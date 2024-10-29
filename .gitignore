@@ -10,3 +10,7 @@
 !scripting/p4sstime/
 !scripting/p4sstime/*
 !scripting/p4sstime.sp
+!cfg
+!cfg/pt_cup.cfg
+!cfg/pt_global_official.cfg
+!cfg/pt_global_pug.cfg
