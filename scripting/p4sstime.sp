@@ -80,6 +80,7 @@ ConVar							bFunStats;
 ConVar							bPracticeMode;
 ConVar							bVerboseLogs;
 ConVar							bMedicArrowsNeutralizeBall;
+ConVar							bAllowInstantResupply;
 
 int									iPlyWhoGotJack;
 // int			plyDirecter;
@@ -121,6 +122,10 @@ float								user2position[3];
 // stats menu variables
 char								moreurl[128];
 
+Handle tfPlayerForceRegenerateAndRespawn;
+Handle pointInRespawnRoom;
+GameData gameData;
+
 public Plugin myinfo =
 {
 	name				= "4v4 PASS Time Extension",
@@ -132,12 +137,7 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	/*GameData gamedata = new GameData("p4sstime");
-	if (gamedata)
-	{
-		DHooks_Initialize(gamedata);
-		delete gamedata;
-	}*/
+	gameData = new GameData("p4sstime");
 
 	cookieCountdownCaption = RegClientCookie("p4ssClientCountdownCaption", "p4sstime's client setting (1/0) for captions for JACK spawn timer", CookieAccess_Public);
 	cookieJACKPickupHud		 = RegClientCookie("p4ssClientJACKPickupHudText", "p4sstime's client setting (1/0) for HUD text when picking up JACK", CookieAccess_Public);
@@ -154,6 +154,7 @@ public void OnPluginStart()
 	RegConsoleCmd("sm_pt_jackpickup_sound", Command_PasstimeJackPickupSound);
 	RegConsoleCmd("sm_pt_simplechatprint", Command_PasstimeSimpleChatPrint);
 	RegConsoleCmd("sm_pt_togglechatprint", Command_PasstimeToggleChatPrint);
+	RegConsoleCmd("sm_pt_resupply", Command_PasstimeResupply);
 	RegAdminCmd("sm_ptsnapshot", Command_GamestateSnapshot, ADMFLAG_GENERIC, "Take a snapshot of the plugin's current variable values.");
 	RegAdminCmd("sm_ptspawnball", Command_PasstimeSpawnBall, ADMFLAG_CONFIG, "Spawn the ball forcefully, by game starting and tournament restarting.");
 
@@ -188,6 +189,7 @@ public void OnPluginStart()
 	bWinstratKills						 = CreateConVar("sm_pt_winstrat_kills", "0", "If 1, kills winstratters and prints \"tried to winstrat\" in chat.", FCVAR_NOTIFY);
 	bVerboseLogs							 = CreateConVar("sm_pt_logs_verbose", "0", "If 1, prints additional information to logs.");
 	bMedicArrowsNeutralizeBall = CreateConVar("sm_pt_medic_can_splash", "1", "If 1, allows medic crossbow arrows to neutralize the ball.", FCVAR_NOTIFY);
+	bAllowInstantResupply = CreateConVar("sm_pt_allow_instant_resupply", "0", "If 1, allows sm_pt_resupply.", FCVAR_NOTIFY);
 	// trikzEnable	 = CreateConVar("sm_pt_trikz", "0", "Set 'trikz' mode. 1 adds friendly knockback for airshots, 2 adds friendly knockback for splash damage, 3 adds friendly knockback for everywhere", FCVAR_NOTIFY, true, 0.0, true, 3.0);
 	// trikzProjCollide = CreateConVar("sm_pt_trikz_projcollide", "2", "Manually set team projectile collision behavior when trikz is on. 2 always collides, 1 will cause your projectiles to phase through if you are too close (default game behavior), 0 will cause them to never collide.", 0, true, 0.0, true, 2.0);
 	// trikzProjDev = CreateConVar("sm_pt_trikz_projcollide_dev", "0", "DONOTUSE; This command is used solely by the plugin to change values. Changing this manually may cause issues.", FCVAR_HIDDEN, true, 0.0, true, 2.0);
@@ -196,6 +198,7 @@ public void OnPluginStart()
 	// HookConVarChange(trikzProjCollide, Hook_OnProjCollideChange);
 	// HookConVarChange(trikzProjDev, Hook_OnProjCollideDev);
 	HookConVarChange(bPracticeMode, Hook_OnPracticeModeChange);
+	HookConVarChange(bAllowInstantResupply, Hook_OnAllowInstantResupplyChange);
 
 	/*for (int client = 1; client <= MaxClients; client++)
 		if (IsClientInGame(client))
@@ -229,6 +232,22 @@ public void OnPluginStart()
 	if (LibraryExists("updater")) {
 		OnLibraryAdded("Updater");
 	}
+
+	StartPrepSDKCall(SDKCall_Player);
+	PrepSDKCall_SetFromConf(gameData, SDKConf_Signature, "CTFPlayer::ForceRegenerateAndRespawn");
+	tfPlayerForceRegenerateAndRespawn = EndPrepSDKCall();
+	if (tfPlayerForceRegenerateAndRespawn == null)
+	   LogError("Failed to find CTFPlayer::ForceRegenerateAndRespawn -- certain features may be non-functional");
+
+	StartPrepSDKCall(SDKCall_Static);
+	PrepSDKCall_SetFromConf(gameData, SDKConf_Signature, "PointInRespawnRoom");
+	PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer);
+	PrepSDKCall_AddParameter(SDKType_Vector, SDKPass_ByRef);
+	PrepSDKCall_AddParameter(SDKType_Bool, SDKPass_ByValue);
+	PrepSDKCall_SetReturnInfo(SDKType_Bool, SDKPass_ByValue);
+	pointInRespawnRoom = EndPrepSDKCall();
+	if (pointInRespawnRoom == null)
+	   LogError("Failed to find PointInRespawnRoom -- certain features may be non-functional");
 }
 
 public
@@ -1225,4 +1244,14 @@ void SetJack(int eIndex)
 		LogError("Could not hook passtime_ball. Splash detection will not work.");
 	}
 	eiJack = eIndex;
+}
+
+bool PointInRespawnRoom(int client, float origin[3], bool sameTeamOnly)
+{
+    return SDKCall(pointInRespawnRoom, client, origin, sameTeamOnly);
+}
+
+void ForceRegenerateAndRespawn(int client)
+{
+    SDKCall(tfPlayerForceRegenerateAndRespawn, client);
 }
