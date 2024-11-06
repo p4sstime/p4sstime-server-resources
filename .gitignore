@@ -25,3 +25,7 @@
 !scripting/compile.sh
 # Our entrypoint
 !scripting/p4sstime.sp
+
+# Here lies our gamedata!
+!gamedata/
+!gamedata/*
