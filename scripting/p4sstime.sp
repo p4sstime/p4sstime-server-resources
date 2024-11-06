@@ -126,9 +126,9 @@ public Plugin myinfo =
 {
 	name				= "4v4 PASS Time Extension",
 	author			= "https://discord.passtime.tf/",
-	description = "The main plugin for 4v4 Competitive PASS Time. This version was forked from https://github.com/blakeplusplus/p4sstime/.`",
+	description = "The main plugin for 4v4 Competitive PASS Time.",
 	version			= VERSION,
-	url					= "https://github.com/prplnorangesoda/p4sstime/releases"
+	url					= "https://github.com/p4sstime/p4sstime-server-resources/releases"
 };
 
 public void OnPluginStart()
@@ -227,20 +227,23 @@ public void OnPluginStart()
 	int jackIndex = FindEntityByClassname(-1, "passtime_ball");
 	if (jackIndex != -1) eiJack = jackIndex;
 
-	if (LibraryExists("updater")) {
+	if (LibraryExists("updater"))
+	{
 		OnLibraryAdded("Updater");
 	}
 }
 
-public
-void OnLibraryAdded(const char[] name) {
-    if (StrEqual(name, "updater")) {
-        Updater_AddPlugin(
-            "https://raw.githubusercontent.com/prplnorangesoda/p4sstime-plugin/updater/updatefile.txt");
-    }
+public void OnLibraryAdded(const char[] name)
+{
+	if (StrEqual(name, "updater"))
+	{
+		Updater_AddPlugin(
+			"https://raw.githubusercontent.com/p4sstime/p4sstime-server-resources/refs/heads/updater/updatefile.txt");
+	}
 }
 
 //#include <p4sstime/trikz.sp>
+#include "p4sstime/stocks.sp"
 #include "p4sstime/snapshot.sp"
 #include "p4sstime/logs.sp"
 #include "p4sstime/pass_menu.sp"
@@ -1206,31 +1209,6 @@ stock void VerboseLog(const char[] format, any...)
 		VFormat(MessageToLog, len, format, 2);
 		LogMessage("[VERBOSE] %s", MessageToLog);
 	}
-}
-
-stock char[] TFTeamToString(TFTeam input)
-{
-	char string[4];
-	switch (input)
-	{
-		case TFTeam_Blue:
-		{
-			string = "BLU";
-		}
-		case TFTeam_Red:
-		{
-			string = "RED";
-		}
-		case TFTeam_Spectator:
-		{
-			string = "SPC";
-		}
-		case TFTeam_Unassigned:
-		{
-			string = "UNA";
-		}
-	}
-	return string;
 }
 
 void SetJack(int eIndex)
