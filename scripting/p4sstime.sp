@@ -424,20 +424,25 @@ void MedicArrowTouchedSomething(int arrow, int other)
 		// // dumb solution: simply neutral the ball by hitting it with 50 damage
 		// SDKHooks_TakeDamage(other, arrow, MedicAttacker, 50.0, -1, -1, NULL_VECTOR, NULL_VECTOR, false);
 		char MedicAttackerName[50];
+		char MedicAttackerNameTeam[MAX_TEAMFORMAT_NAME_LENGTH];
 		GetClientName(MedicAttacker, MedicAttackerName, sizeof(MedicAttackerName));
 		// smart solution: damage the ball using the arrow's position relative to the jack's position
 
 		float jackPosition[3], arrowPosition[3], damageForce[3];
 		GetEntPropVector(other, Prop_Send, "m_vecOrigin", jackPosition);
 		GetEntPropVector(arrow, Prop_Send, "m_vecOrigin", arrowPosition);
-		LogToGame("JackPosition: '%.1f' '%.1f' '%.1f' arrowPosition '%.1f' '%.1f' '%.1f'", jackPosition[0], jackPosition[1], jackPosition[2], arrowPosition[0], arrowPosition[1], arrowPosition[2]);
+		VerboseLog("JackPosition: '%.1f' '%.1f' '%.1f' arrowPosition '%.1f' '%.1f' '%.1f'", jackPosition[0], jackPosition[1], jackPosition[2], arrowPosition[0], arrowPosition[1], arrowPosition[2]);
 		MakeVectorFromPoints(jackPosition, arrowPosition, damageForce);
 		ScaleVector(damageForce, -10.0);
-		LogToGame("DamageForce: '%.1f' '%.1f' '%.1f'", damageForce[0], damageForce[1], damageForce[2]);
+		VerboseLog("DamageForce: '%.1f' '%.1f' '%.1f'", damageForce[0], damageForce[1], damageForce[2]);
 		SDKHooks_TakeDamage(other, arrow, MedicAttacker, 10.0, 0, -1, damageForce, arrowPosition, false);
-		PrintToAllClientsChat("[PASS] %s direct impacted the ball with a crossbow shot!", MedicAttackerName);
+		if (bPrintStats.BoolValue)
+		{
+			PrintToAllClientsChat("\x0700ffff[PASS] %s\x07ffffff direct impacted the ball with a crossbow shot!", MedicAttackerNameTeam);
+		}
+		// PrintToAllClientsChat("[PASS] %s direct impacted the ball with a crossbow shot!", MedicAttackerName);
 	}
-	LogMessage("medic arrow from %d touched %s index %d", MedicAttacker, classname, other);
+	VerboseLog("medic arrow from %d touched %s index %d", MedicAttacker, classname, other);
 }
 
 Action Event_RoundReset(Event event, const char[] name, bool dontBroadcast)
