@@ -123,9 +123,9 @@ float								user2position[3];
 // stats menu variables
 char								moreurl[128];
 
-Handle tfPlayerForceRegenerateAndRespawn;
-Handle pointInRespawnRoom;
-GameData gameData;
+Handle							tfPlayerForceRegenerateAndRespawn;
+Handle							pointInRespawnRoom;
+GameData						gameData;
 
 public Plugin myinfo =
 {
@@ -138,7 +138,7 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	gameData = new GameData("p4sstime");
+	gameData							 = new GameData("p4sstime");
 
 	cookieCountdownCaption = RegClientCookie("p4ssClientCountdownCaption", "p4sstime's client setting (1/0) for captions for JACK spawn timer", CookieAccess_Public);
 	cookieJACKPickupHud		 = RegClientCookie("p4ssClientJACKPickupHudText", "p4sstime's client setting (1/0) for HUD text when picking up JACK", CookieAccess_Public);
@@ -190,7 +190,7 @@ public void OnPluginStart()
 	bWinstratKills						 = CreateConVar("sm_pt_winstrat_kills", "0", "If 1, kills winstratters and prints \"tried to winstrat\" in chat.", FCVAR_NOTIFY);
 	bVerboseLogs							 = CreateConVar("sm_pt_logs_verbose", "0", "If 1, prints additional information to logs.");
 	bMedicArrowsNeutralizeBall = CreateConVar("sm_pt_medic_can_splash", "1", "If 1, allows medic crossbow arrows to neutralize the ball.", FCVAR_NOTIFY);
-	bAllowInstantResupply = CreateConVar("sm_pt_allow_instant_resupply", "0", "If 1, allows sm_pt_resupply.", FCVAR_NOTIFY);
+	bAllowInstantResupply			 = CreateConVar("sm_pt_allow_instant_resupply", "0", "If 1, allows sm_pt_resupply.", FCVAR_NOTIFY);
 	// trikzEnable	 = CreateConVar("sm_pt_trikz", "0", "Set 'trikz' mode. 1 adds friendly knockback for airshots, 2 adds friendly knockback for splash damage, 3 adds friendly knockback for everywhere", FCVAR_NOTIFY, true, 0.0, true, 3.0);
 	// trikzProjCollide = CreateConVar("sm_pt_trikz_projcollide", "2", "Manually set team projectile collision behavior when trikz is on. 2 always collides, 1 will cause your projectiles to phase through if you are too close (default game behavior), 0 will cause them to never collide.", 0, true, 0.0, true, 2.0);
 	// trikzProjDev = CreateConVar("sm_pt_trikz_projcollide_dev", "0", "DONOTUSE; This command is used solely by the plugin to change values. Changing this manually may cause issues.", FCVAR_HIDDEN, true, 0.0, true, 2.0);
@@ -239,7 +239,7 @@ public void OnPluginStart()
 	PrepSDKCall_SetFromConf(gameData, SDKConf_Signature, "CTFPlayer::ForceRegenerateAndRespawn");
 	tfPlayerForceRegenerateAndRespawn = EndPrepSDKCall();
 	if (tfPlayerForceRegenerateAndRespawn == null)
-	   LogError("Failed to find CTFPlayer::ForceRegenerateAndRespawn -- certain features may be non-functional");
+		LogError("Failed to find CTFPlayer::ForceRegenerateAndRespawn -- certain features may be non-functional");
 
 	StartPrepSDKCall(SDKCall_Static);
 	PrepSDKCall_SetFromConf(gameData, SDKConf_Signature, "PointInRespawnRoom");
@@ -249,7 +249,7 @@ public void OnPluginStart()
 	PrepSDKCall_SetReturnInfo(SDKType_Bool, SDKPass_ByValue);
 	pointInRespawnRoom = EndPrepSDKCall();
 	if (pointInRespawnRoom == null)
-	   LogError("Failed to find PointInRespawnRoom -- certain features may be non-functional");
+		LogError("Failed to find PointInRespawnRoom -- certain features may be non-functional");
 }
 
 public void OnLibraryAdded(const char[] name)
@@ -418,16 +418,13 @@ void MedicArrowTouchedSomething(int arrow, int other)
 {
 	char classname[64];
 	GetEntityClassname(other, classname, 64);
-	int MedicAttacker = EntRefToEntIndex(GetEntPropEnt(arrow, Prop_Data, "m_hOwnerEntity"));
+	int eiMedicAttacker = EntRefToEntIndex(GetEntPropEnt(arrow, Prop_Data, "m_hOwnerEntity"));
 	if (StrEqual(classname, "passtime_ball"))
 	{
 		// // dumb solution: simply neutral the ball by hitting it with 50 damage
 		// SDKHooks_TakeDamage(other, arrow, MedicAttacker, 50.0, -1, -1, NULL_VECTOR, NULL_VECTOR, false);
-		char MedicAttackerName[50];
-		char MedicAttackerNameTeam[MAX_TEAMFORMAT_NAME_LENGTH];
-		GetClientName(MedicAttacker, MedicAttackerName, sizeof(MedicAttackerName));
-		// smart solution: damage the ball using the arrow's position relative to the jack's position
 
+		// smart solution: damage the ball using the arrow's position relative to the jack's position
 		float jackPosition[3], arrowPosition[3], damageForce[3];
 		GetEntPropVector(other, Prop_Send, "m_vecOrigin", jackPosition);
 		GetEntPropVector(arrow, Prop_Send, "m_vecOrigin", arrowPosition);
@@ -435,14 +432,25 @@ void MedicArrowTouchedSomething(int arrow, int other)
 		MakeVectorFromPoints(jackPosition, arrowPosition, damageForce);
 		ScaleVector(damageForce, -10.0);
 		VerboseLog("DamageForce: '%.1f' '%.1f' '%.1f'", damageForce[0], damageForce[1], damageForce[2]);
-		SDKHooks_TakeDamage(other, arrow, MedicAttacker, 10.0, 0, -1, damageForce, arrowPosition, false);
+		SDKHooks_TakeDamage(
+			other,						// victim (ball)
+			arrow,						// inflictor (arrow)
+			eiMedicAttacker,	// offender (medic)
+			10.0,							// damage
+			0, -1,						// weapon, damagetype (n/a)
+			damageForce,			// force vector
+			arrowPosition,		// origin vector
+			false							// should bypass hooks
+		);
 		if (bPrintStats.BoolValue)
 		{
-			PrintToAllClientsChat("\x0700ffff[PASS] %s\x07ffffff direct impacted the ball with a crossbow shot!", MedicAttackerNameTeam);
+			char medicAttackerNameTeamFmt[MAX_TEAMFORMAT_NAME_LENGTH];
+			FormatPlayerNameWithTeam(eiMedicAttacker, medicAttackerNameTeamFmt);
+			PrintToAllClientsChat("\x0700ffff[PASS] %s\x07ffffff direct impacted the ball with a crossbow shot!", medicAttackerNameTeamFmt);
 		}
 		// PrintToAllClientsChat("[PASS] %s direct impacted the ball with a crossbow shot!", MedicAttackerName);
 	}
-	VerboseLog("medic arrow from %d touched %s index %d", MedicAttacker, classname, other);
+	VerboseLog("medic arrow from %d touched %s index %d", eiMedicAttacker, classname, other);
 }
 
 Action Event_RoundReset(Event event, const char[] name, bool dontBroadcast)
@@ -1246,10 +1254,10 @@ void SetJack(int eIndex)
 
 bool PointInRespawnRoom(int client, float origin[3], bool sameTeamOnly)
 {
-    return SDKCall(pointInRespawnRoom, client, origin, sameTeamOnly);
+	return SDKCall(pointInRespawnRoom, client, origin, sameTeamOnly);
 }
 
 void ForceRegenerateAndRespawn(int client)
 {
-    SDKCall(tfPlayerForceRegenerateAndRespawn, client);
+	SDKCall(tfPlayerForceRegenerateAndRespawn, client);
 }
