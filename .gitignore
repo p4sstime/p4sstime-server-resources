@@ -29,3 +29,7 @@
 # Here lies our gamedata!
 !gamedata/
 !gamedata/*
+
+# Exclude default sourcemod gamedata
+gamedata/funcommands.games.txt
+sm-tf2.games.txt
