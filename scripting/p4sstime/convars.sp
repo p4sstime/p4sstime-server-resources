@@ -157,7 +157,7 @@ Action Command_PasstimeJackPickupSound(int client, int args)
 void Hook_OnAllowInstantResupplyChange(ConVar convar, const char[] oldValue, const char[] newValue)
 {
 	if (!bAllowInstantResupply.BoolValue)
-	   return;
+	    return;
 
 	if (tfPlayerForceRegenerateAndRespawn == null)
 	{
