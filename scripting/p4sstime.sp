@@ -5,12 +5,13 @@
 #include <tf2_stocks>
 #include <sdkhooks>
 //#include <dhooks>
+#include <vector>
 #include <clientprefs>
 
 #pragma semicolon 1	 // required for logs.tf
 #pragma newdecls required
 
-#define VERSION					"2.5.0"
+#define VERSION					"2.6.0"
 
 #define GOALSCOLOR			"\x073BC43B"
 #define ASSISTSCOLOR		"\x073bc48f"
@@ -80,6 +81,7 @@ ConVar							bFunStats;
 ConVar							bPracticeMode;
 ConVar							bVerboseLogs;
 ConVar							bMedicArrowsNeutralizeBall;
+ConVar							bAllowInstantResupply;
 
 int									iPlyWhoGotJack;
 // int			plyDirecter;
@@ -121,23 +123,22 @@ float								user2position[3];
 // stats menu variables
 char								moreurl[128];
 
+Handle							tfPlayerForceRegenerateAndRespawn;
+Handle							pointInRespawnRoom;
+GameData						gameData;
+
 public Plugin myinfo =
 {
 	name				= "4v4 PASS Time Extension",
 	author			= "https://discord.passtime.tf/",
-	description = "The main plugin for 4v4 Competitive PASS Time. This version was forked from https://github.com/blakeplusplus/p4sstime/.`",
+	description = "The main plugin for 4v4 Competitive PASS Time.",
 	version			= VERSION,
-	url					= "https://github.com/prplnorangesoda/p4sstime/releases"
+	url					= "https://github.com/p4sstime/p4sstime-server-resources/releases"
 };
 
 public void OnPluginStart()
 {
-	/*GameData gamedata = new GameData("p4sstime");
-	if (gamedata)
-	{
-		DHooks_Initialize(gamedata);
-		delete gamedata;
-	}*/
+	gameData							 = new GameData("p4sstime");
 
 	cookieCountdownCaption = RegClientCookie("p4ssClientCountdownCaption", "p4sstime's client setting (1/0) for captions for JACK spawn timer", CookieAccess_Public);
 	cookieJACKPickupHud		 = RegClientCookie("p4ssClientJACKPickupHudText", "p4sstime's client setting (1/0) for HUD text when picking up JACK", CookieAccess_Public);
@@ -154,6 +155,7 @@ public void OnPluginStart()
 	RegConsoleCmd("sm_pt_jackpickup_sound", Command_PasstimeJackPickupSound);
 	RegConsoleCmd("sm_pt_simplechatprint", Command_PasstimeSimpleChatPrint);
 	RegConsoleCmd("sm_pt_togglechatprint", Command_PasstimeToggleChatPrint);
+	RegConsoleCmd("sm_pt_resupply", Command_PasstimeResupply);
 	RegAdminCmd("sm_ptsnapshot", Command_GamestateSnapshot, ADMFLAG_GENERIC, "Take a snapshot of the plugin's current variable values.");
 	RegAdminCmd("sm_ptspawnball", Command_PasstimeSpawnBall, ADMFLAG_CONFIG, "Spawn the ball forcefully, by game starting and tournament restarting.");
 
@@ -188,6 +190,7 @@ public void OnPluginStart()
 	bWinstratKills						 = CreateConVar("sm_pt_winstrat_kills", "0", "If 1, kills winstratters and prints \"tried to winstrat\" in chat.", FCVAR_NOTIFY);
 	bVerboseLogs							 = CreateConVar("sm_pt_logs_verbose", "0", "If 1, prints additional information to logs.");
 	bMedicArrowsNeutralizeBall = CreateConVar("sm_pt_medic_can_splash", "1", "If 1, allows medic crossbow arrows to neutralize the ball.", FCVAR_NOTIFY);
+	bAllowInstantResupply			 = CreateConVar("sm_pt_allow_instant_resupply", "0", "If 1, allows sm_pt_resupply.", FCVAR_NOTIFY);
 	// trikzEnable	 = CreateConVar("sm_pt_trikz", "0", "Set 'trikz' mode. 1 adds friendly knockback for airshots, 2 adds friendly knockback for splash damage, 3 adds friendly knockback for everywhere", FCVAR_NOTIFY, true, 0.0, true, 3.0);
 	// trikzProjCollide = CreateConVar("sm_pt_trikz_projcollide", "2", "Manually set team projectile collision behavior when trikz is on. 2 always collides, 1 will cause your projectiles to phase through if you are too close (default game behavior), 0 will cause them to never collide.", 0, true, 0.0, true, 2.0);
 	// trikzProjDev = CreateConVar("sm_pt_trikz_projcollide_dev", "0", "DONOTUSE; This command is used solely by the plugin to change values. Changing this manually may cause issues.", FCVAR_HIDDEN, true, 0.0, true, 2.0);
@@ -196,6 +199,7 @@ public void OnPluginStart()
 	// HookConVarChange(trikzProjCollide, Hook_OnProjCollideChange);
 	// HookConVarChange(trikzProjDev, Hook_OnProjCollideDev);
 	HookConVarChange(bPracticeMode, Hook_OnPracticeModeChange);
+	HookConVarChange(bAllowInstantResupply, Hook_OnAllowInstantResupplyChange);
 
 	/*for (int client = 1; client <= MaxClients; client++)
 		if (IsClientInGame(client))
@@ -226,20 +230,39 @@ public void OnPluginStart()
 	int jackIndex = FindEntityByClassname(-1, "passtime_ball");
 	if (jackIndex != -1) eiJack = jackIndex;
 
-	if (LibraryExists("updater")) {
+	if (LibraryExists("updater"))
+	{
 		OnLibraryAdded("Updater");
+	}
+
+	StartPrepSDKCall(SDKCall_Player);
+	PrepSDKCall_SetFromConf(gameData, SDKConf_Signature, "CTFPlayer::ForceRegenerateAndRespawn");
+	tfPlayerForceRegenerateAndRespawn = EndPrepSDKCall();
+	if (tfPlayerForceRegenerateAndRespawn == null)
+		LogError("Failed to find CTFPlayer::ForceRegenerateAndRespawn -- certain features may be non-functional");
+
+	StartPrepSDKCall(SDKCall_Static);
+	PrepSDKCall_SetFromConf(gameData, SDKConf_Signature, "PointInRespawnRoom");
+	PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer);
+	PrepSDKCall_AddParameter(SDKType_Vector, SDKPass_ByRef);
+	PrepSDKCall_AddParameter(SDKType_Bool, SDKPass_ByValue);
+	PrepSDKCall_SetReturnInfo(SDKType_Bool, SDKPass_ByValue);
+	pointInRespawnRoom = EndPrepSDKCall();
+	if (pointInRespawnRoom == null)
+		LogError("Failed to find PointInRespawnRoom -- certain features may be non-functional");
+}
+
+public void OnLibraryAdded(const char[] name)
+{
+	if (StrEqual(name, "updater"))
+	{
+		Updater_AddPlugin(
+			"https://raw.githubusercontent.com/p4sstime/p4sstime-server-resources/refs/heads/updater/updatefile.txt");
 	}
 }
 
-public
-void OnLibraryAdded(const char[] name) {
-    if (StrEqual(name, "updater")) {
-        Updater_AddPlugin(
-            "https://raw.githubusercontent.com/prplnorangesoda/p4sstime-plugin/updater/updatefile.txt");
-    }
-}
-
 //#include <p4sstime/trikz.sp>
+#include "p4sstime/stocks.sp"
 #include "p4sstime/snapshot.sp"
 #include "p4sstime/logs.sp"
 #include "p4sstime/pass_menu.sp"
@@ -395,12 +418,39 @@ void MedicArrowTouchedSomething(int arrow, int other)
 {
 	char classname[64];
 	GetEntityClassname(other, classname, 64);
-	int MedicAttacker = EntRefToEntIndex(GetEntPropEnt(arrow, Prop_Data, "m_hOwnerEntity"));
+	int eiMedicAttacker = EntRefToEntIndex(GetEntPropEnt(arrow, Prop_Data, "m_hOwnerEntity"));
 	if (StrEqual(classname, "passtime_ball"))
 	{
-		SDKHooks_TakeDamage(other, arrow, MedicAttacker, 50.0, -1, -1, NULL_VECTOR, NULL_VECTOR, false);
+		// // dumb solution: simply neutral the ball by hitting it with 50 damage
+		// SDKHooks_TakeDamage(other, arrow, MedicAttacker, 50.0, -1, -1, NULL_VECTOR, NULL_VECTOR, false);
+
+		// smart solution: damage the ball using the arrow's position relative to the jack's position
+		float jackPosition[3], arrowPosition[3], damageForce[3];
+		GetEntPropVector(other, Prop_Send, "m_vecOrigin", jackPosition);
+		GetEntPropVector(arrow, Prop_Send, "m_vecOrigin", arrowPosition);
+		VerboseLog("JackPosition: '%.1f' '%.1f' '%.1f' arrowPosition '%.1f' '%.1f' '%.1f'", jackPosition[0], jackPosition[1], jackPosition[2], arrowPosition[0], arrowPosition[1], arrowPosition[2]);
+		MakeVectorFromPoints(jackPosition, arrowPosition, damageForce);
+		ScaleVector(damageForce, -10.0);
+		VerboseLog("DamageForce: '%.1f' '%.1f' '%.1f'", damageForce[0], damageForce[1], damageForce[2]);
+		SDKHooks_TakeDamage(
+			other,						// victim (ball)
+			arrow,						// inflictor (arrow)
+			eiMedicAttacker,	// offender (medic)
+			10.0,							// damage
+			0, -1,						// weapon, damagetype (n/a)
+			damageForce,			// force vector
+			arrowPosition,		// origin vector
+			false							// should bypass hooks
+		);
+		if (bPrintStats.BoolValue)
+		{
+			char medicAttackerNameTeamFmt[MAX_TEAMFORMAT_NAME_LENGTH];
+			FormatPlayerNameWithTeam(eiMedicAttacker, medicAttackerNameTeamFmt);
+			PrintToAllClientsChat("\x0700ffff[PASS] %s\x07ffffff direct impacted the ball with a crossbow shot!", medicAttackerNameTeamFmt);
+		}
+		// PrintToAllClientsChat("[PASS] %s direct impacted the ball with a crossbow shot!", MedicAttackerName);
 	}
-	LogMessage("medic arrow from %d touched %s index %d", MedicAttacker, classname, other);
+	VerboseLog("medic arrow from %d touched %s index %d", eiMedicAttacker, classname, other);
 }
 
 Action Event_RoundReset(Event event, const char[] name, bool dontBroadcast)
@@ -1193,31 +1243,6 @@ stock void VerboseLog(const char[] format, any...)
 	}
 }
 
-stock char[] TFTeamToString(TFTeam input)
-{
-	char string[4];
-	switch (input)
-	{
-		case TFTeam_Blue:
-		{
-			string = "BLU";
-		}
-		case TFTeam_Red:
-		{
-			string = "RED";
-		}
-		case TFTeam_Spectator:
-		{
-			string = "SPC";
-		}
-		case TFTeam_Unassigned:
-		{
-			string = "UNA";
-		}
-	}
-	return string;
-}
-
 void SetJack(int eIndex)
 {
 	if (!SDKHookEx(eIndex, SDKHook_OnTakeDamage, PasstimeBallTookDamage))
@@ -1225,4 +1250,14 @@ void SetJack(int eIndex)
 		LogError("Could not hook passtime_ball. Splash detection will not work.");
 	}
 	eiJack = eIndex;
+}
+
+bool PointInRespawnRoom(int client, float origin[3], bool sameTeamOnly)
+{
+	return SDKCall(pointInRespawnRoom, client, origin, sameTeamOnly);
+}
+
+void ForceRegenerateAndRespawn(int client)
+{
+	SDKCall(tfPlayerForceRegenerateAndRespawn, client);
 }

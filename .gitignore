@@ -1,8 +1,35 @@
-scripting/*
+# Necessary for plugin developers - 
+# saves a lot of time having to copy + paste files from development to repository
+# allows us to clone directly in tf/addons/sourcemod directory
+*
+
+# Keep repo-necessary files
+!.gitignore
+!LICENSE
+
+# Keep documentation files
+!*.md
+!cfg/
+
+# Keep scripting source files
+!scripting/
+!scripting/p4sstime/
+# Allow any new code to be added without updating this file
+!scripting/p4sstime/*
+
+# Manual includes
 !scripting/include/
 !scripting/include/updater.inc
+
+# FIXME: consider replacing this with a different shell script?
 !scripting/compile.sh
-!scripting
-!scripting/p4sstime/
-!scripting/p4sstime/*
+# Our entrypoint
 !scripting/p4sstime.sp
+
+# Here lies our gamedata!
+!gamedata/
+!gamedata/*
+
+# Exclude default sourcemod gamedata
+gamedata/funcommands.games.txt
+sm-tf2.games.txt

@@ -154,6 +154,44 @@ Action Command_PasstimeJackPickupSound(int client, int args)
 	return Plugin_Handled;
 }
 
+void Hook_OnAllowInstantResupplyChange(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	if (!bAllowInstantResupply.BoolValue)
+	   return;
+
+	if (tfPlayerForceRegenerateAndRespawn == null)
+	{
+		LogError("Cannot allow instant resupply due to missing CTFPlayer::ForceRegenerateAndRespawn function");
+		bAllowInstantResupply.BoolValue = false;
+		return;
+	}
+
+	if (pointInRespawnRoom == null)
+	{
+		LogError("Cannot allow instant resupply due to missing PointInRespawnRoom function");
+		bAllowInstantResupply.BoolValue = false;
+		return;
+	}
+}
+Action Command_PasstimeResupply(int client, int args)
+{
+    if (!bAllowInstantResupply.BoolValue)
+        return Plugin_Handled;
+
+    if (!IsPlayerAlive(client))
+        return Plugin_Handled;
+
+    float origin[3];
+    GetClientAbsOrigin(client, origin);
+
+    if (!PointInRespawnRoom(client, origin, false))
+        return Plugin_Handled;
+
+    ForceRegenerateAndRespawn(client);
+
+    return Plugin_Handled;
+}
+
 void RemoveShotty(int client)
 {
 	if (bEquipStockWeapons.BoolValue)
