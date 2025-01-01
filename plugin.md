@@ -12,6 +12,23 @@ In the [releases section](https://github.com/prplnorangesoda/p4sstime-plugin/rel
 
 # Contributing
 
+## Features
+
+This plugin is not meant to be very in-your-face featureful - just a utility for simple things that TF2 should have / fix
+(like medic arrows splashing the ball, banning default hitscan weapons). It also includes printing events to chat. If
+it's not strictly necessary, doesn't patch a base game bug, or isn't helpful it might not be a good fit for this
+plugin.
+
+## Issues
+
+If you have any suggestions, please file an Issue in the Issues tab. 
+Any critical bugs should be filed as soon as you know about them. 
+
+If it is truly game-breaking / security vulnerable, message a developer in
+the official PASS Time Discord and we can sort it out.
+
+## Setting up development environment
+
 To work on this plugin, here are the steps:
 
 ### Setting up a TF2 server
