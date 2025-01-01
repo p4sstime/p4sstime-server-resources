@@ -7,6 +7,7 @@
 //#include <dhooks>
 #include <vector>
 #include <clientprefs>
+#include <sdktools_functions>
 
 #pragma semicolon 1	 // required for logs.tf
 #pragma newdecls required

@@ -69,7 +69,7 @@ Action Event_PlayerResup(Event event, const char[] name, bool dontBroadcast)
 
 Action Command_PasstimeSuicide(int client, int args)
 {
-	SDKHooks_TakeDamage(client, client, client, 500.0, DMG_PREVENT_PHYSICS_FORCE);
+	ForcePlayerSuicide(client, false)
 	ReplyToCommand(client, "[PASS] Committed suicide");
 	return Plugin_Handled;
 }
