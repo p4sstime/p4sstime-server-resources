@@ -21,6 +21,6 @@ Action Command_GamestateSnapshot(int client, int args)
 			team = "UNA";
 		}
 	}
-	PrintToChatAll("[PASS] Ball team: %s (%d)", team, ballTeam);
+	ReplyToCommand("[PASS] Ball team: %s (%d)", team, ballTeam);
 	return Plugin_Handled;
 }
