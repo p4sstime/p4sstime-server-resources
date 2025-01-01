@@ -21,6 +21,6 @@ Action Command_GamestateSnapshot(int client, int args)
 			team = "UNA";
 		}
 	}
-	ReplyToCommand("[PASS] Ball team: %s (%d)", team, ballTeam);
+	ReplyToCommand(client, "[PASS] Ball team: %s (%d)", team, ballTeam);
 	return Plugin_Handled;
 }

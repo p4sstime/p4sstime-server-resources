@@ -69,7 +69,7 @@ Action Event_PlayerResup(Event event, const char[] name, bool dontBroadcast)
 
 Action Command_PasstimeSuicide(int client, int args)
 {
-	ForcePlayerSuicide(client, false)
+	ForcePlayerSuicide(client);
 	ReplyToCommand(client, "[PASS] Committed suicide");
 	return Plugin_Handled;
 }
