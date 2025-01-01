@@ -157,7 +157,7 @@ Action Command_PasstimeJackPickupSound(int client, int args)
 void Hook_OnAllowInstantResupplyChange(ConVar convar, const char[] oldValue, const char[] newValue)
 {
 	if (!bAllowInstantResupply.BoolValue)
-	   return;
+	    return;
 
 	if (tfPlayerForceRegenerateAndRespawn == null)
 	{
@@ -178,6 +178,9 @@ Action Command_PasstimeResupply(int client, int args)
     if (!bAllowInstantResupply.BoolValue)
         return Plugin_Handled;
 
+    if (nextInstantResupplyTime[client] > GetGameTime())
+        return Plugin_Handled;
+
     if (!IsPlayerAlive(client))
         return Plugin_Handled;
 
@@ -187,6 +190,7 @@ Action Command_PasstimeResupply(int client, int args)
     if (!PointInRespawnRoom(client, origin, false))
         return Plugin_Handled;
 
+    nextInstantResupplyTime[client] = GetGameTime() + flInstantResupplyTimeBetween.FloatValue;
     ForceRegenerateAndRespawn(client);
 
     return Plugin_Handled;
