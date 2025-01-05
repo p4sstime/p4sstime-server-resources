@@ -1,6 +1,7 @@
 #!/usr/bin/env -S bash -ex
 cd "$(dirname "$0")"
 
+mkdir -p ../plugins
 echo -e "\nCompiling p4sstime.smx..."
 ./spcomp p4sstime.sp -o../plugins/p4sstime.smx
 
