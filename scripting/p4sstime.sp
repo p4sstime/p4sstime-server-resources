@@ -103,6 +103,7 @@ int                 iBluBallTime;
 // int  			trikzProjCollideSave = 2;
 Menu                mPassMenu;
 bool                bWaitingForBallSpawnToRestart;
+bool                bRoundActive;
 bool                bHalloweenMode;
 bool                bBallLoose;         // Is the ball currently loose (is the passtime_ball entity on the map)?
 bool                bBallSplashed;      // check if ball splashed for panacea checks
@@ -180,6 +181,7 @@ public void OnPluginStart()
   HookEvent("sticky_jump_landed", Event_SJLand);
   HookEvent("teamplay_pre_round_time_left", Event_PregameCountdown);
   HookEvent("teamplay_broadcast_audio", Event_MidgameCountdown);
+  HookEvent("teamplay_round_active", Event_PlayersCanMove);
   HookEvent("teamplay_round_win", Event_TeamWin);
   HookEvent("stats_resetround", Event_RoundReset);
   HookEntityOutput("trigger_catapult", "OnCatapulted", Hook_OnCatapult);
@@ -470,6 +472,7 @@ Action Event_RoundReset(Event event, const char[] name, bool dontBroadcast)
   iRedBallTime = 0;
   iBluBallTime = 0;
   bBallLoose   = false;
+  bRoundActive = false;
   if (GetConVarInt(bPracticeMode) == 1)
   {
     SetConVarInt(bPracticeMode, 0);
@@ -547,6 +550,12 @@ Action Event_MidgameCountdown(Event event, const char[] name, bool dontBroadcast
         PrintToChat(x, "\x0700ffff[PASS] \x0700ff001");
     }
   }
+  return Plugin_Handled;
+}
+
+Action Event_PlayersCanMove(Event event, const char[] name, bool dontBroadcast)
+{
+  bRoundActive = true;
   return Plugin_Handled;
 }
 

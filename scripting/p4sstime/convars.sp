@@ -69,8 +69,15 @@ Action Event_PlayerResup(Event event, const char[] name, bool dontBroadcast)
 
 Action Command_PasstimeSuicide(int client, int args)
 {
-	ForcePlayerSuicide(client);
-	ReplyToCommand(client, "[PASS] Committed suicide");
+	if(bRoundActive)
+	{
+		ForcePlayerSuicide(client);
+		ReplyToCommand(client, "[PASS] Committed suicide");
+	}
+	else
+	{
+		ReplyToCommand(client, "[PASS] Round is not active");
+	}
 	return Plugin_Handled;
 }
 
