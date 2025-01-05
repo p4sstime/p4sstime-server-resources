@@ -787,7 +787,7 @@ Action Event_PassGet(Event event, const char[] name, bool dontBroadcast)
 		arrbPanaceaCheck[iPlyWhoGotJack] = true;
 		GetClientAbsOrigin(iPlyWhoGotJack, position);
 		float distanceFromTopSpawner = GetVectorDistance(position, fTopSpawnPos, false);
-		LogToGame("Panacea check - Distance from top spawner: %.0f, Cutoff distance for winstrat: %i", distanceFromTopSpawner, iWinStratDistance);
+		VerboseLog("Panacea check - Distance from top spawner: %.0f, Cutoff distance for winstrat: %i", distanceFromTopSpawner, iWinStratDistance);
 		if (distanceFromTopSpawner < iWinStratDistance)	 // may need to be changed
 		{
 			arrbPanaceaCheck[iPlyWhoGotJack]	= false;
