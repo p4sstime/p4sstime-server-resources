@@ -103,6 +103,7 @@ Menu								mPassMenu;
 bool								bWaitingForBallSpawnToRestart;
 bool								bHalloweenMode;
 bool								bBallLoose;					// Is the ball currently loose (is the passtime_ball entity on the map)?
+bool 								bBallSplashed;				// check if ball splashed for panacea checks
 TFTeam							eLastTickBallTeam;	// in effect, this is "last thrown ball team"
 bool								arrbPlyIsDead[MAXPLAYERS + 1];
 bool								arrbBlastJumpStatus[MAXPLAYERS + 1];	// true if blast jumping, false if has landed
@@ -376,6 +377,7 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
 	VerboseLog("HEYSPEAKERSLOOKHERE: ballteam '%s'", TFTeamToString(ballTeam));
 	// so incredibly ugly
 	VerboseLog("playerWhoSplashed: %d, playerTeam: %s, ballTeam: %s", attacker, TFTeamToString(playerTeam), TFTeamToString(ballTeam));
+	bBallSplashed = true;
 	switch (playerTeam)
 	{
 		case TFTeam_Blue:
@@ -701,6 +703,7 @@ void Hook_OnSpawnBall(const char[] name, int caller, int activator, float delay)
 		PrintToSTV("[PASS-TV] passtime_ball spawned from the left spawnpoint.");
 	}
 	ibFirstGrabCheck = true;
+	bBallSplashed = false;
 }
 
 Action Event_PassFree(Event event, const char[] name, bool dontBroadcast)
@@ -994,7 +997,7 @@ Action Event_PassScore(Event event, const char[] name, bool dontBroadcast)
 
 	GetClientName(scorer, playerName, sizeof(playerName));
 
-	if (ibBallSpawnedLower)
+	if (ibBallSpawnedLower || bBallSplashed)
 		arrbPanaceaCheck[scorer] = false;
 
 	float fScoredBallPos[3];
