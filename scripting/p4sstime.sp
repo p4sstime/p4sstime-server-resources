@@ -1006,6 +1006,7 @@ Action Event_PassScore(Event event, const char[] name, bool dontBroadcast)
 
 	if (arrbDeathbombCheck[eiDeathBomber])
 	{
+		arrbPanaceaCheck[scorer] = false; // both Panacea and deathbomb requirements can be true at the same time, so if deathbomb occurs just turn off panacea
 		SetLogInfo(eiDeathBomber);
 		LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_score\" (points \"%i\") (panacea \"%d\") (win strat \"%d\") (deathbomb \"%d\") (dist \"%.0f\") (position \"%.0f %.0f %.0f\")",
 							user1, GetClientUserId(user1), user1steamid, user1team,
