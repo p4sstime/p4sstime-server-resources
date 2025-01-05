@@ -1,7 +1,7 @@
 "Updater" {
 	"Information" {
 		"Version" {
-			"Latest" "2.5.1"
+			"Latest" "2.5.2"
 		}
 
 		"Notes" "Patch notes: https://github.com/prplnorangesoda/p4sstime-plugin/releases"
