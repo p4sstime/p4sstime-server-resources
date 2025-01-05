@@ -20,8 +20,8 @@ void SetLogInfo(int p1, int p2 = 0)
     user1team = "Spectator";
   if (p2 != 0)
   {
-    user2 = p2
-      GetClientAbsOrigin(p2, user2position);
+    user2 = p2;
+    GetClientAbsOrigin(p2, user2position);
     GetClientAuthId(p2, AuthId_Steam3, user2steamid, sizeof(user2steamid));
     if (GetClientTeam(p2) == 2)
       user2team = "Red";
