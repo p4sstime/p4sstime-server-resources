@@ -6,6 +6,7 @@
 # Keep repo-necessary files
 !.gitignore
 !LICENSE
+!.vscode
 
 # Keep documentation files
 !*.md
@@ -16,6 +17,10 @@
 !scripting/p4sstime/
 # Allow any new code to be added without updating this file
 !scripting/p4sstime/*
+
+# Maintain building / release scripts
+!p4sstime-scripts/
+!p4sstime-scripts/*
 
 # Manual includes
 !scripting/include/

@@ -1,25 +1,41 @@
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"label": "Compile plugins (linux)",
-			"type": "shell",
-			"linux": {
-				"command": "./scripting/compile.sh"
-			},
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			},
-			"presentation": {
-				"echo": true,
-				"reveal": "always",
-				"focus": false,
-				"panel": "shared",
-				"showReuseMessage": true,
-				"clear": false
-			},
-			"problemMatcher": []
-		}
-	]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Compile plugins (linux)",
+      "type": "shell",
+      "linux": {
+        "command": "./p4sstime-scripts/compile.sh"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Zip and build for release (linux)",
+      "type": "shell",
+      "linux": {
+        "command": "./p4sstime-scripts/build.sh"
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      }
+    }
+  ]
 }

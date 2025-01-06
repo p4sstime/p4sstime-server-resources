@@ -137,7 +137,7 @@ Action Timer_DisplayStats(Handle timer)
   // clean it up for spectators so the value adds up to a clean 100%
   if (redTest + bluTest != 10000)
   {
-    redBallPossessionPercent += 0.0001
+    redBallPossessionPercent += 0.0001;
   }
 
   // for display

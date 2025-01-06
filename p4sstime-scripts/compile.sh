@@ -1,9 +1,14 @@
 #!/usr/bin/env -S bash -ex
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/../scripting"
+
+# OPTIONS:
+# -;   : require semicolons
+# -v 0 : disable copyright output
+options='-; -v 0'
 
 mkdir -p ../plugins
 echo -e "\nCompiling p4sstime.smx..."
-./spcomp p4sstime.sp -o../plugins/p4sstime.smx
+./spcomp $options p4sstime.sp -o../plugins/p4sstime.smx
 
 # if [[ $# -ne 0 ]]; then
 # 	for sourcefile in "$@"
