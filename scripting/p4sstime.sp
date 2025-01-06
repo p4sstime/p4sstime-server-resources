@@ -555,13 +555,14 @@ Action Event_MidgameCountdown(Event event, const char[] name, bool dontBroadcast
 
 Action Event_PlayersCanMove(Event event, const char[] name, bool dontBroadcast)
 {
+  int offset = GameConfGetOffset(gameData, "CTFPlayer::m_bPasstimeBallSlippery");
   for (int x = 1; x < MaxClients + 1; x++)
   {
     if (!IsValidClient(x)) continue;
 
 	// fix by Underscore; if ply goes AFK for long enough (even in pregame) they get attached a flag (m_bPasstimeBallSlippery) that causes teammates to be able to steal from them that doesn't go away. this makes it go away every time a round starts
     Address entity_address = GetEntityAddress(x);
-    StoreToAddress(view_as<Address>(view_as<int>(entity_address) + 0x2645), 0, NumberType_Int8, false);
+    StoreToAddress(view_as<Address>(view_as<int>(entity_address) + offset), 0, NumberType_Int8, false);
   }
   
   bRoundActive = true;

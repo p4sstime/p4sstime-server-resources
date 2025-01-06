@@ -18,5 +18,13 @@
                 "windows"   "\x55\x8B\xEC\x53\x33\xDB\x56\x57\x39\x1D"
             }
         }
+        "Offsets"
+		{
+			"CTFPlayer::m_bPasstimeBallSlippery"
+            {
+                "linux"      "0x2645"
+                "windows"    "0x2649"
+            }
+        }
     }
 }
