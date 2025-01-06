@@ -199,7 +199,7 @@ public void OnPluginStart()
   bVerboseLogs                 = CreateConVar("sm_pt_logs_verbose", "0", "If 1, prints additional information to logs.");
   bMedicArrowsNeutralizeBall   = CreateConVar("sm_pt_medic_can_splash", "1", "If 1, allows medic crossbow arrows to neutralize the ball.", FCVAR_NOTIFY);
   bAllowInstantResupply        = CreateConVar("sm_pt_allow_instant_resupply", "0", "If 1, allows sm_pt_resupply.", FCVAR_NOTIFY);
-  bMedicArrowsPushBall         = CreateConVar("sm_pt_medic_splash_pushes_ball", "0", "If 1 along with sm_pt_medic_can_splash, allows medic crossbow arrows to push the ball", FCVAR_NOTIFY);
+  bMedicArrowsPushBall         = CreateConVar("sm_pt_medic_splash_pushes_ball", "1", "If 1 along with sm_pt_medic_can_splash, allows medic crossbow arrows to push the ball", FCVAR_NOTIFY);
   flInstantResupplyTimeBetween = CreateConVar("sm_pt_instant_resupply_time_between", "0.5", "The number of seconds between each successful sm_pt_resupply.", FCVAR_NOTIFY);
   // trikzEnable	 = CreateConVar("sm_pt_trikz", "0", "Set 'trikz' mode. 1 adds friendly knockback for airshots, 2 adds friendly knockback for splash damage, 3 adds friendly knockback for everywhere", FCVAR_NOTIFY, true, 0.0, true, 3.0);
   // trikzProjCollide = CreateConVar("sm_pt_trikz_projcollide", "2", "Manually set team projectile collision behavior when trikz is on. 2 always collides, 1 will cause your projectiles to phase through if you are too close (default game behavior), 0 will cause them to never collide.", 0, true, 0.0, true, 2.0);
@@ -432,28 +432,33 @@ void MedicArrowTouchedSomething(int arrow, int other)
   int eiMedicAttacker = EntRefToEntIndex(GetEntPropEnt(arrow, Prop_Data, "m_hOwnerEntity"));
   if (StrEqual(classname, "passtime_ball"))
   {
-    // // dumb solution: simply neutral the ball by hitting it with 50 damage
-    // SDKHooks_TakeDamage(other, arrow, MedicAttacker, 50.0, -1, -1, NULL_VECTOR, NULL_VECTOR, false);
+    if (bMedicArrowsPushBall.BoolValue)
+    {
+      // smart solution: damage the ball using the arrow's position relative to the jack's position
+      float jackPosition[3], arrowPosition[3], damageForce[3];
+      GetEntPropVector(other, Prop_Send, "m_vecOrigin", jackPosition);
+      GetEntPropVector(arrow, Prop_Send, "m_vecOrigin", arrowPosition);
+      VerboseLog("JackPosition: '%.1f' '%.1f' '%.1f' arrowPosition '%.1f' '%.1f' '%.1f'", jackPosition[0], jackPosition[1], jackPosition[2], arrowPosition[0], arrowPosition[1], arrowPosition[2]);
+      MakeVectorFromPoints(jackPosition, arrowPosition, damageForce);
+      ScaleVector(damageForce, -10.0);
+      VerboseLog("DamageForce: '%.1f' '%.1f' '%.1f'", damageForce[0], damageForce[1], damageForce[2]);
 
-    // smart solution: damage the ball using the arrow's position relative to the jack's position
-    float jackPosition[3], arrowPosition[3], damageForce[3];
-    GetEntPropVector(other, Prop_Send, "m_vecOrigin", jackPosition);
-    GetEntPropVector(arrow, Prop_Send, "m_vecOrigin", arrowPosition);
-    VerboseLog("JackPosition: '%.1f' '%.1f' '%.1f' arrowPosition '%.1f' '%.1f' '%.1f'", jackPosition[0], jackPosition[1], jackPosition[2], arrowPosition[0], arrowPosition[1], arrowPosition[2]);
-    MakeVectorFromPoints(jackPosition, arrowPosition, damageForce);
-    ScaleVector(damageForce, -10.0);
-    VerboseLog("DamageForce: '%.1f' '%.1f' '%.1f'", damageForce[0], damageForce[1], damageForce[2]);
+      SDKHooks_TakeDamage(
+        other,            // victim (ball)
+        arrow,            // inflictor (arrow)
+        eiMedicAttacker,  // offender (medic)
+        10.0,             // damage
+        0, -1,            // weapon, damagetype (n/a)
+        damageForce,      // force vector
+        arrowPosition,    // origin vector
+        false             // should bypass hooks
+      );
+    }
+    else {
+      // dumb solution: simply neutral the ball by hitting it with 50 damage
+      SDKHooks_TakeDamage(other, arrow, eiMedicAttacker, 50.0, -1, -1, NULL_VECTOR, NULL_VECTOR, false);
+    }
 
-    SDKHooks_TakeDamage(
-      other,            // victim (ball)
-      arrow,            // inflictor (arrow)
-      eiMedicAttacker,  // offender (medic)
-      10.0,             // damage
-      0, -1,            // weapon, damagetype (n/a)
-      damageForce,      // force vector
-      arrowPosition,    // origin vector
-      false             // should bypass hooks
-    );
     if (bPrintStats.BoolValue)
     {
       char medicAttackerNameTeamFmt[MAX_TEAMFORMAT_NAME_LENGTH];
@@ -559,11 +564,11 @@ Action Event_PlayersCanMove(Event event, const char[] name, bool dontBroadcast)
   {
     if (!IsValidClient(x)) continue;
 
-	// fix by Underscore; if ply goes AFK for long enough (even in pregame) they get attached a flag (m_bPasstimeBallSlippery) that causes teammates to be able to steal from them that doesn't go away. this makes it go away every time a round starts
+    // fix by Underscore; if ply goes AFK for long enough (even in pregame) they get attached a flag (m_bPasstimeBallSlippery) that causes teammates to be able to steal from them that doesn't go away. this makes it go away every time a round starts
     Address entity_address = GetEntityAddress(x);
     StoreToAddress(view_as<Address>(view_as<int>(entity_address) + 0x2645), 0, NumberType_Int8, false);
   }
-  
+
   bRoundActive = true;
   return Plugin_Handled;
 }
