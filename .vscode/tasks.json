@@ -22,10 +22,10 @@
       "problemMatcher": []
     },
     {
-      "label": "Zip and build for release (linux)",
+      "label": "Prepare release (linux)",
       "type": "shell",
       "linux": {
-        "command": "./p4sstime-scripts/build.sh"
+        "command": "./p4sstime-scripts/release.sh"
       },
       "group": "build",
       "presentation": {
