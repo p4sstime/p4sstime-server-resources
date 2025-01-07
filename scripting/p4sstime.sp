@@ -37,6 +37,10 @@ enum
 // 	STATE_CARRIED
 // };
 
+// if anyone else was confused on wtf an enum struct was:
+// read: https://wiki.alliedmods.net/SourcePawn_Transitional_Syntax#Enum_Structs
+// basically: emulating a struct through an array. i.e. an array with named indices
+// because SOURCEPAWN DOESN'T SUPPORT STRUCTS??
 enum struct enubPlyJackSettings
 {
   bool bPlyCoundownCaptionSetting;
