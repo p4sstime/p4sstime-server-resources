@@ -22,6 +22,10 @@
 !p4sstime-scripts/
 !p4sstime-scripts/*
 
+# Maintain outdated spcomp binaries
+!vendor/
+!vendor/*
+
 # Manual includes
 !scripting/include/
 !scripting/include/updater.inc

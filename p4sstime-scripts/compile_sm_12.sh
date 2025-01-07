@@ -6,9 +6,9 @@ cd "$(dirname "$0")/../scripting"
 # -v 0 : disable copyright output
 options='-; -v 0'
 
-mkdir -p ../plugins
+mkdir -p ../compiled
 echo -e "\nCompiling p4sstime.smx..."
-./spcomp $options p4sstime.sp -o../plugins/p4sstime.smx
+./spcomp $options p4sstime.sp -o../compiled/p4sstime.smx
 
 # if [[ $# -ne 0 ]]; then
 # 	for sourcefile in "$@"

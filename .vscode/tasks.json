@@ -2,10 +2,10 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Compile plugins (linux)",
+      "label": "Compile plugins for Sourcemod 1.12 (linux)",
       "type": "shell",
       "linux": {
-        "command": "./p4sstime-scripts/compile.sh"
+        "command": "./p4sstime-scripts/compile_sm_12.sh"
       },
       "group": {
         "kind": "build",
