@@ -220,7 +220,8 @@ public void OnPluginStart()
   {
     iWinStratDistance = 150;
   }
-  else {
+  else
+  {
     iWinStratDistance = 400;
   }
 
