@@ -41,7 +41,7 @@ enum
 // read: https://wiki.alliedmods.net/SourcePawn_Transitional_Syntax#Enum_Structs
 // basically: emulating a struct through an array. i.e. an array with named indices
 // because SOURCEPAWN DOESN'T SUPPORT STRUCTS??
-enum struct enubPlyJackSettings
+enum struct enubPlySettings
 {
   bool bPlyCoundownCaptionSetting;
   bool bPlyHudTextSetting;
@@ -71,72 +71,72 @@ enum struct enuiPlyRoundStats
   int iPlySteal2Saves;
 }
 
-enubPlyJackSettings arrbJackAcqSettings[MAXPLAYERS + 1];
-enuiPlyRoundStats   arriPlyRoundPassStats[MAXPLAYERS + 1];
+enubPlySettings   arrbJackAcqSettings[MAXPLAYERS + 1];
+enuiPlyRoundStats arriPlyRoundPassStats[MAXPLAYERS + 1];
 
-float               fBluGoalPos[3], fRedGoalPos[3], fTopSpawnPos[3], fFreeBallPos[3];
+float             fBluGoalPos[3], fRedGoalPos[3], fTopSpawnPos[3], fFreeBallPos[3];
 
-ConVar              bEquipStockWeapons;
-ConVar              bSwitchDuringRespawn;
-ConVar              bStealBlurryOverlay;
+ConVar            bEquipStockWeapons;
+ConVar            bSwitchDuringRespawn;
+ConVar            bStealBlurryOverlay;
 // ConVar							trikzEnable, trikzProjCollide, trikzProjDev;
-ConVar              bDroppedItemsCollision;
-ConVar              bPrintStats;
-ConVar              bWinstratKills;
-ConVar              bFunStats;
-ConVar              bPracticeMode;
-ConVar              bVerboseLogs;
-ConVar              bMedicArrowsNeutralizeBall;
-ConVar              bMedicArrowsPushBall;
-ConVar              bAllowInstantResupply;
-ConVar              flInstantResupplyTimeBetween;
+ConVar            bDroppedItemsCollision;
+ConVar            bPrintStats;
+ConVar            bWinstratKills;
+ConVar            bFunStats;
+ConVar            bPracticeMode;
+ConVar            bVerboseLogs;
+ConVar            bMedicArrowsNeutralizeBall;
+ConVar            bMedicArrowsPushBall;
+ConVar            bAllowInstantResupply;
+ConVar            flInstantResupplyTimeBetween;
 
-int                 iPlyWhoGotJack;
+int               iPlyWhoGotJack;
 // int			plyDirecter;
-int                 ibFirstGrabCheck;
-int                 eiJack;
-int                 eiPassTarget;
-int                 ibBallSpawnedLower;
-int                 iRoundResetTick;
-int                 iWinStratDistance;
-int                 eiDeathBomber;
-int                 iBallPickedUpTick;
-int                 iRedBallTime;
-int                 iBluBallTime;
+int               ibFirstGrabCheck;
+int               eiJack;
+int               eiPassTarget;
+int               ibBallSpawnedLower;
+int               iRoundResetTick;
+int               iWinStratDistance;
+int               eiDeathBomber;
+int               iBallPickedUpTick;
+int               iRedBallTime;
+int               iBluBallTime;
 // int  			trikzProjCollideCurVal;
 // int  			trikzProjCollideSave = 2;
-Menu                mPassMenu;
-bool                bWaitingForBallSpawnToRestart;
-bool                bRoundActive;
-bool                bHalloweenMode;
-bool                bBallLoose;         // Is the ball currently loose (is the passtime_ball entity on the map)?
-bool                bBallSplashed;      // check if ball splashed for panacea checks
-TFTeam              eLastTickBallTeam;  // in effect, this is "last thrown ball team"
-bool                arrbPlyIsDead[MAXPLAYERS + 1];
-bool                arrbBlastJumpStatus[MAXPLAYERS + 1];  // true if blast jumping, false if has landed
-bool                arrbPanaceaCheck[MAXPLAYERS + 1];
-bool                arrbWinStratCheck[MAXPLAYERS + 1];
-bool                arrbDeathbombCheck[MAXPLAYERS + 1];
-float               nextInstantResupplyTime[MAXPLAYERS + 1];
+Menu              mPassMenu;
+bool              bWaitingForBallSpawnToRestart;
+bool              bRoundActive;
+bool              bHalloweenMode;
+bool              bBallLoose;         // Is the ball currently loose (is the passtime_ball entity on the map)?
+bool              bBallSplashed;      // check if ball splashed for panacea checks
+TFTeam            eLastTickBallTeam;  // in effect, this is "last thrown ball team"
+bool              arrbPlyIsDead[MAXPLAYERS + 1];
+bool              arrbBlastJumpStatus[MAXPLAYERS + 1];  // true if blast jumping, false if has landed
+bool              arrbPanaceaCheck[MAXPLAYERS + 1];
+bool              arrbWinStratCheck[MAXPLAYERS + 1];
+bool              arrbDeathbombCheck[MAXPLAYERS + 1];
+float             nextInstantResupplyTime[MAXPLAYERS + 1];
 // bool			plyTakenDirectHit[MAXPLAYERS + 1];
-Cookie              cookieCountdownCaption, cookieJACKPickupHud, cookieJACKPickupChat, cookieJACKPickupSound, cookieSimpleChatPrint, cookieToggleChatPrint;
+Cookie            cookieCountdownCaption, cookieJACKPickupHud, cookieJACKPickupChat, cookieJACKPickupSound, cookieSimpleChatPrint, cookieToggleChatPrint;
 
 // log variables
-int                 user1;
-char                user1steamid[16];
-char                user1team[12];
-float               user1position[3];
-int                 user2;
-char                user2steamid[16];
-char                user2team[12];
-float               user2position[3];
+int               user1;
+char              user1steamid[16];
+char              user1team[12];
+float             user1position[3];
+int               user2;
+char              user2steamid[16];
+char              user2team[12];
+float             user2position[3];
 
 // stats menu variables
-char                moreurl[128];
+char              moreurl[128];
 
-Handle              tfPlayerForceRegenerateAndRespawn;
-Handle              pointInRespawnRoom;
-GameData            gameData;
+Handle            tfPlayerForceRegenerateAndRespawn;
+Handle            pointInRespawnRoom;
+GameData          gameData;
 
 public Plugin myinfo =
 {
