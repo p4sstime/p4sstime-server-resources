@@ -246,7 +246,7 @@ public void OnPluginStart()
 
   if (LibraryExists("updater"))
   {
-    OnLibraryAdded("Updater");
+    OnLibraryAdded("updater");
   }
 
   StartPrepSDKCall(SDKCall_Player);
@@ -268,11 +268,11 @@ public void OnPluginStart()
 
 public void OnLibraryAdded(const char[] name)
 {
-  if (StrEqual(name, "updater"))
-  {
-    Updater_AddPlugin(
-      "https://raw.githubusercontent.com/p4sstime/p4sstime-server-resources/refs/heads/updater/updatefile.txt");
-  }
+  // if (StrEqual(name, "updater"))
+  // {
+  //   Updater_AddPlugin(
+  //     "https://raw.githubusercontent.com/p4sstime/p4sstime-server-resources/refs/heads/updater/updatefile.txt");
+  // }
 }
 
 //#include <p4sstime/trikz.sp>
