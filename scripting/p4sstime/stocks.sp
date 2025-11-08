@@ -23,6 +23,20 @@ stock char[] TFTeamToString(TFTeam input)
   return string;
 }
 
+stock float fmin(float x, float y)
+{
+  if (x <= y) return x;
+  else return y;
+}
+stock int min(int x, int y)
+{
+  if (x <= y) return x;
+  else return y;
+}
+stock int GetPlayerMaxHealthTF2(int client)
+{
+  return GetEntProp(GetPlayerResourceEntity(), Prop_Send, "m_iMaxHealth", _, client);
+}
 stock void FormatServersidePluginMessage(char[] outBuf, int maxLength, const char[] format, any...)
 {
   char interimBuf[512];
