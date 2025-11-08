@@ -348,25 +348,25 @@ public void OnGameFrame()
 
 public void OnEntityCreated(int eIndex, const char[] eClassname)
 {
-  // wrap it around and double check cvar
-  // bad but avoids an unnecessary string cmp
-  if (bVerboseLogs.BoolValue)
-  {
-    if (StrEqual(eClassname, "tf_projectile_rocket"))
-    {
-      VerboseLog("tf_projectile_rocket spawned, index: %d", eIndex);
-    }
-  }
+  // // wrap it around and double check cvar
+  // // bad but avoids an unnecessary string cmp
+  // if (bVerboseLogs.BoolValue)
+  // {
+  //   if (StrEqual(eClassname, "tf_projectile_rocket"))
+  //   {
+  //     VerboseLog("tf_projectile_rocket spawned, index: %d", eIndex);
+  //   }
+  // }
   if (StrEqual(eClassname, "passtime_ball"))
   {
-    LogMessage("passtime_ball spawned index \"%d\"", eIndex);
+    VerboseLog("passtime_ball spawned index \"%d\"", eIndex);
     SetJack(eIndex);
   }
   if (bMedicArrowsNeutralizeBall.BoolValue)
   {
     if (StrEqual(eClassname, "tf_projectile_healing_bolt"))
     {
-      LogMessage("%s spawned.", eClassname);
+      VerboseLog("tf_projectile_healing_bolt spawned.");
       SDKHookEx(eIndex, SDKHook_StartTouchPost, MedicArrowTouchedSomething);
     }
   }
@@ -382,19 +382,19 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
 
   char   playerName[MAX_NAME_LENGTH];
   GetClientName(attacker, playerName, sizeof(playerName));
-  VerboseLog("HEYSPEAKERSLOOKHERE: attacker '%s', attacker team: '%s'", playerName, TFTeamToString(playerTeam));
-  VerboseLog("HEYSPEAKERSLOOKHERE: ballteam '%s'", TFTeamToString(ballTeam));
+  VerboseLog("passtime_ball damage debug: attacker '%s', attacker team: '%s' (indice '%d')", playerName, TFTeamToString(playerTeam), playerTeam);
+  VerboseLog("passtime_ball damage debug: ballteam '%s' (indice '%d')", TFTeamToString(ballTeam), ballTeam);
   // so incredibly ugly
-  VerboseLog("playerWhoSplashed: %d, playerTeam: %s, ballTeam: %s", attacker, TFTeamToString(playerTeam), TFTeamToString(ballTeam));
+  VerboseLog("passtime_ball damage debug: playerWhoSplashed: %d, playerTeam: %s, ballTeam: %s", attacker, TFTeamToString(playerTeam), TFTeamToString(ballTeam));
   bBallSplashed = true;
   switch (playerTeam)
   {
     case TFTeam_Blue:
     {
-      VerboseLog("player team is BLU, checking if in blu goal and if ball is red.");
+      VerboseLog("passtime_ball damage debug: player team is BLU, checking if in blu goal and if ball is red.");
       if (EntInBluGoalZone(eiJack) && ballTeam == TFTeam_Red)
       {
-        VerboseLog("all successful, this is a successful splash");
+        VerboseLog("passtime_ball damage debug: all successful, this is a successful splash");
         char playerNameTeam[MAX_TEAMFORMAT_NAME_LENGTH];
         GetClientName(attacker, playerName, sizeof(playerName));
         FormatPlayerNameWithTeam(attacker, playerNameTeam);
@@ -408,11 +408,11 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
     }
     case TFTeam_Red:
     {
-      VerboseLog("player team is RED, checking if in red goal and if ball is blu.");
+      VerboseLog("passtime_ball damage debug: player team is RED, checking if in red goal and if ball is blu.");
 
       if (EntInRedGoalZone(eiJack) && ballTeam == TFTeam_Blue)
       {
-        VerboseLog("all successful, this is a successful splash");
+        VerboseLog("passtime_ball damage debug: all successful, this is a successful splash");
         char playerNameTeam[MAX_TEAMFORMAT_NAME_LENGTH];
         GetClientName(attacker, playerName, sizeof(playerName));
         FormatPlayerNameWithTeam(attacker, playerNameTeam);
