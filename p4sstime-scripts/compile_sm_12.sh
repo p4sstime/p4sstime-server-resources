@@ -7,8 +7,8 @@ cd "$(dirname "$0")/../scripting"
 options='-; -v 0'
 
 mkdir -p ../compiled
-echo -e "\nCompiling p4sstime.smx..."
-./spcomp $options p4sstime.sp -o../compiled/p4sstime.smx
+echo -e "\nCompiling p4sstime.smx... (for sourcemod 1.12)"
+./spcomp $options p4sstime.sp -o../compiled/p4sstime_sm_1_12.smx
 
 # if [[ $# -ne 0 ]]; then
 # 	for sourcefile in "$@"

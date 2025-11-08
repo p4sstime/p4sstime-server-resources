@@ -1,4 +1,4 @@
-#!/usr/bin/env -S bash -e
+#!/usr/bin/env -S bash -euo pipefail
 # CD to the parent directory of this file (root of repository)
 cd "$(dirname "$0")/.."
 
@@ -8,8 +8,8 @@ echo 'Compiling binary...'
 echo 'Compiling binary for SourceMod 1.11...'
 ./p4sstime-scripts/compile_sm_11.sh
 
-NAME12=p4sstime.smx
-NAME11=p4sstime_sm_1_11.smx
+NAME12=p4sstime_sm_1_12.smx
+NAME11=p4sstime.smx
 
 sm12exists=false
 sm11exists=false
@@ -31,26 +31,31 @@ mkdir -p plugins
 mv "compiled/$NAME12" plugins
 mv "compiled/$NAME11" plugins
 
-rm p4sstime.tar.xz
-rm p4sstime.zip
-rm p4sstime_compatibility.tar.xz
-rm p4sstime_compatibility.zip
+rm -f p4sstime.tar.xz
+rm -f p4sstime.zip
+
+# old names
+rm -f p4sstime_compatibility.tar.xz
+rm -f p4sstime_compatibility.zip
+
+rm -f p4sstime_sm_1_12.tar.xz
+rm -f p4sstime_sm_1_12.zip
 
 # Build gamedata and compiled binary to tar
 tar -cJf p4sstime.tar.xz \
-  "plugins/$NAME12" \
+  "plugins/$NAME11" \
   gamedata/p4sstime.txt
 
 zip p4sstime.zip \
+  "plugins/$NAME11" \
+  gamedata/p4sstime.txt
+
+tar -cJf p4sstime_sm_1_12.tar.xz \
   "plugins/$NAME12" \
   gamedata/p4sstime.txt
 
-tar -cJf p4sstime_compatibility.tar.xz \
-  "plugins/$NAME11" \
-  gamedata/p4sstime.txt
-
-zip p4sstime_compatibility.zip \
-  "plugins/$NAME11" \
+zip p4sstime_sm_1_12.zip \
+  "plugins/$NAME12" \
   gamedata/p4sstime.txt
 
 # Move back plugins to compiled folder
