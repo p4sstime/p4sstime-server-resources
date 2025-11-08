@@ -266,9 +266,9 @@ void              GetConsoleStatsArrStr(char buf[MAXPLAYERS + 1][7][MAX_MESSAGE_
 {
   for (int i = 0; i < teamAmount; i++)
   {
-    char              playerName[MAX_NAME_LENGTH];
-    int               player = teamMembers[i];
-    enuiPlyRoundStats stats;
+    char         playerName[MAX_NAME_LENGTH];
+    int          player = teamMembers[i];
+    enuiPlyStats stats;
     stats = arriPlyRoundPassStats[player];
     GetClientName(player, playerName, sizeof(playerName));
     Format(buf[i][0], MAX_MESSAGE_LENGTH, consoleFormatBlank);
