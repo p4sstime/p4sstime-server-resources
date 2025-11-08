@@ -9,6 +9,26 @@
       },
       "group": {
         "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Compile plugins for Sourcemod 1.11 (linux)",
+      "type": "shell",
+      "linux": {
+        "command": "./p4sstime-scripts/compile_sm_11.sh"
+      },
+      "group": {
+        "kind": "build",
         "isDefault": true
       },
       "presentation": {

@@ -63,9 +63,9 @@ mv "plugins/$NAME12" compiled
 mv "plugins/$NAME11" compiled
 
 if [ "$sm11exists" = true ] ; then
-  mv "plugins/$NAME12.old" "plugins/$NAME12"
+  mv "plugins/$NAME11.old" "plugins/$NAME11"
 fi
 if [ "$sm12exists" = true ] ; then
-  mv "plugins/$NAME11.old" "plugins/$NAME11"
+  mv "plugins/$NAME12.old" "plugins/$NAME12"
 fi
 
