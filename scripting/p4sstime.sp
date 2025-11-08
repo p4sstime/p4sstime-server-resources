@@ -27,8 +27,12 @@ enum
   COLOR_FORMAT_LENGTH        = 7,
   MAX_TEAMFORMAT_NAME_LENGTH = COLOR_FORMAT_LENGTH + MAX_NAME_LENGTH,
   MAX_ENTITIES               = 4096,
-  GOALIE_DISTANCE            = 200
+  GOALIE_DISTANCE            = 200,  // hu
+  GOAL_HEAL_HEIGHT           = 330   // hu
 }
+
+#define GOAL_HEAL_RADIUS     500.0                                  // hu
+#define GOAL_HEAL_RADIUS_SQR (GOAL_HEAL_RADIUS * GOAL_HEAL_RADIUS)  // hu
 
 // enum BallState
 // {
@@ -204,6 +208,7 @@ public void OnPluginStart()
   bMedicArrowsNeutralizeBall   = CreateConVar("sm_pt_medic_can_splash", "1", "If 1, allows medic crossbow arrows to neutralize the ball.", FCVAR_NOTIFY);
   bAllowInstantResupply        = CreateConVar("sm_pt_allow_instant_resupply", "0", "If 1, allows sm_pt_resupply.", FCVAR_NOTIFY);
   bMedicArrowsPushBall         = CreateConVar("sm_pt_medic_splash_pushes_ball", "1", "If 1 along with sm_pt_medic_can_splash, allows medic crossbow arrows to push the ball", FCVAR_NOTIFY);
+  flGoalHeal                   = CreateConVar("sm_pt_goal_heal", "0", "How much health the goal should heal per goal heal tick. There are two ticks per second.", FCVAR_NOTIFY);
   flInstantResupplyTimeBetween = CreateConVar("sm_pt_instant_resupply_time_between", "0.5", "The number of seconds between each successful sm_pt_resupply.", FCVAR_NOTIFY);
   // trikzEnable	 = CreateConVar("sm_pt_trikz", "0", "Set 'trikz' mode. 1 adds friendly knockback for airshots, 2 adds friendly knockback for splash damage, 3 adds friendly knockback for everywhere", FCVAR_NOTIFY, true, 0.0, true, 3.0);
   // trikzProjCollide = CreateConVar("sm_pt_trikz_projcollide", "2", "Manually set team projectile collision behavior when trikz is on. 2 always collides, 1 will cause your projectiles to phase through if you are too close (default game behavior), 0 will cause them to never collide.", 0, true, 0.0, true, 2.0);
@@ -215,6 +220,7 @@ public void OnPluginStart()
   HookConVarChange(bPracticeMode, Hook_OnPracticeModeChange);
   HookConVarChange(bAllowInstantResupply, Hook_OnAllowInstantResupplyChange);
 
+  CreateTimer(0.5, GoalHealTimer, 0, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
   /*for (int client = 1; client <= MaxClients; client++)
     if (IsClientInGame(client))
       OnClientPutInServer(client);*/
@@ -286,6 +292,46 @@ public void OnLibraryAdded(const char[] name)
 #include "p4sstime/stats_print.sp"
 #include "p4sstime/f2stocks.sp"
 #include "p4sstime/spawnball.sp"
+
+public Action GoalHealTimer(Handle timer)
+{
+  // LogMessage("GoalHealTimer popped");
+  if (flGoalHeal.FloatValue == 0.0) return Plugin_Continue;
+  for (int client_idx = 1; client_idx < MaxClients + 1; client_idx++)
+  {
+    if (!IsValidClient(client_idx) || IsClientSourceTV(client_idx)) continue;
+    float position[3];
+    GetClientAbsOrigin(client_idx, position);
+
+    TFTeam team = TF2_GetClientTeam(client_idx);
+    if (team == TFTeam_Spectator || team == TFTeam_Unassigned)
+    {
+      continue;  // skip this player
+    }
+    int health     = GetClientHealth(client_idx);
+    int max_health = GetPlayerMaxHealthTF2(client_idx);
+
+    if (health >= max_health) return Plugin_Continue;
+
+    float distance_sqr, vertical_difference;
+    if (team == TFTeam_Red)
+    {
+      distance_sqr        = GetVectorDistance(position, fRedGoalPos, true);
+      vertical_difference = FloatAbs(fRedGoalPos[2] - position[2]);
+    }
+    else {
+      distance_sqr        = GetVectorDistance(position, fBluGoalPos, true);
+      vertical_difference = FloatAbs(fBluGoalPos[2] - position[2]);
+    }
+    if (distance_sqr < GOAL_HEAL_RADIUS_SQR && vertical_difference < GOAL_HEAL_HEIGHT)
+    {
+      VerboseLog("player \"%d\": distance '%f' (max distance '%f'), vertical_difference '%f'", client_idx, distance_sqr, GOAL_HEAL_RADIUS_SQR, vertical_difference);
+
+      SetEntityHealth(client_idx, min(health + flGoalHeal.IntValue, max_health));
+    }
+  }
+  return Plugin_Continue;
+}
 
 public void OnMapInit(const char[] mapName)
 {
