@@ -44,7 +44,7 @@ enum
 // if anyone else was confused on wtf an enum struct was:
 // read: https://wiki.alliedmods.net/SourcePawn_Transitional_Syntax#Enum_Structs
 // basically: emulating a struct through an array. i.e. an array with named indices
-// because SOURCEPAWN DOESN'T SUPPORT STRUCTS??
+// because SOURCEPAWN DOESNT SUPPORT STRUCTS??
 enum struct enubPlySettings
 {
   bool bPlyCoundownCaptionSetting;
@@ -78,7 +78,7 @@ enum struct enuiPlyStats
 enubPlySettings arrbJackAcqSettings[MAXPLAYERS + 1];
 enuiPlyStats    arriPlyRoundPassStats[MAXPLAYERS + 1];
 
-float           fBluGoalPos[3], fRedGoalPos[3], fTopSpawnPos[3], fFreeBallPos[3];
+float           fBluGoalPos[3], fRedGoalPos[3], fTopSpawnPos[3], fFreeBallPos[3], fFreeBallThrowerVec[3];
 
 ConVar          bEquipStockWeapons;
 ConVar          bSwitchDuringRespawn;
@@ -818,6 +818,7 @@ Action Event_PassFree(Event event, const char[] name, bool dontBroadcast)
     ShowHudText(owner, 1, "");
   }
   GetEntPropVector(eiJack, Prop_Data, "m_vecAbsOrigin", fFreeBallPos);
+  GetEntPropVector(owner, Prop_Data, "m_vecAbsVelocity", fFreeBallThrowerVec);
   eiPassTarget = EntRefToEntIndex(GetEntPropEnt(owner, Prop_Send, "m_hPasstimePassTarget"));
   if (!(arrbBlastJumpStatus[owner]))
   {
@@ -1082,14 +1083,15 @@ Action Event_PassScore(Event event, const char[] name, bool dontBroadcast)
   float fScoredBallPos[3];
   GetEntPropVector(eiJack, Prop_Send, "m_vecOrigin", fScoredBallPos);
   float dist = GetVectorDistance(fFreeBallPos, fScoredBallPos, false);
+  float speed = GetVectorLength(fFreeBallThrowerVec, false);
 
   if (arrbDeathbombCheck[eiDeathBomber])
   {
     arrbPanaceaCheck[scorer] = false;  // both Panacea and deathbomb requirements can be true at the same time, so if deathbomb occurs just turn off panacea
     SetLogInfo(eiDeathBomber);
-    LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_score\" (points \"%i\") (panacea \"%d\") (win strat \"%d\") (deathbomb \"%d\") (dist \"%.0f\") (position \"%.0f %.0f %.0f\")",
+    LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_score\" (points \"%i\") (panacea \"%d\") (win strat \"%d\") (deathbomb \"%d\") (dist \"%.0f\") (speed \"%.0f\") (position \"%.0f %.0f %.0f\")",
               user1, GetClientUserId(user1), user1steamid, user1team,
-              points, arrbPanaceaCheck[scorer], arrbWinStratCheck[scorer], arrbDeathbombCheck[eiDeathBomber], dist,
+              points, arrbPanaceaCheck[scorer], arrbWinStratCheck[scorer], arrbDeathbombCheck[eiDeathBomber], dist, speed,
               user1position[0], user1position[1], user1position[2]);
     arriPlyRoundPassStats[eiDeathBomber].iPlyScores++;
     arriPlyRoundPassStats[eiDeathBomber].iPlyDeathbombs++;
@@ -1104,9 +1106,9 @@ Action Event_PassScore(Event event, const char[] name, bool dontBroadcast)
   else
   {
     SetLogInfo(scorer);
-    LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_score\" (points \"%i\") (panacea \"%d\") (win strat \"%d\") (deathbomb \"%d\") (dist \"%.0f\") (position \"%.0f %.0f %.0f\")",
+    LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_score\" (points \"%i\") (panacea \"%d\") (win strat \"%d\") (deathbomb \"%d\") (dist \"%.0f\") (speed \"%.0f\") (position \"%.0f %.0f %.0f\")",
               user1, GetClientUserId(user1), user1steamid, user1team,
-              points, arrbPanaceaCheck[scorer], arrbWinStratCheck[scorer], arrbDeathbombCheck[eiDeathBomber], dist,
+              points, arrbPanaceaCheck[scorer], arrbWinStratCheck[scorer], arrbDeathbombCheck[eiDeathBomber], dist, speed,
               user1position[0], user1position[1], user1position[2]);
     arriPlyRoundPassStats[scorer].iPlyScores++;
 
@@ -1149,6 +1151,11 @@ Action Event_PassScore(Event event, const char[] name, bool dontBroadcast)
       FormatPlayerNameWithTeam(deathBomber, playerNameTeamFormatted);
       PrintToAllClientsChat("\x0700ffff[PASS] %s\x073BC43B scored a \x0797e043deathbomb!", playerNameTeamFormatted);
       PrintToSTV("[PASS-TV] %s scored a deathbomb. Tick: %d", playerName, STVTickCount());
+    }
+    else if (speed > 1350)
+    {
+      PrintToAllClientsChat("\x0700ffff[PASS] %s\x073BC43B scored a goal going %.0fhu/s!", playerNameTeamFormatted, speed);
+      PrintToSTV("[PASS-TV] %s scored a goal going %.0fhu/s. Tick: %d", playerName, speed, STVTickCount());
     }
     else if (dist > 1600)
     {
