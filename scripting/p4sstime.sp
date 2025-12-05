@@ -95,6 +95,7 @@ ConVar          bMedicArrowsPushBall;
 ConVar          bAllowInstantResupply;
 ConVar          flInstantResupplyTimeBetween;
 ConVar          flGoalHeal;
+ConVar          flSpeedToAnnounce;
 
 int             iPlyWhoGotJack;
 // int			plyDirecter;
@@ -211,6 +212,7 @@ public void OnPluginStart()
   bMedicArrowsPushBall         = CreateConVar("sm_pt_medic_splash_pushes_ball", "1", "If 1 along with sm_pt_medic_can_splash, allows medic crossbow arrows to push the ball", FCVAR_NOTIFY);
   flGoalHeal                   = CreateConVar("sm_pt_goal_heal", "0", "How much health the goal should heal per goal heal tick. There are two ticks per second.", FCVAR_NOTIFY);
   flInstantResupplyTimeBetween = CreateConVar("sm_pt_instant_resupply_time_between", "0.5", "The number of seconds between each successful sm_pt_resupply.", FCVAR_NOTIFY);
+  flSpeedToAnnounce            = CreateConVar("sm_pt_speed_to_announce", "1500", "The minimum speed the scoring player would be going before announcing it in chat.", FCVAR_NOTIFY);
   // trikzEnable	 = CreateConVar("sm_pt_trikz", "0", "Set 'trikz' mode. 1 adds friendly knockback for airshots, 2 adds friendly knockback for splash damage, 3 adds friendly knockback for everywhere", FCVAR_NOTIFY, true, 0.0, true, 3.0);
   // trikzProjCollide = CreateConVar("sm_pt_trikz_projcollide", "2", "Manually set team projectile collision behavior when trikz is on. 2 always collides, 1 will cause your projectiles to phase through if you are too close (default game behavior), 0 will cause them to never collide.", 0, true, 0.0, true, 2.0);
   // trikzProjDev = CreateConVar("sm_pt_trikz_projcollide_dev", "0", "DONOTUSE; This command is used solely by the plugin to change values. Changing this manually may cause issues.", FCVAR_HIDDEN, true, 0.0, true, 2.0);
@@ -237,10 +239,14 @@ public void OnPluginStart()
   char sMapNameBuffer[256];
   GetCurrentMap(sMapNameBuffer, 256);
   VerboseLog("Current map buffer -> %s", sMapNameBuffer);
-  // check if stadium is the current map in order to set the height lower
+  // check if stadium or fountain spawner is the current map in order to set the height lower
   // see OnMapInit
   // this is necessary as OnMapInit is not called when the plugin is ran
-  if (StrContains(sMapNameBuffer, "stadium", false) != -1)
+  if ((StrContains(sMapNameBuffer, "obelisk", false) != -1) || (StrContains(sMapNameBuffer, "arena2_b16a", false) != -1))
+  {
+    iWinStratDistance = 0;
+  }
+  else if (StrContains(sMapNameBuffer, "stadium", false) != -1)
   {
     iWinStratDistance = 150;
   }
@@ -336,10 +342,18 @@ public Action GoalHealTimer(Handle timer)
 
 public void OnMapInit(const char[] mapName)
 {
-  if (StrContains(mapName, "stadium", false) != -1)  // stadium has much lower top spawner so do this to avoid false positive win strats
+  if ((StrContains(mapName, "obelisk", false) != -1) || (StrContains(mapName, "arena2_b16a", false) != -1))
+  {
+    iWinStratDistance = 0;
+  }
+  else if (StrContains(mapName, "stadium", false) != -1)  // stadium has much lower top spawner so do this to avoid false positive win strats
+  {
     iWinStratDistance = 150;
+  }
   else
+  {
     iWinStratDistance = 400;
+  }
 }
 
 public void OnMapStart()  // getgoallocations
@@ -434,6 +448,8 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
   // so incredibly ugly
   VerboseLog("passtime_ball damage debug: playerWhoSplashed: %d, playerTeam: %s, ballTeam: %s", attacker, TFTeamToString(playerTeam), TFTeamToString(ballTeam));
   bBallSplashed = true;
+  float fSplashedBallPos[3];
+  GetEntPropVector(eiJack, Prop_Send, "m_vecOrigin", fSplashedBallPos);
   switch (playerTeam)
   {
     case TFTeam_Blue:
@@ -450,6 +466,10 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
           PrintToAllClientsChat("\x0700ffff[PASS] %s\x075bd4b3 splashed the ball to save!", playerNameTeam);
         }
         PrintToSTV("[PASS-TV] %s splashed the ball to save it. Tick: %d", playerName, STVTickCount());
+        SetLogInfo(attacker);
+        LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_splash_defense\" (ball position \"%.0f %.0f %.0f\")",
+            user1, GetClientUserId(user1), user1steamid, user1team,
+            fSplashedBallPos[0], fSplashedBallPos[1], fSplashedBallPos[2]);
         arriPlyRoundPassStats[attacker].iPlySplashSaves++;
       }
     }
@@ -468,6 +488,10 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
           PrintToAllClientsChat("\x0700ffff[PASS] %s\x075bd4b3 splashed the ball to save!", playerNameTeam);
         }
         PrintToSTV("[PASS-TV] %s splashed the ball to save it. Tick: %d", playerName, STVTickCount());
+        SetLogInfo(attacker);
+        LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_splash_defense\" (ball position \"%.0f %.0f %.0f\")",
+            user1, GetClientUserId(user1), user1steamid, user1team,
+            fSplashedBallPos[0], fSplashedBallPos[1], fSplashedBallPos[2]);
         arriPlyRoundPassStats[attacker].iPlySplashSaves++;
       }
     }
@@ -764,6 +788,12 @@ void Hook_OnSpawnBall(const char[] name, int caller, int activator, float delay)
     LogToGame("passtime_ball spawned from the upper spawnpoint.");
     PrintToSTV("[PASS-TV] passtime_ball spawned from the upper spawnpoint.");
     GetEntPropVector(caller, Prop_Send, "m_vecOrigin", fTopSpawnPos);
+    // arena2_b16a's spawner is at -1700 so this should catch most fountain spawners, has to be called here because it is only set after ball spawns
+    /*if (fTopSpawnPos[2] < -1400)
+    {
+      LogToGame("fountain spawner detected, winstrats not allowed.");
+      iWinStratDistance = 0
+    }*/
   }
   else if (StrEqual(spawnName, "passtime_ball_spawn2"))
   {
