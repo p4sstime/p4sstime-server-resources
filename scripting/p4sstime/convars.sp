@@ -72,12 +72,12 @@ Action Command_ChatCountdown(int client, int args) {
   int value = 0;
   if (GetCmdArgIntEx(1, value)) {
     if (value == 1)
-      arrbJackAcqSettings[client].bPlyCoundownCaptionSetting = true;
+      arrbClientSettings[client].bCountdown = true;
     else if (value == 0)
-      arrbJackAcqSettings[client].bPlyCoundownCaptionSetting = false;
+      arrbClientSettings[client].bCountdown = false;
     if (value == 1 || value == 0) {
-      SetCookieBool(client, cookieCountdownCaption, arrbJackAcqSettings[client].bPlyCoundownCaptionSetting);
-      CTagReply(client, "JACK spawn timer captions: %s", arrbJackAcqSettings[client].bPlyCoundownCaptionSetting ? "ON" : "OFF");
+      SetCookieBool(client, cookieCountdownCaption, arrbClientSettings[client].bCountdown);
+      CTagReply(client, "JACK spawn timer captions: %s", arrbClientSettings[client].bCountdown ? "ON" : "OFF");
     }
   }
   else
@@ -89,12 +89,12 @@ Action Command_JackPickupHud(int client, int args) {
   int value = 0;
   if (GetCmdArgIntEx(1, value)) {
     if (value == 1)
-      arrbJackAcqSettings[client].bPlyHudTextSetting = true;
+      arrbClientSettings[client].bJackHud = true;
     else if (value == 0)
-      arrbJackAcqSettings[client].bPlyHudTextSetting = false;
+      arrbClientSettings[client].bJackHud = false;
     if (value == 1 || value == 0) {
-      SetCookieBool(client, cookieJACKPickupHud, arrbJackAcqSettings[client].bPlyHudTextSetting);
-      CTagReply(client, "JACK pickup HUD text: %s", arrbJackAcqSettings[client].bPlyHudTextSetting ? "ON" : "OFF");
+      SetCookieBool(client, cookieJACKPickupHud, arrbClientSettings[client].bJackHud);
+      CTagReply(client, "JACK pickup HUD text: %s", arrbClientSettings[client].bJackHud ? "ON" : "OFF");
     }
   }
   else
@@ -106,12 +106,12 @@ Action Command_JackPickupChat(int client, int args) {
   int value = 0;
   if (GetCmdArgIntEx(1, value)) {
     if (value == 1)
-      arrbJackAcqSettings[client].bPlyChatPrintSetting = true;
+      arrbClientSettings[client].bJackChat = true;
     if (value == 0)
-      arrbJackAcqSettings[client].bPlyChatPrintSetting = false;
+      arrbClientSettings[client].bJackChat = false;
     if (value == 1 || value == 0) {
-      SetCookieBool(client, cookieJACKPickupChat, arrbJackAcqSettings[client].bPlyChatPrintSetting);
-      CTagReply(client, "JACK pickup chat text: %s", arrbJackAcqSettings[client].bPlyChatPrintSetting ? "ON" : "OFF");
+      SetCookieBool(client, cookieJACKPickupChat, arrbClientSettings[client].bJackChat);
+      CTagReply(client, "JACK pickup chat text: %s", arrbClientSettings[client].bJackChat ? "ON" : "OFF");
     }
   }
   else
@@ -123,12 +123,12 @@ Action Command_JackPickupSound(int client, int args) {
   int value = 0;
   if (GetCmdArgIntEx(1, value)) {
     if (value == 1)
-      arrbJackAcqSettings[client].bPlySoundSetting = true;
+      arrbClientSettings[client].bJackSound = true;
     if (value == 0)
-      arrbJackAcqSettings[client].bPlySoundSetting = false;
+      arrbClientSettings[client].bJackSound = false;
     if (value == 1 || value == 0) {
-      SetCookieBool(client, cookieJACKPickupSound, arrbJackAcqSettings[client].bPlySoundSetting);
-      CTagReply(client, "JACK pickup sound: %s", arrbJackAcqSettings[client].bPlySoundSetting ? "ON" : "OFF");
+      SetCookieBool(client, cookieJACKPickupSound, arrbClientSettings[client].bJackSound);
+      CTagReply(client, "JACK pickup sound: %s", arrbClientSettings[client].bJackSound ? "ON" : "OFF");
     }
   }
   else
