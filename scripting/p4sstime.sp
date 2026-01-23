@@ -154,17 +154,19 @@ public void OnPluginStart()
   cookieSummary          = RegClientCookie("p4ssClientSummary",           "p4sstime's client setting (0/1/2) for EoR summaries",               CookieAccess_Public);
 
   RegConsoleCmd("sm_pt_menu",           Command_PassMenu);
-  RegConsoleCmd("sm_pt_suicide",        Command_PasstimeSuicide);
-  RegConsoleCmd("sm_pt_kill",           Command_PasstimeSuicide);
-  RegConsoleCmd("sm_pt_countdown",      Command_PasstimeCountdown);
-  RegConsoleCmd("sm_pt_pickup_hud",     Command_PasstimeJackPickupHud);
-  RegConsoleCmd("sm_pt_pickup_chat",    Command_PasstimeJackPickupChat);
-  RegConsoleCmd("sm_pt_pickup_sound",   Command_PasstimeJackPickupSound);
-  RegConsoleCmd("sm_pt_summary",        Command_PasstimeSummary);
-  RegConsoleCmd("sm_pt_resupply",       Command_PasstimeResupply);
+  RegConsoleCmd("sm_pt_suicide",        Command_Suicide);
+  RegConsoleCmd("sm_pt_kill",           Command_Suicide);
+  RegConsoleCmd("sm_pt_countdown",      Command_Countdown);
+  RegConsoleCmd("sm_pt_pickup_hud",     Command_JackPickupHud);
+  RegConsoleCmd("sm_pt_pickup_chat",    Command_JackPickupChat);
+  RegConsoleCmd("sm_pt_pickup_sound",   Command_JackPickupSound);
+  RegConsoleCmd("sm_pt_summary",        Command_Summary);
+  RegConsoleCmd("sm_pt_resupply",       Command_Resupply);
 
   RegAdminCmd("sm_pt_snapshot",  Command_Snapshot,          ADMFLAG_GENERIC, "Take a snapshot of the plugin's current variable values.");
-  RegAdminCmd("sm_pt_spawnball", Command_PasstimeSpawnBall, ADMFLAG_CONFIG,  "Spawn the ball forcefully, by game starting and tournament restarting.");
+  RegAdminCmd("sm_pt_spawnball", Command_SpawnBall, ADMFLAG_CONFIG,  "Spawn the ball forcefully, by game starting and tournament restarting.");
+
+  // Colors
 
   CAddColor("plugin_tag",   0x96BD63); // #96BD63
   CAddColor("warning",      0xECCD19); // #eccd19
@@ -219,9 +221,9 @@ public void OnPluginStart()
   bMedicArrowsPushBall         = CreateConVar("sm_pt_medic_splash_push",        "1",   "If sm_pt_medic_splash is 1, enable crossbow push on the jack.",                                          FCVAR_NOTIFY);
   flGoalHeal                   = CreateConVar("sm_pt_goal_heal",                "0",   "Goal heal every 500ms.",                                                                                 FCVAR_NOTIFY);
   flInstantResupplyTimeBetween = CreateConVar("sm_pt_resupply_cooldown",        "0.5", "Resupply cooldown time in seconds.",                                                                     FCVAR_NOTIFY);
-  // trikzEnable	 = CreateConVar("sm_pt_trikz", "0", "Set 'trikz' mode. 1 adds friendly knockback for airshots, 2 adds friendly knockback for splash damage, 3 adds friendly knockback for everywhere", FCVAR_NOTIFY, true, 0.0, true, 3.0);
-  // trikzProjCollide = CreateConVar("sm_pt_trikz_projcollide", "2", "Manually set team projectile collision behavior when trikz is on. 2 always collides, 1 will cause your projectiles to phase through if you are too close (default game behavior), 0 will cause them to never collide.", 0, true, 0.0, true, 2.0);
-  // trikzProjDev = CreateConVar("sm_pt_trikz_projcollide_dev", "0", "DONOTUSE; This command is used solely by the plugin to change values. Changing this manually may cause issues.", FCVAR_HIDDEN, true, 0.0, true, 2.0);
+  // trikzEnable	    = CreateConVar("sm_pt_trikz",                 "0", "Set 'trikz' mode. 1 adds friendly knockback for airshots, 2 adds friendly knockback for splash damage, 3 adds friendly knockback for everywhere", FCVAR_NOTIFY, true, 0.0, true, 3.0);
+  // trikzProjCollide = CreateConVar("sm_pt_trikz_projcollide",     "2", "Manually set team projectile collision behavior when trikz is on. 2 always collides, 1 will cause your projectiles to phase through if you are too close (default game behavior), 0 will cause them to never collide.", 0, true, 0.0, true, 2.0);
+  // trikzProjDev     = CreateConVar("sm_pt_trikz_projcollide_dev", "0", "DONOTUSE; This command is used solely by the plugin to change values. Changing this manually may cause issues.", FCVAR_HIDDEN, true, 0.0, true, 2.0);
 
   // HookConVarChange(trikzEnable, Hook_OnTrikzChange);
   // HookConVarChange(trikzProjCollide, Hook_OnProjCollideChange);

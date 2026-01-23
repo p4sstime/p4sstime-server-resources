@@ -67,7 +67,7 @@ Action Event_PlayerResup(Event event, const char[] name, bool dontBroadcast)
   return Plugin_Handled;
 }
 
-Action Command_PasstimeSuicide(int client, int args)
+Action Command_Suicide(int client, int args)
 {
   if (bRoundActive)
   {
@@ -81,7 +81,7 @@ Action Command_PasstimeSuicide(int client, int args)
   return Plugin_Handled;
 }
 
-Action Command_PasstimeCountdown(int client, int args)
+Action Command_Countdown(int client, int args)
 {
   int value = 0;
   if (GetCmdArgIntEx(1, value))
@@ -101,7 +101,7 @@ Action Command_PasstimeCountdown(int client, int args)
   return Plugin_Handled;
 }
 
-Action Command_PasstimeJackPickupHud(int client, int args)
+Action Command_JackPickupHud(int client, int args)
 {
   int value = 0;
   if (GetCmdArgIntEx(1, value))
@@ -121,7 +121,7 @@ Action Command_PasstimeJackPickupHud(int client, int args)
   return Plugin_Handled;
 }
 
-Action Command_PasstimeJackPickupChat(int client, int args)
+Action Command_JackPickupChat(int client, int args)
 {
   int value = 0;
   if (GetCmdArgIntEx(1, value))
@@ -141,7 +141,7 @@ Action Command_PasstimeJackPickupChat(int client, int args)
   return Plugin_Handled;
 }
 
-Action Command_PasstimeJackPickupSound(int client, int args)
+Action Command_JackPickupSound(int client, int args)
 {
   int value = 0;
   if (GetCmdArgIntEx(1, value))
@@ -180,7 +180,7 @@ void Hook_OnAllowInstantResupplyChange(ConVar convar, const char[] oldValue, con
     return;
   }
 }
-Action Command_PasstimeResupply(int client, int args)
+Action Command_Resupply(int client, int args)
 {
   if (!bAllowInstantResupply.BoolValue)
     return Plugin_Handled;
