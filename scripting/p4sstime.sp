@@ -15,8 +15,7 @@
 
 #define VERSION            "3.0.0"
 
-enum
-{
+enum {
   COLOR_FORMAT_LENGTH        = 7,
   MAX_TEAMFORMAT_NAME_LENGTH = COLOR_FORMAT_LENGTH + MAX_NAME_LENGTH,
   MAX_ENTITIES               = 4096,
@@ -38,8 +37,7 @@ enum
 // read: https://wiki.alliedmods.net/SourcePawn_Transitional_Syntax#Enum_Structs
 // basically: emulating a struct through an array. i.e. an array with named indices
 // because SOURCEPAWN DOESN'T SUPPORT STRUCTS??
-enum struct enuPlySettings
-{
+enum struct enuPlySettings {
   bool bPlyCoundownCaptionSetting;
   bool bPlyHudTextSetting;
   bool bPlyChatPrintSetting;
@@ -48,8 +46,7 @@ enum struct enuPlySettings
   int iSummary;
 }
 
-enum struct enuiPlyStats
-{
+enum struct enuiPlyStats {
   int iScores;
   int iAssists;
   int iSaves;
@@ -134,8 +131,7 @@ Handle          tfPlayerForceRegenerateAndRespawn;
 Handle          pointInRespawnRoom;
 GameData        gameData;
 
-public Plugin myinfo =
-{
+public Plugin myinfo = {
   name        = "4v4 PASS Time Extension",
   author      = "https://discord.passtime.tf/",
   description = "The main plugin for 4v4 Competitive PASS Time.",
@@ -143,8 +139,7 @@ public Plugin myinfo =
   url         = "https://github.com/p4sstime/p4sstime-server-resources/releases"
 };
 
-public void OnPluginStart()
-{
+public void OnPluginStart() {
   gameData = new GameData("p4sstime"); // Load config
 
   // Cookies
@@ -240,10 +235,8 @@ public void OnPluginStart()
   /*for (int client = 1; client <= MaxClients; client++)
     if (IsClientInGame(client))
       OnClientPutInServer(client);*/
-  for (int i = MaxClients; i > 0; --i)
-  {
-    if (!AreClientCookiesCached(i))
-    {
+  for (int i = MaxClients; i > 0; --i) {
+    if (!AreClientCookiesCached(i)) {
       continue;
     }
     OnClientCookiesCached(i);
@@ -265,8 +258,7 @@ public void OnPluginStart()
   int jackIndex = FindEntityByClassname(-1, "passtime_ball");
   if (jackIndex != -1) eiJack = jackIndex;
 
-  if (LibraryExists("updater"))
-  {
+  if (LibraryExists("updater")) {
     OnLibraryAdded("updater");
   }
 
@@ -288,8 +280,7 @@ public void OnPluginStart()
     LogError("Failed to find PointInRespawnRoom -- certain features may be non-functional");
 }
 
-public void OnLibraryAdded(const char[] name)
-{
+public void OnLibraryAdded(const char[] name) {
   // if (StrEqual(name, "updater"))
   // {
   //   Updater_AddPlugin(
@@ -310,19 +301,16 @@ public void OnLibraryAdded(const char[] name)
 #include "p4sstime/spawnball.sp"
 //#include <p4sstime/trikz.sp>
 
-public Action GoalHealTimer(Handle timer)
-{
+public Action GoalHealTimer(Handle timer) {
   // LogMessage("GoalHealTimer popped");
   if (flGoalRegeneration.FloatValue == 0.0) return Plugin_Continue;
-  for (int client_idx = 1; client_idx < MaxClients + 1; client_idx++)
-  {
+  for (int client_idx = 1; client_idx < MaxClients + 1; client_idx++) {
     if (!IsValidClient(client_idx) || IsClientSourceTV(client_idx)) continue;
     float position[3];
     GetClientAbsOrigin(client_idx, position);
 
     TFTeam team = TF2_GetClientTeam(client_idx);
-    if (team == TFTeam_Spectator || team == TFTeam_Unassigned)
-    {
+    if (team == TFTeam_Spectator || team == TFTeam_Unassigned) {
       continue;  // skip this player
     }
     int health     = GetClientHealth(client_idx);
@@ -331,8 +319,7 @@ public Action GoalHealTimer(Handle timer)
     if (health >= max_health) return Plugin_Continue;
 
     float distance_sqr, vertical_difference;
-    if (team == TFTeam_Red)
-    {
+    if (team == TFTeam_Red) {
       distance_sqr        = GetVectorDistance(position, fRedGoalPos, true);
       vertical_difference = FloatAbs(fRedGoalPos[2] - position[2]);
     }
@@ -340,8 +327,7 @@ public Action GoalHealTimer(Handle timer)
       distance_sqr        = GetVectorDistance(position, fBluGoalPos, true);
       vertical_difference = FloatAbs(fBluGoalPos[2] - position[2]);
     }
-    if (distance_sqr < GOAL_HEAL_RADIUS_SQR && vertical_difference < GOAL_HEAL_HEIGHT)
-    {
+    if (distance_sqr < GOAL_HEAL_RADIUS_SQR && vertical_difference < GOAL_HEAL_HEIGHT) {
       VerboseLog("player \"%d\": distance '%f' (max distance '%f'), vertical_difference '%f'", client_idx, distance_sqr, GOAL_HEAL_RADIUS_SQR, vertical_difference);
 
       SetEntityHealth(client_idx, min(health + flGoalRegeneration.IntValue, max_health));
@@ -350,57 +336,46 @@ public Action GoalHealTimer(Handle timer)
   return Plugin_Continue;
 }
 
-public void OnMapInit(const char[] mapName)
-{
+public void OnMapInit(const char[] mapName) {
   if (StrContains(mapName, "stadium", false) != -1)  // stadium has much lower top spawner so do this to avoid false positive win strats
     iWinStratDistance = 150;
   else
     iWinStratDistance = 400;
 }
 
-public void OnMapStart()  // getgoallocations
-{
+public void OnMapStart()  // getgoallocations {
   int goal1 = FindEntityByClassname(-1, "func_passtime_goal");
   int goal2 = FindEntityByClassname(goal1, "func_passtime_goal");
   int team1 = GetEntProp(goal1, Prop_Send, "m_iTeamNum");
-  if (team1 == 2)
-  {
+  if (team1 == 2) {
     GetEntPropVector(goal1, Prop_Send, "m_vecOrigin", fBluGoalPos);
     GetEntPropVector(goal2, Prop_Send, "m_vecOrigin", fRedGoalPos);
   }
-  else
-  {
+  else {
     GetEntPropVector(goal2, Prop_Send, "m_vecOrigin", fBluGoalPos);
     GetEntPropVector(goal1, Prop_Send, "m_vecOrigin", fRedGoalPos);
   }
 }
 
-public void OnMapEnd()
-{
+public void OnMapEnd() {
   eiJack = 0;
 }
 
-public void OnGameFrame()
-{
-  if (bBallLoose)
-  {
+public void OnGameFrame() {
+  if (bBallLoose) {
     TFTeam ballTeam = GetBallTeam();
-    if (ballTeam != eLastTickBallTeam)
-    {
+    if (ballTeam != eLastTickBallTeam) {
       VerboseLog("Ball team changed from %d (%s) to %d (%s)", eLastTickBallTeam, TFTeamToString(eLastTickBallTeam), ballTeam, TFTeamToString(ballTeam));
       float ballPos[3];
       GetEntPropVector(eiJack, Prop_Send, "m_vecOrigin", ballPos);
       float distFromBluGoal = GetVectorDistance(ballPos, fBluGoalPos);
       float distFromRedGoal = GetVectorDistance(ballPos, fRedGoalPos);
       VerboseLog("Loose ball distance from goals: \"blu\" \"%.2f\" \"red\" \"%.2f\"", distFromBluGoal, distFromRedGoal);
-      if (bChatEvents.BoolValue && bChatEventsFun.BoolValue)
-      {
-        if (distFromBluGoal <= 120)
-        {
+      if (bChatEvents.BoolValue && bChatEventsFun.BoolValue) {
+        if (distFromBluGoal <= 120) {
           TagChatAllPlayers("The ball went neutral %.2fhu {cyan}from the goal!", distFromBluGoal - 20);
         }
-        else if (distFromRedGoal <= 120)
-        {
+        else if (distFromRedGoal <= 120) {
           TagChatAllPlayers("The ball went neutral %.2fhu {cyan}from the goal!", distFromRedGoal - 20);
         }
       }
@@ -409,8 +384,7 @@ public void OnGameFrame()
   }
 }
 
-public void OnEntityCreated(int eIndex, const char[] eClassname)
-{
+public void OnEntityCreated(int eIndex, const char[] eClassname) {
   // // wrap it around and double check cvar
   // // bad but avoids an unnecessary string cmp
   // if (bVerboseLogs.BoolValue)
@@ -420,23 +394,19 @@ public void OnEntityCreated(int eIndex, const char[] eClassname)
   //     VerboseLog("tf_projectile_rocket spawned, index: %d", eIndex);
   //   }
   // }
-  if (StrEqual(eClassname, "passtime_ball"))
-  {
+  if (StrEqual(eClassname, "passtime_ball")) {
     VerboseLog("passtime_ball spawned index \"%d\"", eIndex);
     SetJack(eIndex);
   }
-  if (bMedicSplash.BoolValue)
-  {
-    if (StrEqual(eClassname, "tf_projectile_healing_bolt"))
-    {
+  if (bMedicSplash.BoolValue) {
+    if (StrEqual(eClassname, "tf_projectile_healing_bolt")) {
       VerboseLog("tf_projectile_healing_bolt spawned.");
       SDKHookEx(eIndex, SDKHook_StartTouchPost, MedicArrowTouchedSomething);
     }
   }
 }
 
-Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype)
-{
+Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
   TFTeam ballTeam = eLastTickBallTeam;
   char   classname[128];
   GetEntityClassname(inflictor, classname, sizeof(classname));
@@ -450,37 +420,30 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
   // so incredibly ugly
   VerboseLog("passtime_ball damage debug: playerWhoSplashed: %d, playerTeam: %s, ballTeam: %s", attacker, TFTeamToString(playerTeam), TFTeamToString(ballTeam));
   bBallSplashed = true;
-  switch (playerTeam)
-  {
-    case TFTeam_Blue:
-    {
+  switch (playerTeam) {
+    case TFTeam_Blue: {
       VerboseLog("passtime_ball damage debug: player team is BLU, checking if in blu goal and if ball is red.");
-      if (EntInBluGoalZone(eiJack) && ballTeam == TFTeam_Red)
-      {
+      if (EntInBluGoalZone(eiJack) && ballTeam == TFTeam_Red) {
         VerboseLog("passtime_ball damage debug: all successful, this is a successful splash");
         char playerNameTeam[MAX_TEAMFORMAT_NAME_LENGTH];
         GetClientName(attacker, playerName, sizeof(playerName));
         FormatPlayerNameWithTeam(attacker, playerNameTeam);
-        if (bChatEvents.BoolValue)
-        {
+        if (bChatEvents.BoolValue) {
           TagChatAllPlayers("%s {blu_team}splashed the ball to save!", playerNameTeam);
         }
         TagChatSTV("%s splashed the ball to save it. Tick: %d", playerName, STVTickCount());
         arriPlyRoundPassStats[attacker].iSplashSaves++;
       }
     }
-    case TFTeam_Red:
-    {
+    case TFTeam_Red: {
       VerboseLog("passtime_ball damage debug: player team is RED, checking if in red goal and if ball is blu.");
 
-      if (EntInRedGoalZone(eiJack) && ballTeam == TFTeam_Blue)
-      {
+      if (EntInRedGoalZone(eiJack) && ballTeam == TFTeam_Blue) {
         VerboseLog("passtime_ball damage debug: all successful, this is a successful splash");
         char playerNameTeam[MAX_TEAMFORMAT_NAME_LENGTH];
         GetClientName(attacker, playerName, sizeof(playerName));
         FormatPlayerNameWithTeam(attacker, playerNameTeam);
-        if (bChatEvents.BoolValue)
-        {
+        if (bChatEvents.BoolValue) {
           TagChatAllPlayers("%s {blu_team}splashed the ball to save!", playerNameTeam);
         }
         TagChatSTV("%s splashed the ball to save it. Tick: %d", playerName, STVTickCount());
@@ -492,15 +455,12 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
   return Plugin_Continue;
 }
 
-void MedicArrowTouchedSomething(int arrow, int other)
-{
+void MedicArrowTouchedSomething(int arrow, int other) {
   char classname[64];
   GetEntityClassname(other, classname, 64);
   int eiMedicAttacker = EntRefToEntIndex(GetEntPropEnt(arrow, Prop_Data, "m_hOwnerEntity"));
-  if (StrEqual(classname, "passtime_ball"))
-  {
-    if (bMedicSplashPush.BoolValue)
-    {
+  if (StrEqual(classname, "passtime_ball")) {
+    if (bMedicSplashPush.BoolValue) {
       // smart solution: damage the ball using the arrow's position relative to the jack's position
       float jackPosition[3], arrowPosition[3], damageForce[3];
       GetEntPropVector(other, Prop_Send, "m_vecOrigin", jackPosition);
@@ -526,8 +486,7 @@ void MedicArrowTouchedSomething(int arrow, int other)
       SDKHooks_TakeDamage(other, arrow, eiMedicAttacker, 50.0, -1, -1, NULL_VECTOR, NULL_VECTOR, false);
     }
 
-    if (bChatEvents.BoolValue)
-    {
+    if (bChatEvents.BoolValue) {
       char medicAttackerNameTeamFmt[MAX_TEAMFORMAT_NAME_LENGTH];
       FormatPlayerNameWithTeam(eiMedicAttacker, medicAttackerNameTeamFmt);
       TagChatAllPlayers("%s%s direct impacted the ball with a crossbow shot!", medicAttackerNameTeamFmt, COLOR_MEDIC_SPLASH);
@@ -537,16 +496,14 @@ void MedicArrowTouchedSomething(int arrow, int other)
   VerboseLog("medic arrow from %d touched %s index %d", eiMedicAttacker, classname, other);
 }
 
-Action Event_RoundReset(Event event, const char[] name, bool dontBroadcast)
-{
+Action Event_RoundReset(Event event, const char[] name, bool dontBroadcast) {
   for (int i = 0; i < MaxClients + 1; i++)
     ClearLocalStats(i);
   iRedBallTime = 0;
   iBluBallTime = 0;
   bBallLoose   = false;
   bRoundActive = false;
-  if (GetConVarInt(bPractice) == 1)
-  {
+  if (GetConVarInt(bPractice) == 1) {
     SetConVarInt(bPractice, 0);
     TagChatGlobal("Game started; practice mode disabled.");
   }
@@ -555,11 +512,9 @@ Action Event_RoundReset(Event event, const char[] name, bool dontBroadcast)
   return Plugin_Handled;
 }
 
-Action Event_PregameCountdown(Event event, const char[] name, bool dontBroadcast)
-{
+Action Event_PregameCountdown(Event event, const char[] name, bool dontBroadcast) {
   int time = event.GetInt("time");
-  for (int x = 1; x < MaxClients + 1; x++)
-  {
+  for (int x = 1; x < MaxClients + 1; x++) {
     if (!IsValidClient(x) || !arrbJackAcqSettings[x].bPlyCoundownCaptionSetting) continue;
 
     if (time == 10)
@@ -578,8 +533,7 @@ Action Event_PregameCountdown(Event event, const char[] name, bool dontBroadcast
   return Plugin_Handled;
 }
 
-Action Event_MidgameCountdown(Event event, const char[] name, bool dontBroadcast)
-{
+Action Event_MidgameCountdown(Event event, const char[] name, bool dontBroadcast) {
   // if it is halloween, announcer always says 10 seconds, but merasmus says 5-1
   // for pregame, announcer ALWAYS says start
 
@@ -587,16 +541,14 @@ Action Event_MidgameCountdown(Event event, const char[] name, bool dontBroadcast
   event.GetString("sound", sound, sizeof(sound));
   if (StrEqual(sound, "Passtime.Merasmus.Laugh"))  // if this occurs (which it does during halloween right after ball spawn), assume halloween
     bHalloweenMode = true;
-  for (int x = 1; x < MaxClients + 1; x++)
-  {
+  for (int x = 1; x < MaxClients + 1; x++) {
     if (!IsValidClient(x) || !arrbJackAcqSettings[x].bPlyCoundownCaptionSetting) continue;
 
     if (StrEqual(sound, "Announcer.RoundBegins10seconds"))
       TagChatClient(x, "{red}10 seconds...");
     else if (StrEqual(sound, "Passtime.BallSpawn"))
       TagChatClient(x, "{green}Ball has spawned!");
-    if (bHalloweenMode)
-    {
+    if (bHalloweenMode) {
       if (StrEqual(sound, "Merasmus.RoundBegins5seconds"))
         TagChatClient(x, "{pass_yellow}5 seconds...");
       else if (StrEqual(sound, "Merasmus.RoundBegins4seconds"))
@@ -608,8 +560,7 @@ Action Event_MidgameCountdown(Event event, const char[] name, bool dontBroadcast
       else if (StrEqual(sound, "Merasmus.RoundBegins1seconds"))
         TagChatClient(x, "{green}1 second...");
     }
-    else
-    {
+    else {
       if (StrEqual(sound, "Announcer.RoundBegins5seconds"))
         TagChatClient(x, "{pass_yellow}5 seconds...");
       else if (StrEqual(sound, "Announcer.RoundBegins4seconds"))
@@ -625,11 +576,9 @@ Action Event_MidgameCountdown(Event event, const char[] name, bool dontBroadcast
   return Plugin_Handled;
 }
 
-Action Event_PlayersCanMove(Event event, const char[] name, bool dontBroadcast)
-{
+Action Event_PlayersCanMove(Event event, const char[] name, bool dontBroadcast) {
   int offset = GameConfGetOffset(gameData, "CTFPlayer::m_bPasstimeBallSlippery");
-  for (int x = 1; x < MaxClients + 1; x++)
-  {
+  for (int x = 1; x < MaxClients + 1; x++) {
     if (!IsValidClient(x)) continue;
 
     // fix by Underscore; if ply goes AFK for long enough (even in pregame) they get attached a flag (m_bPasstimeBallSlippery) that causes teammates to be able to steal from them that doesn't go away. this makes it go away every time a round starts
@@ -641,23 +590,20 @@ Action Event_PlayersCanMove(Event event, const char[] name, bool dontBroadcast)
   return Plugin_Handled;
 }
 
-Action Event_TeamWin(Event event, const char[] name, bool dontBroadcast)
-{
+Action Event_TeamWin(Event event, const char[] name, bool dontBroadcast) {
   if (!bChatEvents.BoolValue) return Plugin_Handled;
   CreateTimer(0.5, Timer_DisplayStats);
   iPlyWhoGotJack = 0;  // reset this because it's a good idea. doesn't actually fix anything but this shouldn't carry over between rounds
   return Plugin_Handled;
 }
 
-int STVTickCount()
-{
+int STVTickCount() {
   int tick;
   tick = GetGameTickCount() - iRoundResetTick;
   return tick;
 }
 
-bool IsValidClient(int client, bool blockbots = true)
-{
+bool IsValidClient(int client, bool blockbots = true) {
   if (client > 4096) client = EntRefToEntIndex(client);
   if (client <= 0 || client > MaxClients) return false;
   if (!IsClientInGame(client)) return false;
@@ -667,28 +613,23 @@ bool IsValidClient(int client, bool blockbots = true)
 }
 
 /*-------------------------------------------------- Player Events --------------------------------------------------*/
-public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs)
-{
-  if (StrEqual(sArgs, "/more", false) || StrEqual(sArgs, ".more", false))
-  {
+public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs) {
+  if (StrEqual(sArgs, "/more", false) || StrEqual(sArgs, ".more", false)) {
     CreateTimer(0.1, Timer_ShowMoreTF, client, TIMER_FLAG_NO_MAPCHANGE);
     return Plugin_Handled;
   }
-  else if (StrEqual(sArgs, "/pass", false) || StrEqual(sArgs, "/p4ss", false) || StrEqual(sArgs, ".pass", false) || StrEqual(sArgs, ".p4ss", false))
-  {
+  else if (StrEqual(sArgs, "/pass", false) || StrEqual(sArgs, "/p4ss", false) || StrEqual(sArgs, ".pass", false) || StrEqual(sArgs, ".p4ss", false)) {
     ShowPassMenu(client);
     return Plugin_Handled;
   }
   return Plugin_Continue;
 }
 
-bool TraceEntityFilterPlayer(int entity, int contentsMask)  // taken from mgemod; just going to use this instead of isvalidclient for the below function
-{
+bool TraceEntityFilterPlayer(int entity, int contentsMask)  // taken from mgemod; just going to use this instead of isvalidclient for the below function {
   return entity > MaxClients || !entity;
 }
 
-float DistanceAboveGround(int victim)  // taken from mgemod
-{
+float DistanceAboveGround(int victim)  // taken from mgemod {
   float vStart[3];
   float vEnd[3];
   float vAngles[3] = { 90.0, 0.0, 0.0 };
@@ -696,8 +637,7 @@ float DistanceAboveGround(int victim)  // taken from mgemod
   Handle trace    = TR_TraceRayFilterEx(vStart, vAngles, MASK_PLAYERSOLID, RayType_Infinite, TraceEntityFilterPlayer);
 
   float  distance = -1.0;
-  if (TR_DidHit(trace))
-  {
+  if (TR_DidHit(trace)) {
     TR_GetEndPosition(vEnd, trace);
     distance = GetVectorDistance(vStart, vEnd, false);
   }
@@ -708,92 +648,78 @@ float DistanceAboveGround(int victim)  // taken from mgemod
   return distance;
 }
 
-Action Event_RJ(Event event, const char[] name, bool dontBroadcast)
-{
+Action Event_RJ(Event event, const char[] name, bool dontBroadcast) {
   int client                  = GetClientOfUserId(event.GetInt("userid"));
   arrbBlastJumpStatus[client] = true;
   return Plugin_Handled;
 }
 
-Action Event_RJLand(Event event, const char[] name, bool dontBroadcast)
-{
+Action Event_RJLand(Event event, const char[] name, bool dontBroadcast) {
   int client                  = GetClientOfUserId(event.GetInt("userid"));
   arrbBlastJumpStatus[client] = false;
   return Plugin_Handled;
 }
 
-Action Event_SJ(Event event, const char[] name, bool dontBroadcast)
-{
+Action Event_SJ(Event event, const char[] name, bool dontBroadcast) {
   int client                  = GetClientOfUserId(event.GetInt("userid"));
   arrbBlastJumpStatus[client] = true;
   return Plugin_Handled;
 }
 
-Action Event_SJLand(Event event, const char[] name, bool dontBroadcast)
-{
+Action Event_SJLand(Event event, const char[] name, bool dontBroadcast) {
   int client                  = GetClientOfUserId(event.GetInt("userid"));
   arrbBlastJumpStatus[client] = false;
   return Plugin_Handled;
 }
 
 // the below function is dr underscore's fix. thanks!
-public void TF2_OnConditionRemoved(int client, TFCond condition)
-{
+public void TF2_OnConditionRemoved(int client, TFCond condition) {
   if (condition == TFCond_Ubercharged)
     TF2_RemoveCondition(client, TFCond_UberchargeFading);
 }
 
-Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast)
-{
+Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
   int client            = GetClientOfUserId(event.GetInt("userid"));
   arrbPlyIsDead[client] = true;
-  if (client == eiPassTarget)
-  {
+  if (client == eiPassTarget) {
     eiDeathBomber                     = client;
     arrbDeathbombCheck[eiDeathBomber] = true;
   }
   return Plugin_Handled;
 }
 
-public void OnClientDisconnect(int client)
-{
+public void OnClientDisconnect(int client) {
   ClearLocalStats(client);
 }
 
 /*-------------------------------------------------- PASS Events --------------------------------------------------*/
-void Hook_OnSpawnBall(const char[] name, int caller, int activator, float delay)
-{
+void Hook_OnSpawnBall(const char[] name, int caller, int activator, float delay) {
   char spawnName[24];
   eiJack             = FindEntityByClassname(-1, "passtime_ball");
 
   bBallLoose         = true;
   ibBallSpawnedLower = 0;
   if (!bFixJackCollision.BoolValue) SetEntityCollisionGroup(eiJack, 4);
-  if (bWaitingForBallSpawnToRestart)
-  {
+  if (bWaitingForBallSpawnToRestart) {
     ServerCommand("mp_tournament_restart");
     bWaitingForBallSpawnToRestart = false;
   }
   GetEntPropString(caller, Prop_Data, "m_iName", spawnName, sizeof(spawnName));
-  if (StrEqual(spawnName, "passtime_ball_spawn1"))
-  {
+  if (StrEqual(spawnName, "passtime_ball_spawn1")) {
     LogToGame("passtime_ball spawned from the upper spawnpoint.");
     TagChatSTV("passtime_ball spawned from the upper spawnpoint.");
     GetEntPropVector(caller, Prop_Send, "m_vecOrigin", fTopSpawnPos);
   }
-  else if (StrEqual(spawnName, "passtime_ball_spawn2"))
-  {
+  else if (StrEqual(spawnName, "passtime_ball_spawn2")) {
     LogToGame("passtime_ball spawned from the lower spawnpoint.");
     TagChatSTV("passtime_ball spawned from the lower spawnpoint.");
     ibBallSpawnedLower = 1;
   }
-  else if (StrEqual(spawnName, "passtime_ball_spawn3"))
-  {
+  else if (StrEqual(spawnName, "passtime_ball_spawn3")) {
     LogToGame("passtime_ball spawned from the right spawnpoint.");
     TagChatSTV("passtime_ball spawned from the right spawnpoint.");
   }
-  else if (StrEqual(spawnName, "passtime_ball_spawn4"))
-  {
+  else if (StrEqual(spawnName, "passtime_ball_spawn4")) {
     LogToGame("passtime_ball spawned from the left spawnpoint.");
     TagChatSTV("passtime_ball spawned from the left spawnpoint.");
   }
@@ -801,42 +727,34 @@ void Hook_OnSpawnBall(const char[] name, int caller, int activator, float delay)
   bBallSplashed    = false;
 }
 
-Action Event_PassFree(Event event, const char[] name, bool dontBroadcast)
-{
+Action Event_PassFree(Event event, const char[] name, bool dontBroadcast) {
   bBallLoose       = true;
   int    owner     = event.GetInt("owner");
   TFTeam ownerTeam = TF2_GetClientTeam(owner);
-  if (ownerTeam == TFTeam_Blue)
-  {
-    if (iBallPickedUpTick != 0)
-    {
+  if (ownerTeam == TFTeam_Blue) {
+    if (iBallPickedUpTick != 0) {
       iBluBallTime += GetGameTickCount() - iBallPickedUpTick;
     }
   }
-  else if (ownerTeam == TFTeam_Red)
-  {
-    if (iBallPickedUpTick != 0)
-    {
+  else if (ownerTeam == TFTeam_Red) {
+    if (iBallPickedUpTick != 0) {
       iRedBallTime += GetGameTickCount() - iBallPickedUpTick;
     }
   }
 
-  if (!arrbPlyIsDead[owner])
-  {
+  if (!arrbPlyIsDead[owner]) {
     eLastTickBallTeam = ownerTeam;
   }
 
   arrbDeathbombCheck[eiDeathBomber] = false;  // if anyone at all throws the ball, the deathbomb is automatically false
 
-  if (arrbJackAcqSettings[owner].bPlyHudTextSetting)
-  {
+  if (arrbJackAcqSettings[owner].bPlyHudTextSetting) {
     SetHudTextParams(-1.0, 0.22, 3.0, 240, 0, 240, 255);
     ShowHudText(owner, 1, "");
   }
   GetEntPropVector(eiJack, Prop_Data, "m_vecAbsOrigin", fFreeBallPos);
   eiPassTarget = EntRefToEntIndex(GetEntPropEnt(owner, Prop_Send, "m_hPasstimePassTarget"));
-  if (!(arrbBlastJumpStatus[owner]))
-  {
+  if (!(arrbBlastJumpStatus[owner])) {
     arrbPanaceaCheck[owner]  = false;
     arrbWinStratCheck[owner] = false;
   }
@@ -848,8 +766,7 @@ Action Event_PassFree(Event event, const char[] name, bool dontBroadcast)
 }
 
 // When an enemy player blocks a thrown ball without picking it up, via uber or rocket/sticky jumpers
-Action Event_PassBallBlocked(Event event, const char[] name, bool dontBroadcast)
-{
+Action Event_PassBallBlocked(Event event, const char[] name, bool dontBroadcast) {
   int blocker = event.GetInt("blocker");
   int thrower = event.GetInt("owner");
   arriPlyRoundPassStats[blocker].iBlocks++;
@@ -864,8 +781,7 @@ Action Event_PassBallBlocked(Event event, const char[] name, bool dontBroadcast)
 }
 
 // When a player gets a neutral ball.
-Action Event_PassGet(Event event, const char[] name, bool dontBroadcast)
-{
+Action Event_PassGet(Event event, const char[] name, bool dontBroadcast) {
   bBallLoose        = false;
   iBallPickedUpTick = GetGameTickCount();
   VerboseLog("Ball picked up - tick: %d", iBallPickedUpTick);
@@ -876,20 +792,17 @@ Action Event_PassGet(Event event, const char[] name, bool dontBroadcast)
   LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_get\" (firstcontact \"%i\") (position \"%.0f %.0f %.0f\")",
             user1, GetClientUserId(user1), user1steamid, user1team, ibFirstGrabCheck,
             user1position[0], user1position[1], user1position[2]);
-  if (ibFirstGrabCheck && arrbBlastJumpStatus[iPlyWhoGotJack])
-  {
+  if (ibFirstGrabCheck && arrbBlastJumpStatus[iPlyWhoGotJack]) {
     arriPlyRoundPassStats[iPlyWhoGotJack].iFirstGrabs++;
     arrbPanaceaCheck[iPlyWhoGotJack] = true;
     GetClientAbsOrigin(iPlyWhoGotJack, position);
     float distanceFromTopSpawner = GetVectorDistance(position, fTopSpawnPos, false);
     VerboseLog("Panacea check - Distance from top spawner: %.0f, Cutoff distance for winstrat: %i", distanceFromTopSpawner, iWinStratDistance);
-    if (distanceFromTopSpawner < iWinStratDistance)  // may need to be changed
-    {
+    if (distanceFromTopSpawner < iWinStratDistance)  // may need to be changed {
       arrbPanaceaCheck[iPlyWhoGotJack]  = false;
       arrbWinStratCheck[iPlyWhoGotJack] = true;
 
-      if (bWinstratKills.BoolValue)
-      {
+      if (bWinstratKills.BoolValue) {
         arrbWinStratCheck[iPlyWhoGotJack] = false;
         // KILL winstratter
         SDKHooks_TakeDamage(iPlyWhoGotJack, iPlyWhoGotJack, iPlyWhoGotJack, 500.0);
@@ -899,15 +812,13 @@ Action Event_PassGet(Event event, const char[] name, bool dontBroadcast)
       }
     }
   }
-  else
-  {
+  else {
     arrbPanaceaCheck[iPlyWhoGotJack]  = false;
     arrbWinStratCheck[iPlyWhoGotJack] = false;
   }
   ibFirstGrabCheck = false;
 
-  if (arrbJackAcqSettings[iPlyWhoGotJack].bPlyHudTextSetting)
-  {
+  if (arrbJackAcqSettings[iPlyWhoGotJack].bPlyHudTextSetting) {
     SetHudTextParams(-1.0, 0.22, 3.0, 240, 0, 240, 255);
     ShowHudText(iPlyWhoGotJack, 1, "YOU HAVE THE JACK");
   }
@@ -922,8 +833,7 @@ Action Event_PassGet(Event event, const char[] name, bool dontBroadcast)
 }
 
 // When a player catches a ball thrown by another player.
-Action Event_PassCaught(Handle event, const char[] name, bool dontBroadcast)
-{
+Action Event_PassCaught(Handle event, const char[] name, bool dontBroadcast) {
   int   thrower        = GetEventInt(event, "passer");
   int   catcher        = GetEventInt(event, "catcher");
   float dist           = GetEventFloat(event, "dist");
@@ -947,41 +857,31 @@ Action Event_PassCaught(Handle event, const char[] name, bool dontBroadcast)
 
   if (TF2_GetClientTeam(thrower) == TFTeam_Spectator || TF2_GetClientTeam(catcher) == TFTeam_Spectator) return Plugin_Handled;
 
-  if (bChatEventsFun.BoolValue && bChatEvents.BoolValue)
-  {
-    if (GetClientTeam(thrower) == GetClientTeam(catcher))
-    {
-      if (PlayerInEnemyGoalieZone(catcher))
-      {
+  if (bChatEventsFun.BoolValue && bChatEvents.BoolValue) {
+    if (GetClientTeam(thrower) == GetClientTeam(catcher)) {
+      if (PlayerInEnemyGoalieZone(catcher)) {
         TagChatAllPlayers("%s {pass_yellow}blocked *their teammate* %s %sfrom scoring!", catcherNameTeamFormat, throwerNameTeamFormat, "{cyan}");
       }
     }
   }
 
-  if (GetClientTeam(thrower) != GetClientTeam(catcher))
-  {
+  if (GetClientTeam(thrower) != GetClientTeam(catcher)) {
     intercept = true;
-    if (PlayerInTeamGoalieZone(catcher))
-    {
+    if (PlayerInTeamGoalieZone(catcher)) {
       bSave = true;
       arriPlyRoundPassStats[catcher].iSaves++;
-      if (bChatEvents.BoolValue)
-      {
-        for (int x = 1; x < MaxClients + 1; x++)
-        {
+      if (bChatEvents.BoolValue) {
+        for (int x = 1; x < MaxClients + 1; x++) {
           if (!IsValidClient(x) || IsClientSourceTV(x)) continue;
           TagChatClient(x, "%s {pass_yellow}blocked %s {cyan}from scoring!", catcherNameTeamFormat, throwerNameTeamFormat);
         }
       }
       TagChatSTV("%s blocked %s from scoring. Tick: %d", catcherName, throwerName, STVTickCount());
     }
-    else
-    {
+    else {
       arriPlyRoundPassStats[catcher].iIntercepts++;
-      if (bChatEvents.BoolValue)
-      {
-        for (int x = 1; x < MaxClients + 1; x++)
-        {
+      if (bChatEvents.BoolValue) {
+        for (int x = 1; x < MaxClients + 1; x++) {
           if (!IsValidClient(x) || IsClientSourceTV(x)) continue;
           TagChatClient(x, "%s {pass_magenta}intercepted %s!", catcherNameTeamFormat, throwerNameTeamFormat);
         }
@@ -990,12 +890,9 @@ Action Event_PassCaught(Handle event, const char[] name, bool dontBroadcast)
     }
   }
 
-  if (TF2_GetClientTeam(thrower) == TF2_GetClientTeam(catcher) && eiPassTarget != catcher && !(GetEntityFlags(catcher) & FL_ONGROUND) && DistanceAboveGround(catcher) > 200)  // if on same team and catcher is not locked onto for a pass, also 200 units above ground at least (to ignore just normal non-lock passes)
-  {
-    if (bChatEvents.BoolValue)
-    {
-      for (int x = 1; x < MaxClients + 1; x++)
-      {
+  if (TF2_GetClientTeam(thrower) == TF2_GetClientTeam(catcher) && eiPassTarget != catcher && !(GetEntityFlags(catcher) & FL_ONGROUND) && DistanceAboveGround(catcher) > 200)  // if on same team and catcher is not locked onto for a pass, also 200 units above ground at least (to ignore just normal non-lock passes) {
+    if (bChatEvents.BoolValue) {
+      for (int x = 1; x < MaxClients + 1; x++) {
         if (!IsValidClient(x) || IsClientSourceTV(x)) continue;
         TagChatClient(x, "%s {pass_yellow}handoff to %s!", throwerNameTeamFormat, catcherNameTeamFormat);
       }
@@ -1022,8 +919,7 @@ Action Event_PassCaught(Handle event, const char[] name, bool dontBroadcast)
 }
 
 // When a player melee steals the ball from another player.
-Action Event_PassStolen(Event event, const char[] name, bool dontBroadcast)
-{
+Action Event_PassStolen(Event event, const char[] name, bool dontBroadcast) {
   int  thief        = event.GetInt("attacker");
   int  victim       = event.GetInt("victim");
   bool steal2save   = false;
@@ -1031,8 +927,7 @@ Action Event_PassStolen(Event event, const char[] name, bool dontBroadcast)
 
   iBallPickedUpTick = GetGameTickCount();
   VerboseLog("Ball picked up - tick: %d", iBallPickedUpTick);
-  if (PlayerInTeamGoalieZone(thief))
-  {
+  if (PlayerInTeamGoalieZone(thief)) {
     arriPlyRoundPassStats[thief].iSteal2Saves++;
     steal2save = true;
   }
@@ -1050,13 +945,11 @@ Action Event_PassStolen(Event event, const char[] name, bool dontBroadcast)
   arrbWinStratCheck[thief]  = false;
   arrbWinStratCheck[victim] = false;
 
-  if (arrbJackAcqSettings[victim].bPlyHudTextSetting)
-  {
+  if (arrbJackAcqSettings[victim].bPlyHudTextSetting) {
     SetHudTextParams(-1.0, 0.22, 3.0, 240, 0, 240, 255);
     ShowHudText(victim, 1, "");
   }
-  if (bChatEvents.BoolValue)
-  {
+  if (bChatEvents.BoolValue) {
     char thiefName[MAX_NAME_LENGTH], victimName[MAX_NAME_LENGTH];
     GetClientName(thief, thiefName, sizeof(thiefName));
     GetClientName(victim, victimName, sizeof(victimName));
@@ -1065,13 +958,11 @@ Action Event_PassStolen(Event event, const char[] name, bool dontBroadcast)
     FormatPlayerNameWithTeam(thief, thiefNameTeamFormat);
     FormatPlayerNameWithTeam(victim, victimNameTeamFormat);
 
-    if (PlayerInTeamGoalieZone(thief))
-    {
+    if (PlayerInTeamGoalieZone(thief)) {
       TagChatAllPlayers("%s{pass_orange} defensively stole from{cyan} %s!", thiefNameTeamFormat, victimNameTeamFormat);
       TagChatSTV("%s defensively stole from %s. Tick: %d", thiefName, victimName, STVTickCount());
     }
-    else
-    {
+    else {
       TagChatAllPlayers("%s{pass_orange} stole from{cyan} %s!", thiefNameTeamFormat, victimNameTeamFormat);
       TagChatSTV("%s stole from %s. Tick: %d", thiefName, victimName, STVTickCount());
     }
@@ -1081,8 +972,7 @@ Action Event_PassStolen(Event event, const char[] name, bool dontBroadcast)
 }
 
 // When a player scores with the ball.
-Action Event_PassScore(Event event, const char[] name, bool dontBroadcast)
-{
+Action Event_PassScore(Event event, const char[] name, bool dontBroadcast) {
   int  scorer    = event.GetInt("scorer");
   int  points    = event.GetInt("points");
   int  assistant = event.GetInt("assister");
@@ -1099,8 +989,7 @@ Action Event_PassScore(Event event, const char[] name, bool dontBroadcast)
   GetEntPropVector(eiJack, Prop_Send, "m_vecOrigin", fScoredBallPos);
   float dist = GetVectorDistance(fFreeBallPos, fScoredBallPos, false);
 
-  if (arrbDeathbombCheck[eiDeathBomber])
-  {
+  if (arrbDeathbombCheck[eiDeathBomber]) {
     arrbPanaceaCheck[scorer] = false;  // both Panacea and deathbomb requirements can be true at the same time, so if deathbomb occurs just turn off panacea
     SetLogInfo(eiDeathBomber);
     LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_score\" (points \"%i\") (panacea \"%d\") (win strat \"%d\") (deathbomb \"%d\") (dist \"%.0f\") (position \"%.0f %.0f %.0f\")",
@@ -1117,8 +1006,7 @@ Action Event_PassScore(Event event, const char[] name, bool dontBroadcast)
               user1position[0], user1position[1], user1position[2]);
     arriPlyRoundPassStats[scorer].iAssists++;
   }
-  else
-  {
+  else {
     SetLogInfo(scorer);
     LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_score\" (points \"%i\") (panacea \"%d\") (win strat \"%d\") (deathbomb \"%d\") (dist \"%.0f\") (position \"%.0f %.0f %.0f\")",
               user1, GetClientUserId(user1), user1steamid, user1team,
@@ -1126,8 +1014,7 @@ Action Event_PassScore(Event event, const char[] name, bool dontBroadcast)
               user1position[0], user1position[1], user1position[2]);
     arriPlyRoundPassStats[scorer].iScores++;
 
-    if (assistant > 0)
-    {
+    if (assistant > 0) {
       GetClientName(assistant, assistantName, sizeof(assistantName));
       SetLogInfo(assistant);
       LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_score_assist\" (position \"%.0f %.0f %.0f\")",
@@ -1142,22 +1029,18 @@ Action Event_PassScore(Event event, const char[] name, bool dontBroadcast)
   else if (arrbWinStratCheck[scorer])
     arriPlyRoundPassStats[scorer].iWinStrats++;
 
-  if (bChatEvents.BoolValue)
-  {
+  if (bChatEvents.BoolValue) {
     char playerNameTeamFormatted[MAX_TEAMFORMAT_NAME_LENGTH], assistantNameTeamFormatted[MAX_TEAMFORMAT_NAME_LENGTH];
     FormatPlayerNameWithTeam(scorer, playerNameTeamFormatted);
-    if (arrbPanaceaCheck[scorer] && TF2_GetPlayerClass(scorer) != TFClass_Medic)
-    {
+    if (arrbPanaceaCheck[scorer] && TF2_GetPlayerClass(scorer) != TFClass_Medic) {
       TagChatAllPlayers("%s{pass_green} scored a {pass_green}Panacea!", playerNameTeamFormatted);
       TagChatSTV("%s scored a Panacea. Tick: %d", playerName, STVTickCount());
     }
-    else if (arrbWinStratCheck[scorer])
-    {
+    else if (arrbWinStratCheck[scorer]) {
       TagChatAllPlayers("%s{pass_green} scored a {pass_green}win strat!", playerNameTeamFormatted);
       TagChatSTV("%s scored a win strat. Tick: %d", playerName, STVTickCount());
     }
-    else if (arrbDeathbombCheck[eiDeathBomber])
-    {
+    else if (arrbDeathbombCheck[eiDeathBomber]) {
       // if we take too long to print, a race condition happens
       // prevent that race condition
       int deathBomber = eiDeathBomber;
@@ -1166,19 +1049,16 @@ Action Event_PassScore(Event event, const char[] name, bool dontBroadcast)
       TagChatAllPlayers("%s{pass_green} scored a {pass_green}deathbomb!", playerNameTeamFormatted);
       TagChatSTV("%s scored a deathbomb. Tick: %d", playerName, STVTickCount());
     }
-    else if (dist > 1600)
-    {
+    else if (dist > 1600) {
       TagChatAllPlayers("%s{pass_green} scored a goal from a distance of %.0fhu!", playerNameTeamFormatted, dist);
       TagChatSTV("%s scored a goal from distance of %.0fhu. Tick: %d", playerName, dist, STVTickCount());
     }
-    else if (assistant > 0)
-    {
+    else if (assistant > 0) {
       FormatPlayerNameWithTeam(assistant, assistantNameTeamFormatted);
       TagChatAllPlayers("%s{pass_green} scored a goal {cyan}assisted by %s!", playerNameTeamFormatted, assistantNameTeamFormatted);
       TagChatSTV("%s scored a goal assisted by %s. Tick: %d", playerName, assistantName, STVTickCount());
     }
-    else
-    {
+    else {
       TagChatAllPlayers("%s{pass_green} scored a goal!", playerNameTeamFormatted);
       TagChatSTV("%s scored a goal. Tick: %d", playerName, STVTickCount());
     }
@@ -1190,49 +1070,42 @@ Action Event_PassScore(Event event, const char[] name, bool dontBroadcast)
 }
 
 // Checks if a player is close enough to their team's goal to count as a goalie.
-bool PlayerInTeamGoalieZone(int client)
-{
+bool PlayerInTeamGoalieZone(int client) {
   int   team = GetClientTeam(client);
   float position[3];
   GetClientAbsOrigin(client, position);
 
-  if (team == view_as<int>(TFTeam_Blue))
-  {
+  if (team == view_as<int>(TFTeam_Blue)) {
     float distance = GetVectorDistance(position, fBluGoalPos, false);
     if (distance < GOALIE_DISTANCE) return true;
   }
 
-  if (team == view_as<int>(TFTeam_Red))
-  {
+  if (team == view_as<int>(TFTeam_Red)) {
     float distance = GetVectorDistance(position, fRedGoalPos, false);
     if (distance < GOALIE_DISTANCE) return true;
   }
   return false;
 }
 
-bool EntInRedGoalZone(int entIndex)
-{
+bool EntInRedGoalZone(int entIndex) {
   float position[3];
   GetEntPropVector(entIndex, Prop_Send, "m_vecOrigin", position);
   return PosInRedGoalZone(position);
 }
 
-bool EntInBluGoalZone(int entIndex)
-{
+bool EntInBluGoalZone(int entIndex) {
   float position[3];
   GetEntPropVector(entIndex, Prop_Send, "m_vecOrigin", position);
   return PosInBluGoalZone(position);
 }
 
-bool PosInRedGoalZone(float position[3])
-{
+bool PosInRedGoalZone(float position[3]) {
   float dist = GetVectorDistance(position, fRedGoalPos);
   if (dist < GOALIE_DISTANCE) return true;
   return false;
 }
 
-bool PosInBluGoalZone(float position[3])
-{
+bool PosInBluGoalZone(float position[3]) {
   float dist = GetVectorDistance(position, fBluGoalPos);
   if (dist < GOALIE_DISTANCE) return true;
   return false;
@@ -1240,34 +1113,28 @@ bool PosInBluGoalZone(float position[3])
 
 // Checks if a player is close enough to the *enemy* team's goal to count as a blocker.
 // For fun.
-bool PlayerInEnemyGoalieZone(int client)
-{
+bool PlayerInEnemyGoalieZone(int client) {
   int   team = GetClientTeam(client);
   float position[3];
   GetClientAbsOrigin(client, position);
 
-  if (team == view_as<int>(TFTeam_Blue))
-  {
+  if (team == view_as<int>(TFTeam_Blue)) {
     float distance = GetVectorDistance(position, fRedGoalPos, false);
     if (distance < 100) return true;
   }
 
-  if (team == view_as<int>(TFTeam_Red))
-  {
+  if (team == view_as<int>(TFTeam_Red)) {
     float distance = GetVectorDistance(position, fBluGoalPos, false);
     if (distance < 100) return true;
   }
   return false;
 }
 
-void Hook_OnCatapult(const char[] output, int caller, int activator, float delay)
-{
+void Hook_OnCatapult(const char[] output, int caller, int activator, float delay) {
   char catapultName[15];
   GetEntPropString(caller, Prop_Data, "m_iName", catapultName, sizeof(catapultName));
-  if (activator == eiJack && iPlyWhoGotJack != 0)
-  {
-    if (StrEqual(catapultName, "red_catapult1") || StrEqual(catapultName, "red_catapult2") || StrEqual(catapultName, "blu_catapult1") || StrEqual(catapultName, "blu_catapult2") && IsClientConnected(iPlyWhoGotJack))
-    {
+  if (activator == eiJack && iPlyWhoGotJack != 0) {
+    if (StrEqual(catapultName, "red_catapult1") || StrEqual(catapultName, "red_catapult2") || StrEqual(catapultName, "blu_catapult1") || StrEqual(catapultName, "blu_catapult2") && IsClientConnected(iPlyWhoGotJack)) {
       SetLogInfo(iPlyWhoGotJack);
       LogToGame("\"%N<%i><%s><%s>\" triggered \"%s\" with the jack (position \"%.0f %.0f %.0f\")",
                 user1, GetClientUserId(user1), user1steamid, user1team,
@@ -1279,12 +1146,10 @@ void Hook_OnCatapult(const char[] output, int caller, int activator, float delay
 }
 
 // outputString must be of size MAX_NAME_LENGTH + 7 or greater.
-void FormatPlayerNameWithTeam(int player, char[] outputString)
-{
+void FormatPlayerNameWithTeam(int player, char[] outputString) {
   char playerName[MAX_NAME_LENGTH];
   GetClientName(player, playerName, sizeof(playerName));
-  if (TF2_GetClientTeam(player) == TFTeam_Blue)
-  {
+  if (TF2_GetClientTeam(player) == TFTeam_Blue) {
     Format(outputString, MAX_NAME_LENGTH + 7, "{blu_team}%s", playerName);
   }
   else {
@@ -1296,16 +1161,13 @@ void FormatPlayerNameWithTeam(int player, char[] outputString)
 // 1: spectator
 // 2: TF_TEAM_RED
 // 3: TF_TEAM_BLU
-stock TFTeam GetBallTeam()
-{
-  if (eiJack == 0 || !IsValidEntity(eiJack))
-  {
+stock TFTeam GetBallTeam() {
+  if (eiJack == 0 || !IsValidEntity(eiJack)) {
     LogStackTrace("Ball entity invalid, returning Unassigned");
     return TFTeam_Unassigned;
   }
   int team = GetEntProp(eiJack, Prop_Send, "m_iTeamNum");
-  switch (team)
-  {
+  switch (team) {
     case 0:
       return TFTeam_Unassigned;
     case 1:
@@ -1320,10 +1182,8 @@ stock TFTeam GetBallTeam()
 }
 
 // Utility function
-stock void VerboseLog(const char[] format, any...)
-{
-  if (bVerboseLogs.BoolValue)
-  {
+stock void VerboseLog(const char[] format, any...) {
+  if (bVerboseLogs.BoolValue) {
     int len             = strlen(format) + 255;
     // sensible value for max log size?
     char[] MessageToLog = new char[len];
@@ -1332,21 +1192,17 @@ stock void VerboseLog(const char[] format, any...)
   }
 }
 
-void SetJack(int eIndex)
-{
-  if (!SDKHookEx(eIndex, SDKHook_OnTakeDamage, PasstimeBallTookDamage))
-  {
+void SetJack(int eIndex) {
+  if (!SDKHookEx(eIndex, SDKHook_OnTakeDamage, PasstimeBallTookDamage)) {
     LogError("Could not hook passtime_ball. Splash detection will not work.");
   }
   eiJack = eIndex;
 }
 
-bool PointInRespawnRoom(int client, float origin[3], bool sameTeamOnly)
-{
+bool PointInRespawnRoom(int client, float origin[3], bool sameTeamOnly) {
   return SDKCall(pointInRespawnRoom, client, origin, sameTeamOnly);
 }
 
-void ForceRegenerateAndRespawn(int client)
-{
+void ForceRegenerateAndRespawn(int client) {
   SDKCall(tfPlayerForceRegenerateAndRespawn, client);
 }

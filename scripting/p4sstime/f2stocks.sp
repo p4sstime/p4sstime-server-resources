@@ -2,8 +2,7 @@
 // i just didn't need the whole include file so i didnt see any reason in including it all
 
 int        PrintToSTV_iLastStvClient;  // Cached STV client id
-stock void CPrintToSTV(const char[] format, any...)
-{
+stock void CPrintToSTV(const char[] format, any...) {
   int stv = FindSTV();
   if (stv < 1)
     return;
@@ -13,16 +12,12 @@ stock void CPrintToSTV(const char[] format, any...)
   CPrintToChat(stv, "%s", buffer);
 }
 
-stock int FindSTV()
-{
-  if (!(PrintToSTV_iLastStvClient >= 1 && PrintToSTV_iLastStvClient <= MaxClients && IsClientConnected(PrintToSTV_iLastStvClient) && IsClientInGame(PrintToSTV_iLastStvClient) && IsClientSourceTV(PrintToSTV_iLastStvClient)))
-  {
+stock int FindSTV() {
+  if (!(PrintToSTV_iLastStvClient >= 1 && PrintToSTV_iLastStvClient <= MaxClients && IsClientConnected(PrintToSTV_iLastStvClient) && IsClientInGame(PrintToSTV_iLastStvClient) && IsClientSourceTV(PrintToSTV_iLastStvClient))) {
     PrintToSTV_iLastStvClient = -1;
 
-    for (int client = 1; client <= MaxClients; client++)
-    {
-      if (IsClientConnected(client) && IsClientInGame(client) && IsClientSourceTV(client))
-      {
+    for (int client = 1; client <= MaxClients; client++) {
+      if (IsClientConnected(client) && IsClientInGame(client) && IsClientSourceTV(client)) {
         PrintToSTV_iLastStvClient = client;
         break;
       }

@@ -1,7 +1,6 @@
 // This file relates to all convars and will contain the functions for them
 
-Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
-{
+Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
   int client            = GetClientOfUserId(event.GetInt("userid"));
   arrbPlyIsDead[client] = false;
   RemoveStocks(client);
@@ -10,8 +9,7 @@ Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
   return Plugin_Handled;
 }
 
-Action OnChangeClass(int client, const char[] strCommand, int args)
-{
+Action OnChangeClass(int client, const char[] strCommand, int args) {
   // class limits; demo = 1, med = 1, soldier = 3
   // essentially we just check every time someone changes class if the class change is possible. i dont like doing it this way but alternative is dhooks :vomit:
   char sChosenClass[12];
@@ -21,24 +19,20 @@ Action OnChangeClass(int client, const char[] strCommand, int args)
   GetCmdArg(1, sChosenClass, sizeof(sChosenClass));
   TFClassType class  = TF2_GetClass(sChosenClass);
   TFTeam currentTeam = TF2_GetClientTeam(client);
-  for (int x = 1; x < MaxClients + 1; x++)
-  {
+  for (int x = 1; x < MaxClients + 1; x++) {
     if (!IsValidClient(x)) continue;
-    if (TF2_GetClientTeam(x) == currentTeam)
-    {
+    if (TF2_GetClientTeam(x) == currentTeam) {
       TFClassType classcheck = TF2_GetPlayerClass(x);
       if (classcheck == TFClass_Soldier) solly++;
       else if (classcheck == TFClass_DemoMan) demo = true;
       else if (classcheck == TFClass_Medic) med = true;
     }
   }
-  if (arrbPlyIsDead[client] == true && bFixRespawnBypass.BoolValue)
-  {
+  if (arrbPlyIsDead[client] == true && bFixRespawnBypass.BoolValue) {
     if (class == TFClass_Medic && med) return Plugin_Handled;
     else if (class == TFClass_DemoMan && demo) return Plugin_Handled;
     else if (class == TFClass_Soldier && solly > 2) return Plugin_Handled;
-    if (class != TFClass_Unknown && class != TFClass_Pyro && class != TFClass_Heavy && class != TFClass_Engineer && class != TFClass_Spy && class != TFClass_Sniper && class != TFClass_Scout)
-    {
+    if (class != TFClass_Unknown && class != TFClass_Pyro && class != TFClass_Heavy && class != TFClass_Engineer && class != TFClass_Spy && class != TFClass_Sniper && class != TFClass_Scout) {
       SetEntProp(client, Prop_Send, "m_iDesiredPlayerClass", class);
       PrintCenterText(client, "Class when spawned will be %s.", sChosenClass);
     }
@@ -47,51 +41,41 @@ Action OnChangeClass(int client, const char[] strCommand, int args)
   return Plugin_Continue;
 }
 
-public void TF2_OnConditionAdded(int client, TFCond condition)
-{
-  if (condition == TFCond_PasstimeInterception && !bFixBlur.BoolValue)
-  {
+public void TF2_OnConditionAdded(int client, TFCond condition) {
+  if (condition == TFCond_PasstimeInterception && !bFixBlur.BoolValue) {
     ClientCommand(client, "r_screenoverlay \"\"");
   }
-  if (condition == TFCond_Charging && TF2_GetPlayerClass(client) == TFClass_DemoMan)
-  {
+  if (condition == TFCond_Charging && TF2_GetPlayerClass(client) == TFClass_DemoMan) {
     CreateTimer(0.1, MultiCheck, client);
   }
 }
 
-Action Event_PlayerResup(Event event, const char[] name, bool dontBroadcast)
-{
+Action Event_PlayerResup(Event event, const char[] name, bool dontBroadcast) {
   int client = GetClientOfUserId(event.GetInt("userid"));
   RemoveStocks(client);
 
   return Plugin_Handled;
 }
 
-Action Command_Suicide(int client, int args)
-{
-  if (bRoundActive)
-  {
+Action Command_Suicide(int client, int args) {
+  if (bRoundActive) {
     ForcePlayerSuicide(client);
     CTagReply(client, "Committed suicide");
   }
-  else
-  {
+  else {
     CTagReply(client, "Round is not active");
   }
   return Plugin_Handled;
 }
 
-Action Command_ChatCountdown(int client, int args)
-{
+Action Command_ChatCountdown(int client, int args) {
   int value = 0;
-  if (GetCmdArgIntEx(1, value))
-  {
+  if (GetCmdArgIntEx(1, value)) {
     if (value == 1)
       arrbJackAcqSettings[client].bPlyCoundownCaptionSetting = true;
     else if (value == 0)
       arrbJackAcqSettings[client].bPlyCoundownCaptionSetting = false;
-    if (value == 1 || value == 0)
-    {
+    if (value == 1 || value == 0) {
       SetCookieBool(client, cookieCountdownCaption, arrbJackAcqSettings[client].bPlyCoundownCaptionSetting);
       CTagReply(client, "JACK spawn timer captions: %s", arrbJackAcqSettings[client].bPlyCoundownCaptionSetting ? "ON" : "OFF");
     }
@@ -101,17 +85,14 @@ Action Command_ChatCountdown(int client, int args)
   return Plugin_Handled;
 }
 
-Action Command_JackPickupHud(int client, int args)
-{
+Action Command_JackPickupHud(int client, int args) {
   int value = 0;
-  if (GetCmdArgIntEx(1, value))
-  {
+  if (GetCmdArgIntEx(1, value)) {
     if (value == 1)
       arrbJackAcqSettings[client].bPlyHudTextSetting = true;
     else if (value == 0)
       arrbJackAcqSettings[client].bPlyHudTextSetting = false;
-    if (value == 1 || value == 0)
-    {
+    if (value == 1 || value == 0) {
       SetCookieBool(client, cookieJACKPickupHud, arrbJackAcqSettings[client].bPlyHudTextSetting);
       CTagReply(client, "JACK pickup HUD text: %s", arrbJackAcqSettings[client].bPlyHudTextSetting ? "ON" : "OFF");
     }
@@ -121,17 +102,14 @@ Action Command_JackPickupHud(int client, int args)
   return Plugin_Handled;
 }
 
-Action Command_JackPickupChat(int client, int args)
-{
+Action Command_JackPickupChat(int client, int args) {
   int value = 0;
-  if (GetCmdArgIntEx(1, value))
-  {
+  if (GetCmdArgIntEx(1, value)) {
     if (value == 1)
       arrbJackAcqSettings[client].bPlyChatPrintSetting = true;
     if (value == 0)
       arrbJackAcqSettings[client].bPlyChatPrintSetting = false;
-    if (value == 1 || value == 0)
-    {
+    if (value == 1 || value == 0) {
       SetCookieBool(client, cookieJACKPickupChat, arrbJackAcqSettings[client].bPlyChatPrintSetting);
       CTagReply(client, "JACK pickup chat text: %s", arrbJackAcqSettings[client].bPlyChatPrintSetting ? "ON" : "OFF");
     }
@@ -141,17 +119,14 @@ Action Command_JackPickupChat(int client, int args)
   return Plugin_Handled;
 }
 
-Action Command_JackPickupSound(int client, int args)
-{
+Action Command_JackPickupSound(int client, int args) {
   int value = 0;
-  if (GetCmdArgIntEx(1, value))
-  {
+  if (GetCmdArgIntEx(1, value)) {
     if (value == 1)
       arrbJackAcqSettings[client].bPlySoundSetting = true;
     if (value == 0)
       arrbJackAcqSettings[client].bPlySoundSetting = false;
-    if (value == 1 || value == 0)
-    {
+    if (value == 1 || value == 0) {
       SetCookieBool(client, cookieJACKPickupSound, arrbJackAcqSettings[client].bPlySoundSetting);
       CTagReply(client, "JACK pickup sound: %s", arrbJackAcqSettings[client].bPlySoundSetting ? "ON" : "OFF");
     }
@@ -161,27 +136,23 @@ Action Command_JackPickupSound(int client, int args)
   return Plugin_Handled;
 }
 
-void Hook_OnAllowInstantResupplyChange(ConVar convar, const char[] oldValue, const char[] newValue)
-{
+void Hook_OnAllowInstantResupplyChange(ConVar convar, const char[] oldValue, const char[] newValue) {
   if (!bResupply.BoolValue)
     return;
 
-  if (tfPlayerForceRegenerateAndRespawn == null)
-  {
+  if (tfPlayerForceRegenerateAndRespawn == null) {
     LogError("Cannot allow instant resupply due to missing CTFPlayer::ForceRegenerateAndRespawn function");
     bResupply.BoolValue = false;
     return;
   }
 
-  if (pointInRespawnRoom == null)
-  {
+  if (pointInRespawnRoom == null) {
     LogError("Cannot allow instant resupply due to missing PointInRespawnRoom function");
     bResupply.BoolValue = false;
     return;
   }
 }
-Action Command_Resupply(int client, int args)
-{
+Action Command_Resupply(int client, int args) {
   if (!bResupply.BoolValue)
     return Plugin_Handled;
 
@@ -203,34 +174,28 @@ Action Command_Resupply(int client, int args)
   return Plugin_Handled;
 }
 
-void RemoveStocks(int client)
-{
-  if (bFixStocks.BoolValue)
-  {
+void RemoveStocks(int client) {
+  if (bFixStocks.BoolValue) {
     TFClassType class = TF2_GetPlayerClass(client);
     int iWep;
     if (class == TFClass_DemoMan || class == TFClass_Soldier) iWep = GetPlayerWeaponSlot(client, 1);
     else if (class == TFClass_Medic) iWep = GetPlayerWeaponSlot(client, 0);
 
-    if (iWep >= 0)
-    {
+    if (iWep >= 0) {
       char classname[64];
       GetEntityClassname(iWep, classname, sizeof(classname));
 
-      if (StrEqual(classname, "tf_weapon_shotgun_soldier"))
-      {
+      if (StrEqual(classname, "tf_weapon_shotgun_soldier")) {
         TagChatClient(client, "Shotgun equipped");
         TF2_RemoveWeaponSlot(client, 1);
       }
       
-      if (StrEqual(classname, "tf_weapon_pipebomblauncher"))
-      {
+      if (StrEqual(classname, "tf_weapon_pipebomblauncher")) {
         TagChatClient(client, "Stickies equipped");
         TF2_RemoveWeaponSlot(client, 1);
       }
 
-      if (StrEqual(classname, "tf_weapon_syringegun_medic"))
-      {
+      if (StrEqual(classname, "tf_weapon_syringegun_medic")) {
         TagChatClient(client, "Syringe Gun equipped");
         TF2_RemoveWeaponSlot(client, 0);
       }

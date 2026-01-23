@@ -1,5 +1,4 @@
-Action Command_SpawnBall(int client, int args)
-{
+Action Command_SpawnBall(int client, int args) {
   char name[MAX_NAME_LENGTH];
   VerboseLog("ptspawnball called from client %d", client);
   if (client == 0) name = "CONSOLE";

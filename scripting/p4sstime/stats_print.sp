@@ -17,25 +17,19 @@ static const char sInterceptsShort[] = "{pass_red} INT %d";
 static const char sStealsShort[]     = "{pass_orange} STL %d";
 static const char sSplashesShort[]   = "{pass_blue} SPL %d";
 
-Action Command_ChatSummary(int client, int args)
-{
+Action Command_ChatSummary(int client, int args) {
   int value = 0;
-  if (GetCmdArgIntEx(1, value))
-  {
-    switch (value)
-    {
-      case 0:
-      {
+  if (GetCmdArgIntEx(1, value)) {
+    switch (value) {
+      case 0: {
         arrbJackAcqSettings[client].iSummary = 0;
         CTagReply(client, "Round summary: {pass_blue}Off{chat}|{darkgray}Long{chat}|{darkgray}Short{chat}");
       }
-      case 1:
-      {
+      case 1: {
         arrbJackAcqSettings[client].iSummary = 1;
         CTagReply(client, "Round summary: {darkgray}Off{chat}|{pass_blue}Long{chat}|{darkgray}Short{chat}");
       }
-      case 2:
-      {
+      case 2: {
         arrbJackAcqSettings[client].iSummary = 2;
         CTagReply(client, "Round summary: {darkgray}Off{chat}|{darkgray}Long{chat}|{pass_blue}Short{chat}");
       }
@@ -47,8 +41,7 @@ Action Command_ChatSummary(int client, int args)
   return Plugin_Handled;
 }
 
-Action Timer_ShowMoreTF(Handle timer, any client)
-{
+Action Timer_ShowMoreTF(Handle timer, any client) {
   if (!IsValidClient(client))
     return Plugin_Stop;
 
@@ -66,8 +59,7 @@ Action Timer_ShowMoreTF(Handle timer, any client)
 }
 
 // Clear all plugin stats for the specified client.
-void ClearLocalStats(int client)
-{
+void ClearLocalStats(int client) {
   arrbPlyIsDead[client]       = false;
   arrbBlastJumpStatus[client] = false;
   arrbPanaceaCheck[client]    = false;
@@ -90,8 +82,7 @@ void ClearLocalStats(int client)
 }
 
 // this is really fucking sloppy but shrug
-Action Timer_DisplayStats(Handle timer)
-{
+Action Timer_DisplayStats(Handle timer) {
   int redTeam[16], bluTeam[16];
   int redAmount, bluAmount = 0;
   // calculate possession time
@@ -119,20 +110,17 @@ Action Timer_DisplayStats(Handle timer)
   int redTest = RoundToFloor(redBallPossessionPercent * 10000);
   int bluTest = RoundToFloor(bluBallPossessionPercent * 10000);
   // clean it up for spectators so the value adds up to a clean 100%
-  if (redTest + bluTest != 10000)
-  {
+  if (redTest + bluTest != 10000) {
     redBallPossessionPercent += 0.0001;
   }
 
   // for display
   redBallPossessionPercent *= 100;
   bluBallPossessionPercent *= 100;
-  for (int x = 1; x < MaxClients + 1; x++)
-  {
+  for (int x = 1; x < MaxClients + 1; x++) {
     if (!IsValidClient(x)) continue;
 
-    if (TF2_GetClientTeam(x) == TFTeam_Red)
-    {
+    if (TF2_GetClientTeam(x) == TFTeam_Red) {
       redTeam[redAmount] = x;
       redAmount++;
     }
@@ -160,8 +148,7 @@ Action Timer_DisplayStats(Handle timer)
   GetConsoleStatsArrStr(arrStrConsoleStatsRed, redTeam, redAmount, RED);
   GetConsoleStatsArrStr(arrStrConsoleStatsBlu, bluTeam, bluAmount, BLU);
 
-  for (int x = 1; x < MaxClients + 1; x++)
-  {
+  for (int x = 1; x < MaxClients + 1; x++) {
     if (!IsValidClient(x)) continue;
     if (arrbJackAcqSettings[x].iSummary) continue;
 
@@ -171,41 +158,33 @@ Action Timer_DisplayStats(Handle timer)
     bool shouldPrintBluFirst = (TF2_GetClientTeam(x) == TFTeam_Red);
 
     // smelly!
-    if (arrbJackAcqSettings[x].iSummary == 2)
-    {
-      if (shouldPrintBluFirst)
-      {
+    if (arrbJackAcqSettings[x].iSummary == 2) {
+      if (shouldPrintBluFirst) {
         CPrintMultiline(x, arrStrBluSimpleStats, sizeof(arrStrBluSimpleStats));
         CPrintMultiline(x, arrStrRedSimpleStats, sizeof(arrStrRedSimpleStats));
       }
-      else
-      {
+      else {
         CPrintMultiline(x, arrStrRedSimpleStats, sizeof(arrStrRedSimpleStats));
         CPrintMultiline(x, arrStrBluSimpleStats, sizeof(arrStrBluSimpleStats));
       }
     }
-    else
-    {
-      if (shouldPrintBluFirst)
-      {
+    else {
+      if (shouldPrintBluFirst) {
         CPrintMultiline(x, arrStrBluTeamStats, sizeof(arrStrBluTeamStats));
         CPrintMultiline(x, arrStrRedTeamStats, sizeof(arrStrRedTeamStats));
       }
-      else
-      {
+      else {
         CPrintMultiline(x, arrStrRedTeamStats, sizeof(arrStrRedTeamStats));
         CPrintMultiline(x, arrStrBluTeamStats, sizeof(arrStrBluTeamStats));
       }
     }
   
     TagChatClient(x, "{red_team}RED {pass_green}possession: %.1f%%, {blu_team}BLU {pass_green}possession: %.1f%%", redBallPossessionPercent, bluBallPossessionPercent);
-    if (isStv)
-    {
+    if (isStv) {
       TagChatSTV("BLU possession time in ticks: %d", iRedBallTime);
       TagChatSTV("RED possession time in ticks: %d", iBluBallTime);
     }
-    else
-    {
+    else {
       Print3DMultilineToConsole(x, arrStrConsoleStatsBlu, sizeof(arrStrConsoleStatsBlu), sizeof(arrStrConsoleStatsBlu[]));
       Print3DMultilineToConsole(x, arrStrConsoleStatsRed, sizeof(arrStrConsoleStatsRed), sizeof(arrStrConsoleStatsRed[]));
     }
@@ -217,10 +196,8 @@ Action Timer_DisplayStats(Handle timer)
   return Plugin_Stop;
 }
 
-void GetTeamStatsArrStr(char buf[MAXPLAYERS + 1][MAX_MESSAGE_LENGTH], int[] teamMembers, int len, bool isSimple = false)
-{
-  for (int i = 0; i < len; i++)
-  {
+void GetTeamStatsArrStr(char buf[MAXPLAYERS + 1][MAX_MESSAGE_LENGTH], int[] teamMembers, int len, bool isSimple = false) {
+  for (int i = 0; i < len; i++) {
     char playerNameTeamFormatted[MAX_NAME_LENGTH + 7];
     FormatPlayerNameWithTeam(teamMembers[i], playerNameTeamFormatted);
     char stats[MAX_MESSAGE_LENGTH];
@@ -246,22 +223,18 @@ static const char consoleFormat4[]        = "//   %d splash saves               
 // dimension 1: a player
 // dimension 2: their stat strings
 
-void              GetConsoleStatsArrStr(char buf[MAXPLAYERS + 1][7][MAX_MESSAGE_LENGTH], int[] teamMembers, int teamAmount, bool isBlu)
-{
-  for (int i = 0; i < teamAmount; i++)
-  {
+void              GetConsoleStatsArrStr(char buf[MAXPLAYERS + 1][7][MAX_MESSAGE_LENGTH], int[] teamMembers, int teamAmount, bool isBlu) {
+  for (int i = 0; i < teamAmount; i++) {
     char         playerName[MAX_NAME_LENGTH];
     int          player = teamMembers[i];
     enuiPlyStats stats;
     stats = arriPlyRoundPassStats[player];
     GetClientName(player, playerName, sizeof(playerName));
     Format(buf[i][0], MAX_MESSAGE_LENGTH, consoleFormatBlank);
-    if (isBlu)
-    {
+    if (isBlu) {
       Format(buf[i][1], MAX_MESSAGE_LENGTH, consoleFormatTitleBlu, playerName);
     }
-    else
-    {
+    else {
       Format(buf[i][1], MAX_MESSAGE_LENGTH, consoleFormatTitleRed, playerName);
     }
     Format(buf[i][2], MAX_MESSAGE_LENGTH, consoleFormat1, stats.iScores, stats.iAssists, stats.iSaves, stats.iIntercepts, stats.iSteals);
@@ -272,26 +245,19 @@ void              GetConsoleStatsArrStr(char buf[MAXPLAYERS + 1][7][MAX_MESSAGE_
   }
 }
 
-void CPrintMultiline(int client, char[][] lines, int len)
-{
-  for (int i = 0; i < len; i++)
-  {
-    if (!StrEqual(lines[i], ""))
-    {
+void CPrintMultiline(int client, char[][] lines, int len) {
+  for (int i = 0; i < len; i++) {
+    if (!StrEqual(lines[i], "")) {
       CPrintToChat(client, lines[i]);
     }
   }
   return;
 }
 
-void Print3DMultilineToConsole(int client, char[][][] lines, int length, int height)
-{
-  for (int i = 0; i < length; i++)
-  {
-    for (int j = 0; j < height; j++)
-    {
-      if (!StrEqual(lines[i][j], ""))
-      {
+void Print3DMultilineToConsole(int client, char[][][] lines, int length, int height) {
+  for (int i = 0; i < length; i++) {
+    for (int j = 0; j < height; j++) {
+      if (!StrEqual(lines[i][j], "")) {
         PrintToConsole(client, lines[i][j]);
       }
     }
@@ -302,8 +268,7 @@ void Print3DMultilineToConsole(int client, char[][][] lines, int length, int hei
  * @param simplified whether to use the simplified 3 letter abbreviations (true) or long names (false)
  */
 static void
-  AssembleColoredStatsString(char[] buf, int maxLength, int client, bool simplified = false)
-{
+  AssembleColoredStatsString(char[] buf, int maxLength, int client, bool simplified = false) {
   VerboseLog("Assembling stats for client: %d", client);
   char sGoals[48];
   char sAssists[48];
@@ -311,8 +276,7 @@ static void
   char sIntercepts[48];
   char sSteals[48];
   char sSplashes[48];
-  if (simplified)
-  {
+  if (simplified) {
     Format(sGoals,      sizeof(sGoals),      sGoalsShort,      arriPlyRoundPassStats[client].iScores);
     Format(sAssists,    sizeof(sAssists),    sAssistsShort,    arriPlyRoundPassStats[client].iAssists);
     Format(sSaves,      sizeof(sSaves),      sSavesShort,      arriPlyRoundPassStats[client].iSaves);
@@ -320,8 +284,7 @@ static void
     Format(sSteals,     sizeof(sSteals),     sStealsShort,     arriPlyRoundPassStats[client].iSteals);
     Format(sSplashes,   sizeof(sSplashes),   sSplashesShort,   arriPlyRoundPassStats[client].iSplashSaves);
   }
-  else
-  {
+  else {
     Format(sGoals,      sizeof(sGoals),      sGoals,        arriPlyRoundPassStats[client].iScores);
     Format(sAssists,    sizeof(sAssists),    sAssists,      arriPlyRoundPassStats[client].iAssists);
     Format(sSaves,      sizeof(sSaves),      sSaves,        arriPlyRoundPassStats[client].iSaves);

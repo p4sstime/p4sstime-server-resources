@@ -1,5 +1,4 @@
-Action Command_Snapshot(int client, int args)
-{
+Action Command_Snapshot(int client, int args) {
   char   team[4];
   TFTeam ballTeam = GetBallTeam();
   team            = TFTeamToString(ballTeam);

@@ -68,8 +68,7 @@ forward void   Updater_OnPluginUpdated();
  * @param plugin    Plugin Handle (INVALID_HANDLE uses the calling plugin).
  * @noreturn
  */
-stock void     ReloadPlugin(Handle plugin = null)
-{
+stock void     ReloadPlugin(Handle plugin = null) {
   char filename[64];
   GetPluginFilename(plugin, filename, sizeof(filename));
   ServerCommand("sm plugins reload %s", filename);
@@ -87,8 +86,7 @@ public SharedPlugin __pl_updater = {
 
 #if !defined REQUIRE_PLUGIN
 
-public void __pl_updater_SetNTVOptional()
-{
+public void __pl_updater_SetNTVOptional() {
   MarkNativeAsOptional("Updater_AddPlugin");
   MarkNativeAsOptional("Updater_RemovePlugin");
   MarkNativeAsOptional("Updater_ForceUpdate");
