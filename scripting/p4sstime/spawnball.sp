@@ -5,10 +5,10 @@ Action Command_PasstimeSpawnBall(int client, int args)
   if (client == 0) name = "CONSOLE";
   else GetClientName(client, name, sizeof(name));
 
-  PrintToAllClientsChat("\x0700ffff[PASS] \x07ffffff%s: Spawning the ball for practice...", name);
-  PrintToAllClientsChat("\x0700ffff[PASS] \x07ffff00THE GAME IS \x07ff0000NOT \x07ffff00STARTING!");
-  PrintToAllClientsChat("\x0700ffff[PASS] \x07ffff00THE GAME IS \x07ff0000NOT \x07ffff00STARTING!");
-  PrintToAllClientsChat("\x0700ffff[PASS] \x07ffff00THE GAME IS \x07ff0000NOT \x07ffff00STARTING!");
+  TagChatAllPlayers("{default}: Spawning the ball for practice...", name);
+  TagChatAllPlayers("{pass_yellow}THE GAME IS {red}NOT {pass_yellow}STARTING!");
+  TagChatAllPlayers("{pass_yellow}THE GAME IS {red}NOT {pass_yellow}STARTING!");
+  TagChatAllPlayers("{pass_yellow}THE GAME IS {red}NOT {pass_yellow}STARTING!");
   bWaitingForBallSpawnToRestart = true;
   ServerCommand("mp_restartgame_immediate 1");
   return Plugin_Handled;

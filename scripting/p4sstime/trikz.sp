@@ -97,7 +97,7 @@ Action Event_OnTakeDamage(int victim, int& attacker, int& inflictor, float& dama
     GetClientName(attacker, attackerName, sizeof(attackerName));
     GetClientAuthId(attacker, AuthId_Steam3, steamid_attacker, sizeof(steamid_attacker));
     if (bPrintStats.BoolValue)
-      PrintToChatAll("\x0700ffff[PASS] %s \x07ffff00airshot \x0700ffffball carrier %s!", attackerName, victimName);
+      TagChatGlobal("%s {pass_yellow}airshot {cyan}ball carrier %s!", attackerName, victimName);
     LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_carrier_airshot\" against \"%N<%i><%s><%s>\"", attacker, GetClientUserId(attacker), steamid_attacker, team_attacker, victim, GetClientUserId(victim), steamid_victim, team_victim);
   }
   if (trikzEnable.IntValue == 0 || attacker <= 0 || !IsClientInGame(attacker) || !IsValidClient(victim)) // should not damage
@@ -116,7 +116,7 @@ Action Event_OnTakeDamage(int victim, int& attacker, int& inflictor, float& dama
       GetClientName(attacker, attackerName, sizeof(attackerName));
       GetClientAuthId(attacker, AuthId_Steam3, steamid_attacker, sizeof(steamid_attacker));
       if (bPrintStats.BoolValue)
-        PrintToChatAll("\x0700ffff[PASS] %s \x07ffff00airshot \x0700ffff%s!", attackerName, victimName);
+        TagChatGlobal("%s {pass_yellow}airshot {cyan}%s!", attackerName, victimName);
       LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_friendly_airshot\" against \"%N<%i><%s><%s>\"", attacker, GetClientUserId(attacker), steamid_attacker, team_attacker, victim, GetClientUserId(victim), steamid_victim, team_victim);
     }
     plyTakenDirectHit[victim] = false;

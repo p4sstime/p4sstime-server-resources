@@ -3,63 +3,47 @@
   #define RED false
 #endif
 
-enum
-{
-  MAX_MESSAGE_LENGTH = 192
-}
+static const char sGoals[]      = "{pass_green} goals %d";
+static const char sAssists[]    = "{pass_green} assists %d";
+static const char sSaves[]      = "{pass_yellow} saves %d";
+static const char sIntercepts[] = "{pass_red} intercepts %d";
+static const char sSteals[]     = "{pass_orange} steals %d";
+static const char sSplashes[]   = "{pass_blue} splashes %d";
 
-static const char sGoalsLongFormat[]        = "\x073BC43B goals %d";
-static const char sAssistsLongFormat[]      = "\x073bc48f assists %d";
-static const char sSavesLongFormat[]        = "\x07ffff00 saves %d";
-static const char sInterceptsLongFormat[]   = "\x07ff00ff intercepts %d";
-static const char sStealsLongFormat[]       = "\x07ff8000 steals %d";
-static const char sSplashesLongFormat[]     = "\x075bd4b3 splashes %d";
+static const char sGoalsShort[]      = "{pass_green} GLS %d";
+static const char sAssistsShort[]    = "{pass_green} AST %d";
+static const char sSavesShort[]      = "{pass_yellow} SAV %d";
+static const char sInterceptsShort[] = "{pass_red} INT %d";
+static const char sStealsShort[]     = "{pass_orange} STL %d";
+static const char sSplashesShort[]   = "{pass_blue} SPL %d";
 
-static const char sGoalsSimpleFormat[]      = "\x073BC43B GLS %d";
-static const char sAssistsSimpleFormat[]    = "\x073bc48f AST %d";
-static const char sSavesSimpleFormat[]      = "\x07ffff00 SAV %d";
-static const char sInterceptsSimpleFormat[] = "\x07ff00ff INT %d";
-static const char sStealsSimpleFormat[]     = "\x07ff8000 STL %d";
-static const char sSplashesSimpleFormat[]   = "\x075bd4b3 SPL %d";
-
-Action
-  Command_PasstimeSimpleChatPrint(int client, int args)
+Action Command_PasstimeSummary(int client, int args)
 {
   int value = 0;
   if (GetCmdArgIntEx(1, value))
   {
-    if (value == 1)
-      arrbJackAcqSettings[client].bPlySimpleChatPrintSetting = true;
-    else if (value == 0)
-      arrbJackAcqSettings[client].bPlySimpleChatPrintSetting = false;
-    if (value == 1 || value == 0)
+    switch (value)
     {
-      SetCookieBool(client, cookieSimpleChatPrint, arrbJackAcqSettings[client].bPlySimpleChatPrintSetting);
-      ReplyToCommand(client, "[PASS] Simple round chat summary: %s", arrbJackAcqSettings[client].bPlySimpleChatPrintSetting ? "ON" : "OFF");
+      case 0:
+      {
+        arrbJackAcqSettings[client].iSummary = 0;
+        CTagReply(client, "Round summary: {pass_blue}Off{chat}|{darkgray}Long{chat}|{darkgray}Short{chat}");
+      }
+      case 1:
+      {
+        arrbJackAcqSettings[client].iSummary = 1;
+        CTagReply(client, "Round summary: {darkgray}Off{chat}|{pass_blue}Long{chat}|{darkgray}Short{chat}");
+      }
+      case 2:
+      {
+        arrbJackAcqSettings[client].iSummary = 2;
+        CTagReply(client, "Round summary: {darkgray}Off{chat}|{darkgray}Long{chat}|{pass_blue}Short{chat}");
+      }
     }
+    SetCookieBool(client, cookieSummary, arrbJackAcqSettings[client].iSummary);
   }
   else
-    ReplyToCommand(client, "[PASS] Invalid argument");
-  return Plugin_Handled;
-}
-
-Action Command_PasstimeToggleChatPrint(int client, int args)
-{
-  int value = 0;
-  if (GetCmdArgIntEx(1, value))
-  {
-    if (value == 1)
-      arrbJackAcqSettings[client].bPlyDontPrintChatSetting = true;
-    else if (value == 0)
-      arrbJackAcqSettings[client].bPlyDontPrintChatSetting = false;
-    if (value == 1 || value == 0)
-    {
-      SetCookieBool(client, cookieToggleChatPrint, arrbJackAcqSettings[client].bPlyDontPrintChatSetting);
-      ReplyToCommand(client, "[PASS] Toggle round chat summary: %s", arrbJackAcqSettings[client].bPlyDontPrintChatSetting ? "OFF" : "ON");
-    }
-  }
-  else
-    ReplyToCommand(client, "[PASS] Invalid argument");
+    CTagReply(client, "Invalid argument, use 0, 1, or 2");
   return Plugin_Handled;
 }
 
@@ -72,8 +56,8 @@ Action Timer_ShowMoreTF(Handle timer, any client)
   Handle Kv = CreateKeyValues("data");
   IntToString(MOTDPANEL_TYPE_URL, num, sizeof(num));
   KvSetString(Kv, "title", "MoreTF");
-  KvSetString(Kv, "type", num);
-  KvSetString(Kv, "msg", moreurl);
+  KvSetString(Kv, "type",  num);
+  KvSetString(Kv, "msg",   moreurl);
   KvSetNum(Kv, "customsvr", 1);
   ShowVGUIPanel(client, "info", Kv);
   CloseHandle(Kv);
@@ -84,25 +68,25 @@ Action Timer_ShowMoreTF(Handle timer, any client)
 // Clear all plugin stats for the specified client.
 void ClearLocalStats(int client)
 {
-  arrbPlyIsDead[client]                         = false;
-  arrbBlastJumpStatus[client]                   = false;
-  arrbPanaceaCheck[client]                      = false;
-  arrbWinStratCheck[client]                     = false;
+  arrbPlyIsDead[client]       = false;
+  arrbBlastJumpStatus[client] = false;
+  arrbPanaceaCheck[client]    = false;
+  arrbWinStratCheck[client]   = false;
 
-  arriPlyRoundPassStats[client].iPlyScores      = 0;
-  arriPlyRoundPassStats[client].iPlyAssists     = 0;
-  arriPlyRoundPassStats[client].iPlySaves       = 0;
-  arriPlyRoundPassStats[client].iPlySplashSaves = 0;
-  arriPlyRoundPassStats[client].iPlyIntercepts  = 0;
-  arriPlyRoundPassStats[client].iPlySteals      = 0;
-  arriPlyRoundPassStats[client].iPlyPanaceas    = 0;
-  arriPlyRoundPassStats[client].iPlyWinStrats   = 0;
-  arriPlyRoundPassStats[client].iPlyDeathbombs  = 0;
-  arriPlyRoundPassStats[client].iPlyHandoffs    = 0;
-  arriPlyRoundPassStats[client].iPlyFirstGrabs  = 0;
-  arriPlyRoundPassStats[client].iPlyCatapults   = 0;
-  arriPlyRoundPassStats[client].iPlyBlocks      = 0;
-  arriPlyRoundPassStats[client].iPlySteal2Saves = 0;
+  arriPlyRoundPassStats[client].iScores      = 0;
+  arriPlyRoundPassStats[client].iAssists     = 0;
+  arriPlyRoundPassStats[client].iSaves       = 0;
+  arriPlyRoundPassStats[client].iSplashSaves = 0;
+  arriPlyRoundPassStats[client].iIntercepts  = 0;
+  arriPlyRoundPassStats[client].iSteals      = 0;
+  arriPlyRoundPassStats[client].iPanaceas    = 0;
+  arriPlyRoundPassStats[client].iWinStrats   = 0;
+  arriPlyRoundPassStats[client].iDeathbombs  = 0;
+  arriPlyRoundPassStats[client].iHandoffs    = 0;
+  arriPlyRoundPassStats[client].iFirstGrabs  = 0;
+  arriPlyRoundPassStats[client].iCatapults   = 0;
+  arriPlyRoundPassStats[client].iBlocks      = 0;
+  arriPlyRoundPassStats[client].iSteal2Saves = 0;
 }
 
 // this is really fucking sloppy but shrug
@@ -179,7 +163,7 @@ Action Timer_DisplayStats(Handle timer)
   for (int x = 1; x < MaxClients + 1; x++)
   {
     if (!IsValidClient(x)) continue;
-    if (arrbJackAcqSettings[x].bPlyDontPrintChatSetting) continue;
+    if (arrbJackAcqSettings[x].iSummary) continue;
 
     LogToGame("Printing for client: %d", x);
 
@@ -187,38 +171,38 @@ Action Timer_DisplayStats(Handle timer)
     bool shouldPrintBluFirst = (TF2_GetClientTeam(x) == TFTeam_Red);
 
     // smelly!
-    if (arrbJackAcqSettings[x].bPlySimpleChatPrintSetting)
+    if (arrbJackAcqSettings[x].iSummary == 2)
     {
       if (shouldPrintBluFirst)
       {
-        PrintMultiline(x, arrStrBluSimpleStats, sizeof(arrStrBluSimpleStats));
-        PrintMultiline(x, arrStrRedSimpleStats, sizeof(arrStrRedSimpleStats));
+        CPrintMultiline(x, arrStrBluSimpleStats, sizeof(arrStrBluSimpleStats));
+        CPrintMultiline(x, arrStrRedSimpleStats, sizeof(arrStrRedSimpleStats));
       }
       else
       {
-        PrintMultiline(x, arrStrRedSimpleStats, sizeof(arrStrRedSimpleStats));
-        PrintMultiline(x, arrStrBluSimpleStats, sizeof(arrStrBluSimpleStats));
+        CPrintMultiline(x, arrStrRedSimpleStats, sizeof(arrStrRedSimpleStats));
+        CPrintMultiline(x, arrStrBluSimpleStats, sizeof(arrStrBluSimpleStats));
       }
     }
     else
     {
       if (shouldPrintBluFirst)
       {
-        PrintMultiline(x, arrStrBluTeamStats, sizeof(arrStrBluTeamStats));
-        PrintMultiline(x, arrStrRedTeamStats, sizeof(arrStrRedTeamStats));
+        CPrintMultiline(x, arrStrBluTeamStats, sizeof(arrStrBluTeamStats));
+        CPrintMultiline(x, arrStrRedTeamStats, sizeof(arrStrRedTeamStats));
       }
       else
       {
-        PrintMultiline(x, arrStrRedTeamStats, sizeof(arrStrRedTeamStats));
-        PrintMultiline(x, arrStrBluTeamStats, sizeof(arrStrBluTeamStats));
+        CPrintMultiline(x, arrStrRedTeamStats, sizeof(arrStrRedTeamStats));
+        CPrintMultiline(x, arrStrBluTeamStats, sizeof(arrStrBluTeamStats));
       }
     }
-
-    PrintToChat(x, "\x0700ffff[PASS] \x07C43F3BRED \x073BC43Bpossession: %.2f%%, \x074EA6C1BLU \x073BC43Bpossession: %.2f%%", redBallPossessionPercent, bluBallPossessionPercent);
+  
+    TagChatClient(x, "{red_team}RED {pass_green}possession: %.1f%%, {blu_team}BLU {pass_green}possession: %.1f%%", redBallPossessionPercent, bluBallPossessionPercent);
     if (isStv)
     {
-      PrintToChat(x, "[PASS-TV] BLU possession time in ticks: %d", iRedBallTime);
-      PrintToChat(x, "[PASS-TV] RED possession time in ticks: %d", iBluBallTime);
+      TagChatSTV("BLU possession time in ticks: %d", iRedBallTime);
+      TagChatSTV("RED possession time in ticks: %d", iBluBallTime);
     }
     else
     {
@@ -242,7 +226,7 @@ void GetTeamStatsArrStr(char buf[MAXPLAYERS + 1][MAX_MESSAGE_LENGTH], int[] team
     char stats[MAX_MESSAGE_LENGTH];
     AssembleColoredStatsString(stats, sizeof(stats), teamMembers[i], isSimple);
     char out[MAX_MESSAGE_LENGTH];
-    Format(out, sizeof(out), "\x0700ffff[PASS] %s:%s", playerNameTeamFormatted, stats);
+    Format(out, sizeof(out), "%s %s:%s", gsTag, playerNameTeamFormatted, stats);
     buf[i] = out;
   }
 }
@@ -280,21 +264,21 @@ void              GetConsoleStatsArrStr(char buf[MAXPLAYERS + 1][7][MAX_MESSAGE_
     {
       Format(buf[i][1], MAX_MESSAGE_LENGTH, consoleFormatTitleRed, playerName);
     }
-    Format(buf[i][2], MAX_MESSAGE_LENGTH, consoleFormat1, stats.iPlyScores, stats.iPlyAssists, stats.iPlySaves, stats.iPlyIntercepts, stats.iPlySteals);
-    Format(buf[i][3], MAX_MESSAGE_LENGTH, consoleFormat2, stats.iPlyPanaceas, stats.iPlyWinStrats, stats.iPlyDeathbombs, stats.iPlyHandoffs);
-    Format(buf[i][4], MAX_MESSAGE_LENGTH, consoleFormat3, stats.iPlyFirstGrabs, stats.iPlyCatapults, stats.iPlyBlocks, stats.iPlySteal2Saves);
-    Format(buf[i][5], MAX_MESSAGE_LENGTH, consoleFormat4, stats.iPlySplashSaves);
+    Format(buf[i][2], MAX_MESSAGE_LENGTH, consoleFormat1, stats.iScores, stats.iAssists, stats.iSaves, stats.iIntercepts, stats.iSteals);
+    Format(buf[i][3], MAX_MESSAGE_LENGTH, consoleFormat2, stats.iPanaceas, stats.iWinStrats, stats.iDeathbombs, stats.iHandoffs);
+    Format(buf[i][4], MAX_MESSAGE_LENGTH, consoleFormat3, stats.iFirstGrabs, stats.iCatapults, stats.iBlocks, stats.iSteal2Saves);
+    Format(buf[i][5], MAX_MESSAGE_LENGTH, consoleFormat4, stats.iSplashSaves);
     Format(buf[i][6], MAX_MESSAGE_LENGTH, consoleFormatBlank);
   }
 }
 
-void PrintMultiline(int client, char[][] lines, int len)
+void CPrintMultiline(int client, char[][] lines, int len)
 {
   for (int i = 0; i < len; i++)
   {
     if (!StrEqual(lines[i], ""))
     {
-      PrintToChat(client, lines[i]);
+      CPrintToChat(client, lines[i]);
     }
   }
   return;
@@ -329,21 +313,21 @@ static void
   char sSplashes[48];
   if (simplified)
   {
-    Format(sGoals, sizeof(sGoals), sGoalsSimpleFormat, arriPlyRoundPassStats[client].iPlyScores);
-    Format(sAssists, sizeof(sAssists), sAssistsSimpleFormat, arriPlyRoundPassStats[client].iPlyAssists);
-    Format(sSaves, sizeof(sSaves), sSavesSimpleFormat, arriPlyRoundPassStats[client].iPlySaves);
-    Format(sIntercepts, sizeof(sIntercepts), sInterceptsSimpleFormat, arriPlyRoundPassStats[client].iPlyIntercepts);
-    Format(sSteals, sizeof(sSteals), sStealsSimpleFormat, arriPlyRoundPassStats[client].iPlySteals);
-    Format(sSplashes, sizeof(sSplashes), sSplashesSimpleFormat, arriPlyRoundPassStats[client].iPlySplashSaves);
+    Format(sGoals,      sizeof(sGoals),      sGoalsShort,      arriPlyRoundPassStats[client].iScores);
+    Format(sAssists,    sizeof(sAssists),    sAssistsShort,    arriPlyRoundPassStats[client].iAssists);
+    Format(sSaves,      sizeof(sSaves),      sSavesShort,      arriPlyRoundPassStats[client].iSaves);
+    Format(sIntercepts, sizeof(sIntercepts), sInterceptsShort, arriPlyRoundPassStats[client].iIntercepts);
+    Format(sSteals,     sizeof(sSteals),     sStealsShort,     arriPlyRoundPassStats[client].iSteals);
+    Format(sSplashes,   sizeof(sSplashes),   sSplashesShort,   arriPlyRoundPassStats[client].iSplashSaves);
   }
   else
   {
-    Format(sGoals, sizeof(sGoals), sGoalsLongFormat, arriPlyRoundPassStats[client].iPlyScores);
-    Format(sAssists, sizeof(sAssists), sAssistsLongFormat, arriPlyRoundPassStats[client].iPlyAssists);
-    Format(sSaves, sizeof(sSaves), sSavesLongFormat, arriPlyRoundPassStats[client].iPlySaves);
-    Format(sIntercepts, sizeof(sIntercepts), sInterceptsLongFormat, arriPlyRoundPassStats[client].iPlyIntercepts);
-    Format(sSteals, sizeof(sSteals), sStealsLongFormat, arriPlyRoundPassStats[client].iPlySteals);
-    Format(sSplashes, sizeof(sSplashes), sSplashesLongFormat, arriPlyRoundPassStats[client].iPlySplashSaves);
+    Format(sGoals,      sizeof(sGoals),      sGoals,        arriPlyRoundPassStats[client].iScores);
+    Format(sAssists,    sizeof(sAssists),    sAssists,      arriPlyRoundPassStats[client].iAssists);
+    Format(sSaves,      sizeof(sSaves),      sSaves,        arriPlyRoundPassStats[client].iSaves);
+    Format(sIntercepts, sizeof(sIntercepts), sIntercepts,   arriPlyRoundPassStats[client].iIntercepts);
+    Format(sSteals,     sizeof(sSteals),     sSteals,       arriPlyRoundPassStats[client].iSteals);
+    Format(sSplashes,   sizeof(sSplashes),   sSplashes,     arriPlyRoundPassStats[client].iSplashSaves);
   }
 
   Format(buf, maxLength, "%s,%s,%s,%s,%s,%s", sGoals, sAssists, sSaves, sIntercepts, sSteals, sSplashes);

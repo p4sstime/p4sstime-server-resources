@@ -72,16 +72,16 @@ Action Command_PasstimeSuicide(int client, int args)
   if (bRoundActive)
   {
     ForcePlayerSuicide(client);
-    ReplyToCommand(client, "[PASS] Committed suicide");
+    CTagReply(client, "Committed suicide");
   }
   else
   {
-    ReplyToCommand(client, "[PASS] Round is not active");
+    CTagReply(client, "Round is not active");
   }
   return Plugin_Handled;
 }
 
-Action Command_PasstimeCoundownCaption(int client, int args)
+Action Command_PasstimeCountdown(int client, int args)
 {
   int value = 0;
   if (GetCmdArgIntEx(1, value))
@@ -93,11 +93,11 @@ Action Command_PasstimeCoundownCaption(int client, int args)
     if (value == 1 || value == 0)
     {
       SetCookieBool(client, cookieCountdownCaption, arrbJackAcqSettings[client].bPlyCoundownCaptionSetting);
-      ReplyToCommand(client, "[PASS] JACK spawn timer captions: %s", arrbJackAcqSettings[client].bPlyCoundownCaptionSetting ? "ON" : "OFF");
+      CTagReply(client, "JACK spawn timer captions: %s", arrbJackAcqSettings[client].bPlyCoundownCaptionSetting ? "ON" : "OFF");
     }
   }
   else
-    ReplyToCommand(client, "[PASS] Invalid argument");
+    CTagReply(client, "Invalid argument");
   return Plugin_Handled;
 }
 
@@ -113,11 +113,11 @@ Action Command_PasstimeJackPickupHud(int client, int args)
     if (value == 1 || value == 0)
     {
       SetCookieBool(client, cookieJACKPickupHud, arrbJackAcqSettings[client].bPlyHudTextSetting);
-      ReplyToCommand(client, "[PASS] JACK pickup HUD text: %s", arrbJackAcqSettings[client].bPlyHudTextSetting ? "ON" : "OFF");
+      CTagReply(client, "JACK pickup HUD text: %s", arrbJackAcqSettings[client].bPlyHudTextSetting ? "ON" : "OFF");
     }
   }
   else
-    ReplyToCommand(client, "[PASS] Invalid argument");
+    CTagReply(client, "Invalid argument");
   return Plugin_Handled;
 }
 
@@ -133,11 +133,11 @@ Action Command_PasstimeJackPickupChat(int client, int args)
     if (value == 1 || value == 0)
     {
       SetCookieBool(client, cookieJACKPickupChat, arrbJackAcqSettings[client].bPlyChatPrintSetting);
-      ReplyToCommand(client, "[PASS] JACK pickup chat text: %s", arrbJackAcqSettings[client].bPlyChatPrintSetting ? "ON" : "OFF");
+      CTagReply(client, "JACK pickup chat text: %s", arrbJackAcqSettings[client].bPlyChatPrintSetting ? "ON" : "OFF");
     }
   }
   else
-    ReplyToCommand(client, "[PASS] Invalid argument");
+    CTagReply(client, "Invalid argument");
   return Plugin_Handled;
 }
 
@@ -153,11 +153,11 @@ Action Command_PasstimeJackPickupSound(int client, int args)
     if (value == 1 || value == 0)
     {
       SetCookieBool(client, cookieJACKPickupSound, arrbJackAcqSettings[client].bPlySoundSetting);
-      ReplyToCommand(client, "[PASS] JACK pickup sound: %s", arrbJackAcqSettings[client].bPlySoundSetting ? "ON" : "OFF");
+      CTagReply(client, "JACK pickup sound: %s", arrbJackAcqSettings[client].bPlySoundSetting ? "ON" : "OFF");
     }
   }
   else
-    ReplyToCommand(client, "[PASS] Invalid argument");
+    CTagReply(client, "Invalid argument");
   return Plugin_Handled;
 }
 
@@ -219,13 +219,13 @@ void RemoveShotty(int client)
 
       if (StrEqual(classname, "tf_weapon_shotgun_soldier") || StrEqual(classname, "tf_weapon_pipebomblauncher"))
       {
-        PrintToChat(client, "\x07ff0000[PASS] Shotgun/Stickies equipped");
+        TagChatClient(client, "Shotgun/Stickies equipped");
         TF2_RemoveWeaponSlot(client, 1);
       }
 
       if (StrEqual(classname, "tf_weapon_syringegun_medic"))
       {
-        PrintToChat(client, "\x07ff0000[PASS] Syringe Gun equipped");
+        TagChatClient(client, "Syringe Gun equipped");
         TF2_RemoveWeaponSlot(client, 0);
       }
     }

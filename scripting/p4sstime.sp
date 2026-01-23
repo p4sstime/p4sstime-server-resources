@@ -1,5 +1,6 @@
 #undef REQUIRE_PLUGIN
 #include "include/updater.inc"
+#include "include/morecolors.inc"
 #define REQUIRE_PLUGIN
 
 #include <tf2_stocks>
@@ -12,15 +13,7 @@
 #pragma semicolon 1  // required for logs.tf
 #pragma newdecls required
 
-#define VERSION            "2.6.0"
-
-#define GOALSCOLOR         "\x073BC43B"
-#define ASSISTSCOLOR       "\x073bc48f"
-#define SAVESCOLOR         "\x07ffff00"
-#define INTERCEPTSCOLOR    "\x07ff00ff"
-#define STEALSCOLOR        "\x07ff8000"
-#define SPLASHESCOLOR      "\x075bd4b3"
-#define MEDICSPLASHESCOLOR "\x0769bf90"
+#define VERSION            "3.0.0"
 
 enum
 {
@@ -45,37 +38,35 @@ enum
 // read: https://wiki.alliedmods.net/SourcePawn_Transitional_Syntax#Enum_Structs
 // basically: emulating a struct through an array. i.e. an array with named indices
 // because SOURCEPAWN DOESN'T SUPPORT STRUCTS??
-enum struct enubPlySettings
+enum struct enuPlySettings
 {
   bool bPlyCoundownCaptionSetting;
   bool bPlyHudTextSetting;
   bool bPlyChatPrintSetting;
   bool bPlySoundSetting;
-  // If true: simplify end-of-round chat summaries.
-  bool bPlySimpleChatPrintSetting;
   // If true: do *not* print end-of-round summaries in chat.
-  bool bPlyDontPrintChatSetting;
+  int iSummary;
 }
 
 enum struct enuiPlyStats
 {
-  int iPlyScores;
-  int iPlyAssists;
-  int iPlySaves;
-  int iPlyIntercepts;
-  int iPlySteals;
-  int iPlySplashSaves;
-  int iPlyPanaceas;
-  int iPlyWinStrats;
-  int iPlyDeathbombs;
-  int iPlyHandoffs;
-  int iPlyFirstGrabs;
-  int iPlyCatapults;
-  int iPlyBlocks;
-  int iPlySteal2Saves;
+  int iScores;
+  int iAssists;
+  int iSaves;
+  int iIntercepts;
+  int iSteals;
+  int iSplashSaves;
+  int iPanaceas;
+  int iWinStrats;
+  int iDeathbombs;
+  int iHandoffs;
+  int iFirstGrabs;
+  int iCatapults;
+  int iBlocks;
+  int iSteal2Saves;
 }
 
-enubPlySettings arrbJackAcqSettings[MAXPLAYERS + 1];
+enuPlySettings arrbJackAcqSettings[MAXPLAYERS + 1];
 enuiPlyStats    arriPlyRoundPassStats[MAXPLAYERS + 1];
 
 float           fBluGoalPos[3], fRedGoalPos[3], fTopSpawnPos[3], fFreeBallPos[3];
@@ -124,7 +115,7 @@ bool            arrbWinStratCheck[MAXPLAYERS + 1];
 bool            arrbDeathbombCheck[MAXPLAYERS + 1];
 float           nextInstantResupplyTime[MAXPLAYERS + 1];
 // bool			plyTakenDirectHit[MAXPLAYERS + 1];
-Cookie          cookieCountdownCaption, cookieJACKPickupHud, cookieJACKPickupChat, cookieJACKPickupSound, cookieSimpleChatPrint, cookieToggleChatPrint;
+Cookie          cookieCountdownCaption, cookieJACKPickupHud, cookieJACKPickupChat, cookieJACKPickupSound, cookieSummary;
 
 // log variables
 int             user1;
@@ -156,61 +147,78 @@ public void OnPluginStart()
 {
   gameData               = new GameData("p4sstime");
 
-  cookieCountdownCaption = RegClientCookie("p4ssClientCountdownCaption", "p4sstime's client setting (1/0) for captions for JACK spawn timer", CookieAccess_Public);
+  cookieCountdownCaption = RegClientCookie("p4ssClientCountdownCaption",  "p4sstime's client setting (1/0) for captions for JACK spawn timer", CookieAccess_Public);
   cookieJACKPickupHud    = RegClientCookie("p4ssClientJACKPickupHudText", "p4sstime's client setting (1/0) for HUD text when picking up JACK", CookieAccess_Public);
   cookieJACKPickupChat   = RegClientCookie("p4ssClientJACKPickupChatMsg", "p4sstime's client setting (1/0) for chat msg when picking up JACK", CookieAccess_Public);
-  cookieJACKPickupSound  = RegClientCookie("p4ssClientJACKPickupSound", "p4sstime's client setting (1/0) for sound when picking up JACK", CookieAccess_Public);
-  cookieSimpleChatPrint  = RegClientCookie("p4ssClientSimpleChatPrint", "p4sstime's client setting (1/0) for simple EoR chat prints", CookieAccess_Public);
-  cookieToggleChatPrint  = RegClientCookie("p4ssClientToggleChatPrint", "p4sstime's client setting (1/0) for toggling EoR chat prints", CookieAccess_Public);
+  cookieJACKPickupSound  = RegClientCookie("p4ssClientJACKPickupSound",   "p4sstime's client setting (1/0) for sound when picking up JACK",    CookieAccess_Public);
+  cookieSummary          = RegClientCookie("p4ssClientSummary",           "p4sstime's client setting (0/1/2) for EoR summaries",               CookieAccess_Public);
 
-  RegConsoleCmd("sm_pt_menu", Command_PassMenu);
-  RegConsoleCmd("sm_pt_suicide", Command_PasstimeSuicide);
-  RegConsoleCmd("sm_pt_countdowncaption", Command_PasstimeCoundownCaption);
-  RegConsoleCmd("sm_pt_jackpickup_hud", Command_PasstimeJackPickupHud);
-  RegConsoleCmd("sm_pt_jackpickup_chat", Command_PasstimeJackPickupChat);
-  RegConsoleCmd("sm_pt_jackpickup_sound", Command_PasstimeJackPickupSound);
-  RegConsoleCmd("sm_pt_simplechatprint", Command_PasstimeSimpleChatPrint);
-  RegConsoleCmd("sm_pt_togglechatprint", Command_PasstimeToggleChatPrint);
-  RegConsoleCmd("sm_pt_resupply", Command_PasstimeResupply);
-  RegAdminCmd("sm_ptsnapshot", Command_GamestateSnapshot, ADMFLAG_GENERIC, "Take a snapshot of the plugin's current variable values.");
-  RegAdminCmd("sm_ptspawnball", Command_PasstimeSpawnBall, ADMFLAG_CONFIG, "Spawn the ball forcefully, by game starting and tournament restarting.");
+  RegConsoleCmd("sm_pt_menu",           Command_PassMenu);
+  RegConsoleCmd("sm_pt_suicide",        Command_PasstimeSuicide);
+  RegConsoleCmd("sm_pt_kill",           Command_PasstimeSuicide);
+  RegConsoleCmd("sm_pt_countdown",      Command_PasstimeCountdown);
+  RegConsoleCmd("sm_pt_pickup_hud",     Command_PasstimeJackPickupHud);
+  RegConsoleCmd("sm_pt_pickup_chat",    Command_PasstimeJackPickupChat);
+  RegConsoleCmd("sm_pt_pickup_sound",   Command_PasstimeJackPickupSound);
+  RegConsoleCmd("sm_pt_summary",        Command_PasstimeSummary);
+  RegConsoleCmd("sm_pt_resupply",       Command_PasstimeResupply);
 
-  HookEvent("player_spawn", Event_PlayerSpawn);
-  HookEvent("post_inventory_application", Event_PlayerResup);
-  HookEvent("player_death", Event_PlayerDeath);
-  HookEvent("pass_get", Event_PassGet);
-  HookEvent("pass_free", Event_PassFree);
-  HookEvent("pass_ball_stolen", Event_PassStolen);
-  HookEvent("pass_score", Event_PassScore);
-  HookEvent("pass_pass_caught", Event_PassCaught);
-  HookEvent("pass_ball_blocked", Event_PassBallBlocked);
-  HookEvent("rocket_jump", Event_RJ);
-  HookEvent("rocket_jump_landed", Event_RJLand);
-  HookEvent("sticky_jump", Event_SJ);
-  HookEvent("sticky_jump_landed", Event_SJLand);
+  RegAdminCmd("sm_pt_snapshot",  Command_Snapshot,          ADMFLAG_GENERIC, "Take a snapshot of the plugin's current variable values.");
+  RegAdminCmd("sm_pt_spawnball", Command_PasstimeSpawnBall, ADMFLAG_CONFIG,  "Spawn the ball forcefully, by game starting and tournament restarting.");
+
+  CAddColor("plugin_tag",   0x96BD63); // #96BD63
+  CAddColor("warning",      0xECCD19); // #eccd19
+  CAddColor("error",        0xd64843); // #d64843
+
+  CAddColor("chat",         0xBBBBBB); // #bbbbbb
+  CAddColor("red_team",     0xD64843); // #d64843
+  CAddColor("blu_team",     0x438CD6); // #438cd6
+
+
+  CAddColor("pass_blue",    0x438CD6); // #438cd6
+  CAddColor("pass_green",   0x3CB371); // #3CB371
+  CAddColor("pass_teal",    0x008B8B); // #008B8B
+  CAddColor("pass_red",     0xD64843); // #d64843
+  CAddColor("pass_magenta", 0xA946C7); // #a946c7
+  CAddColor("pass_orange",  0xDD8125); // #dd8125
+  CAddColor("pass_yellow",  0xECCD19); // #eccd19
+
+  HookEvent("player_spawn",                 Event_PlayerSpawn);
+  HookEvent("post_inventory_application",   Event_PlayerResup);
+  HookEvent("player_death",                 Event_PlayerDeath);
+  HookEvent("pass_get",                     Event_PassGet);
+  HookEvent("pass_free",                    Event_PassFree);
+  HookEvent("pass_ball_stolen",             Event_PassStolen);
+  HookEvent("pass_score",                   Event_PassScore);
+  HookEvent("pass_pass_caught",             Event_PassCaught);
+  HookEvent("pass_ball_blocked",            Event_PassBallBlocked);
+  HookEvent("rocket_jump",                  Event_RJ);
+  HookEvent("rocket_jump_landed",           Event_RJLand);
+  HookEvent("sticky_jump",                  Event_SJ);
+  HookEvent("sticky_jump_landed",           Event_SJLand);
   HookEvent("teamplay_pre_round_time_left", Event_PregameCountdown);
-  HookEvent("teamplay_broadcast_audio", Event_MidgameCountdown);
-  HookEvent("teamplay_round_active", Event_PlayersCanMove);
-  HookEvent("teamplay_round_win", Event_TeamWin);
-  HookEvent("stats_resetround", Event_RoundReset);
-  HookEntityOutput("trigger_catapult", "OnCatapulted", Hook_OnCatapult);
-  HookEntityOutput("info_passtime_ball_spawn", "OnSpawnBall", Hook_OnSpawnBall);
+  HookEvent("teamplay_broadcast_audio",     Event_MidgameCountdown);
+  HookEvent("teamplay_round_active",        Event_PlayersCanMove);
+  HookEvent("teamplay_round_win",           Event_TeamWin);
+  HookEvent("stats_resetround",             Event_RoundReset);
+  HookEntityOutput("trigger_catapult",         "OnCatapulted", Hook_OnCatapult);
+  HookEntityOutput("info_passtime_ball_spawn", "OnSpawnBall",  Hook_OnSpawnBall);
   AddCommandListener(OnChangeClass, "joinclass");
 
-  bEquipStockWeapons           = CreateConVar("sm_pt_stock_blocklist", "0", "If 1, disable ability to equip shotgun, stickies, and needles; this is needed as allowlists can't normally block stock weapons.", FCVAR_NOTIFY);
-  bSwitchDuringRespawn         = CreateConVar("sm_pt_block_instant_respawn", "0", "If 1, disable class switch ability while dead to instantly respawn.", FCVAR_NOTIFY);
-  bStealBlurryOverlay          = CreateConVar("sm_pt_disable_intercept_blur", "1", "If 1, disable blurry screen overlay after intercepting or stealing.", FCVAR_NOTIFY);
-  bDroppedItemsCollision       = CreateConVar("sm_pt_disable_jack_drop_item_collision", "1", "If 1, disables the jack colliding with dropped ammo packs or weapons.", FCVAR_NOTIFY);
-  bPrintStats                  = CreateConVar("sm_pt_print_events", "0", "If 1, enables printing of passtime events to chat both during and after games. Does not affect logging.", FCVAR_NOTIFY);
-  bFunStats                    = CreateConVar("sm_pt_print_events_fun", "0", "If sm_pt_print_events is 1, print additional fun stats, like stealing a goal from a teammate.", FCVAR_NOTIFY);
-  bPracticeMode                = CreateConVar("sm_pt_practice", "0", "If 1, enables practice mode. When the round timer reaches 5 minutes, add 5 minutes to the timer.", FCVAR_NOTIFY, true, 0.0, true, 1.0);
-  bWinstratKills               = CreateConVar("sm_pt_winstrat_kills", "0", "If 1, kills winstratters and prints \"tried to winstrat\" in chat.", FCVAR_NOTIFY);
-  bVerboseLogs                 = CreateConVar("sm_pt_logs_verbose", "0", "If 1, prints additional information to logs.");
-  bMedicArrowsNeutralizeBall   = CreateConVar("sm_pt_medic_can_splash", "1", "If 1, allows medic crossbow arrows to neutralize the ball.", FCVAR_NOTIFY);
-  bAllowInstantResupply        = CreateConVar("sm_pt_allow_instant_resupply", "0", "If 1, allows sm_pt_resupply.", FCVAR_NOTIFY);
-  bMedicArrowsPushBall         = CreateConVar("sm_pt_medic_splash_pushes_ball", "1", "If 1 along with sm_pt_medic_can_splash, allows medic crossbow arrows to push the ball", FCVAR_NOTIFY);
-  flGoalHeal                   = CreateConVar("sm_pt_goal_heal", "0", "How much health the goal should heal per goal heal tick. There are two ticks per second.", FCVAR_NOTIFY);
-  flInstantResupplyTimeBetween = CreateConVar("sm_pt_instant_resupply_time_between", "0.5", "The number of seconds between each successful sm_pt_resupply.", FCVAR_NOTIFY);
+  bEquipStockWeapons           = CreateConVar("sm_pt_stock_blocklist",          "0",   "Disable equipping shotgun, stickies, and needles. Required as the allowlist can't block stock weapons.", FCVAR_NOTIFY);
+  bSwitchDuringRespawn         = CreateConVar("sm_pt_block_instant_respawn",    "0",   "Disable switching classes while dead to respawn immediately.",                                           FCVAR_NOTIFY);
+  bStealBlurryOverlay          = CreateConVar("sm_pt_disable_intercept_blur",   "1",   "Disable blurry screen overlay when intercepting or stealing.",                                           FCVAR_NOTIFY);
+  bDroppedItemsCollision       = CreateConVar("sm_pt_jack_item_collision",      "1",   "Disable jack collision on ammo packs and weapons.",                                                      FCVAR_NOTIFY);
+  bPrintStats                  = CreateConVar("sm_pt_print_events",             "0",   "Enable printing of passtime events to chat both during and after games. Does not affect logging.",       FCVAR_NOTIFY);
+  bFunStats                    = CreateConVar("sm_pt_print_events_fun",         "0",   "If sm_pt_print_events is 1, enable printing additional fun stats.",                                      FCVAR_NOTIFY);
+  bPracticeMode                = CreateConVar("sm_pt_practice",                 "0",   "Enable practice mode. When the round timer reaches 5 minutes, add 5 minutes to the timer.",              FCVAR_NOTIFY, true, 0.0, true, 1.0);
+  bWinstratKills               = CreateConVar("sm_pt_winstrat_kills",           "0",   "Enable killing winstratters and printing \"tried to winstrat\" in chat.",                                FCVAR_NOTIFY);
+  bVerboseLogs                 = CreateConVar("sm_pt_logs_verbose",             "0",   "Enable printing additional information to logs.");
+  bMedicArrowsNeutralizeBall   = CreateConVar("sm_pt_medic_splash",             "1",   "Enable medic arrows neutralizing the jack.",                                                             FCVAR_NOTIFY);
+  bAllowInstantResupply        = CreateConVar("sm_pt_allow_instant_resupply",   "0",   "Allow sm_pt_resupply.",                                                                                  FCVAR_NOTIFY);
+  bMedicArrowsPushBall         = CreateConVar("sm_pt_medic_splash_push",        "1",   "If sm_pt_medic_splash is 1, enable crossbow push on the jack.",                                          FCVAR_NOTIFY);
+  flGoalHeal                   = CreateConVar("sm_pt_goal_heal",                "0",   "Goal heal every 500ms.",                                                                                 FCVAR_NOTIFY);
+  flInstantResupplyTimeBetween = CreateConVar("sm_pt_resupply_cooldown",        "0.5", "Resupply cooldown time in seconds.",                                                                     FCVAR_NOTIFY);
   // trikzEnable	 = CreateConVar("sm_pt_trikz", "0", "Set 'trikz' mode. 1 adds friendly knockback for airshots, 2 adds friendly knockback for splash damage, 3 adds friendly knockback for everywhere", FCVAR_NOTIFY, true, 0.0, true, 3.0);
   // trikzProjCollide = CreateConVar("sm_pt_trikz_projcollide", "2", "Manually set team projectile collision behavior when trikz is on. 2 always collides, 1 will cause your projectiles to phase through if you are too close (default game behavior), 0 will cause them to never collide.", 0, true, 0.0, true, 2.0);
   // trikzProjDev = CreateConVar("sm_pt_trikz_projcollide_dev", "0", "DONOTUSE; This command is used solely by the plugin to change values. Changing this manually may cause issues.", FCVAR_HIDDEN, true, 0.0, true, 2.0);
@@ -265,9 +273,9 @@ public void OnPluginStart()
   StartPrepSDKCall(SDKCall_Static);
   PrepSDKCall_SetFromConf(gameData, SDKConf_Signature, "PointInRespawnRoom");
   PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer);
-  PrepSDKCall_AddParameter(SDKType_Vector, SDKPass_ByRef);
-  PrepSDKCall_AddParameter(SDKType_Bool, SDKPass_ByValue);
-  PrepSDKCall_SetReturnInfo(SDKType_Bool, SDKPass_ByValue);
+  PrepSDKCall_AddParameter(SDKType_Vector,      SDKPass_ByRef);
+  PrepSDKCall_AddParameter(SDKType_Bool,        SDKPass_ByValue);
+  PrepSDKCall_SetReturnInfo(SDKType_Bool,       SDKPass_ByValue);
   pointInRespawnRoom = EndPrepSDKCall();
   if (pointInRespawnRoom == null)
     LogError("Failed to find PointInRespawnRoom -- certain features may be non-functional");
@@ -381,11 +389,11 @@ public void OnGameFrame()
       {
         if (distFromBluGoal <= 120)
         {
-          PrintToAllClientsChat("\x0700ffff[PASS] The ball went neutral %.2fhu\x0700ffff from the goal!", distFromBluGoal - 20);
+          TagChatAllPlayers("The ball went neutral %.2fhu {cyan}from the goal!", distFromBluGoal - 20);
         }
         else if (distFromRedGoal <= 120)
         {
-          PrintToAllClientsChat("\x0700ffff[PASS] The ball went neutral %.2fhu\x0700ffff from the goal!", distFromRedGoal - 20);
+          TagChatAllPlayers("The ball went neutral %.2fhu {cyan}from the goal!", distFromRedGoal - 20);
         }
       }
     }
@@ -447,10 +455,10 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
         FormatPlayerNameWithTeam(attacker, playerNameTeam);
         if (bPrintStats.BoolValue)
         {
-          PrintToAllClientsChat("\x0700ffff[PASS] %s\x075bd4b3 splashed the ball to save!", playerNameTeam);
+          TagChatAllPlayers("%s {blu_team}splashed the ball to save!", playerNameTeam);
         }
-        PrintToSTV("[PASS-TV] %s splashed the ball to save it. Tick: %d", playerName, STVTickCount());
-        arriPlyRoundPassStats[attacker].iPlySplashSaves++;
+        TagChatSTV("%s splashed the ball to save it. Tick: %d", playerName, STVTickCount());
+        arriPlyRoundPassStats[attacker].iSplashSaves++;
       }
     }
     case TFTeam_Red:
@@ -465,10 +473,10 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
         FormatPlayerNameWithTeam(attacker, playerNameTeam);
         if (bPrintStats.BoolValue)
         {
-          PrintToAllClientsChat("\x0700ffff[PASS] %s\x075bd4b3 splashed the ball to save!", playerNameTeam);
+          TagChatAllPlayers("%s {blu_team}splashed the ball to save!", playerNameTeam);
         }
-        PrintToSTV("[PASS-TV] %s splashed the ball to save it. Tick: %d", playerName, STVTickCount());
-        arriPlyRoundPassStats[attacker].iPlySplashSaves++;
+        TagChatSTV("%s splashed the ball to save it. Tick: %d", playerName, STVTickCount());
+        arriPlyRoundPassStats[attacker].iSplashSaves++;
       }
     }
   }
@@ -514,9 +522,9 @@ void MedicArrowTouchedSomething(int arrow, int other)
     {
       char medicAttackerNameTeamFmt[MAX_TEAMFORMAT_NAME_LENGTH];
       FormatPlayerNameWithTeam(eiMedicAttacker, medicAttackerNameTeamFmt);
-      PrintToAllClientsChat("\x0700ffff[PASS] %s%s direct impacted the ball with a crossbow shot!", medicAttackerNameTeamFmt, MEDICSPLASHESCOLOR);
+      TagChatAllPlayers("%s%s direct impacted the ball with a crossbow shot!", medicAttackerNameTeamFmt, COLOR_MEDIC_SPLASH);
     }
-    // PrintToAllClientsChat("[PASS] %s direct impacted the ball with a crossbow shot!", MedicAttackerName);
+    // TagChatAllPlayers("%s direct impacted the ball with a crossbow shot!", MedicAttackerName);
   }
   VerboseLog("medic arrow from %d touched %s index %d", eiMedicAttacker, classname, other);
 }
@@ -532,7 +540,7 @@ Action Event_RoundReset(Event event, const char[] name, bool dontBroadcast)
   if (GetConVarInt(bPracticeMode) == 1)
   {
     SetConVarInt(bPracticeMode, 0);
-    PrintToChatAll("\x0700ffff[PASS] Game started; practice mode disabled.");
+    TagChatGlobal("Game started; practice mode disabled.");
   }
   bHalloweenMode  = false;
   iRoundResetTick = GetGameTickCount();
@@ -547,17 +555,17 @@ Action Event_PregameCountdown(Event event, const char[] name, bool dontBroadcast
     if (!IsValidClient(x) || !arrbJackAcqSettings[x].bPlyCoundownCaptionSetting) continue;
 
     if (time == 10)
-      PrintToChat(x, "\x0700ffff[PASS] \x07ff000010 seconds...");
+      TagChatClient(x, "{red}10 seconds...");
     else if (time == 5)
-      PrintToChat(x, "\x0700ffff[PASS] \x07ffff005");
+      TagChatClient(x, "{pass_yellow}5 seconds...");
     else if (time == 4)
-      PrintToChat(x, "\x0700ffff[PASS] \x07ffff004");
+      TagChatClient(x, "{pass_yellow}4 seconds...");
     else if (time == 3)
-      PrintToChat(x, "\x0700ffff[PASS] \x07ffff003");
+      TagChatClient(x, "{pass_yellow}3 seconds...");
     else if (time == 2)
-      PrintToChat(x, "\x0700ffff[PASS] \x0700ff002");
+      TagChatClient(x, "{green}2 seconds...");
     else if (time == 1)
-      PrintToChat(x, "\x0700ffff[PASS] \x0700ff001");
+      TagChatClient(x, "{green}1 second...");
   }
   return Plugin_Handled;
 }
@@ -576,34 +584,34 @@ Action Event_MidgameCountdown(Event event, const char[] name, bool dontBroadcast
     if (!IsValidClient(x) || !arrbJackAcqSettings[x].bPlyCoundownCaptionSetting) continue;
 
     if (StrEqual(sound, "Announcer.RoundBegins10seconds"))
-      PrintToChat(x, "\x0700ffff[PASS] \x07ff000010 seconds...");
+      TagChatClient(x, "{red}10 seconds...");
     else if (StrEqual(sound, "Passtime.BallSpawn"))
-      PrintToChat(x, "\x0700ffff[PASS] \x0700ff00Ball has spawned!");
+      TagChatClient(x, "{green}Ball has spawned!");
     if (bHalloweenMode)
     {
       if (StrEqual(sound, "Merasmus.RoundBegins5seconds"))
-        PrintToChat(x, "\x0700ffff[PASS] \x07ffff005");
+        TagChatClient(x, "{pass_yellow}5 seconds...");
       else if (StrEqual(sound, "Merasmus.RoundBegins4seconds"))
-        PrintToChat(x, "\x0700ffff[PASS] \x07ffff004");
+        TagChatClient(x, "{pass_yellow}4 seconds...");
       else if (StrEqual(sound, "Merasmus.RoundBegins3seconds"))
-        PrintToChat(x, "\x0700ffff[PASS] \x0700ff003");
+        TagChatClient(x, "{pass_yellow}3 seconds...");
       else if (StrEqual(sound, "Merasmus.RoundBegins2seconds"))
-        PrintToChat(x, "\x0700ffff[PASS] \x0700ff002");
+        TagChatClient(x, "{green}2 seconds...");
       else if (StrEqual(sound, "Merasmus.RoundBegins1seconds"))
-        PrintToChat(x, "\x0700ffff[PASS] \x0700ff001");
+        TagChatClient(x, "{green}1 second...");
     }
     else
     {
       if (StrEqual(sound, "Announcer.RoundBegins5seconds"))
-        PrintToChat(x, "\x0700ffff[PASS] \x07ffff005");
+        TagChatClient(x, "{pass_yellow}5 seconds...");
       else if (StrEqual(sound, "Announcer.RoundBegins4seconds"))
-        PrintToChat(x, "\x0700ffff[PASS] \x07ffff004");
+        TagChatClient(x, "{pass_yellow}4 seconds...");
       else if (StrEqual(sound, "Announcer.RoundBegins3seconds"))
-        PrintToChat(x, "\x0700ffff[PASS] \x0700ff003");
+        TagChatClient(x, "{pass_yellow}3 seconds...");
       else if (StrEqual(sound, "Announcer.RoundBegins2seconds"))
-        PrintToChat(x, "\x0700ffff[PASS] \x0700ff002");
+        TagChatClient(x, "{green}2 seconds...");
       else if (StrEqual(sound, "Announcer.RoundBegins1seconds"))
-        PrintToChat(x, "\x0700ffff[PASS] \x0700ff001");
+        TagChatClient(x, "{green}1 second...");
     }
   }
   return Plugin_Handled;
@@ -752,7 +760,7 @@ void Hook_OnSpawnBall(const char[] name, int caller, int activator, float delay)
 
   bBallLoose         = true;
   ibBallSpawnedLower = 0;
-  if (bDroppedItemsCollision.BoolValue) SetEntityCollisionGroup(eiJack, 4);
+  if (!bDroppedItemsCollision.BoolValue) SetEntityCollisionGroup(eiJack, 4);
   if (bWaitingForBallSpawnToRestart)
   {
     ServerCommand("mp_tournament_restart");
@@ -762,24 +770,24 @@ void Hook_OnSpawnBall(const char[] name, int caller, int activator, float delay)
   if (StrEqual(spawnName, "passtime_ball_spawn1"))
   {
     LogToGame("passtime_ball spawned from the upper spawnpoint.");
-    PrintToSTV("[PASS-TV] passtime_ball spawned from the upper spawnpoint.");
+    TagChatSTV("passtime_ball spawned from the upper spawnpoint.");
     GetEntPropVector(caller, Prop_Send, "m_vecOrigin", fTopSpawnPos);
   }
   else if (StrEqual(spawnName, "passtime_ball_spawn2"))
   {
     LogToGame("passtime_ball spawned from the lower spawnpoint.");
-    PrintToSTV("[PASS-TV] passtime_ball spawned from the lower spawnpoint.");
+    TagChatSTV("passtime_ball spawned from the lower spawnpoint.");
     ibBallSpawnedLower = 1;
   }
   else if (StrEqual(spawnName, "passtime_ball_spawn3"))
   {
     LogToGame("passtime_ball spawned from the right spawnpoint.");
-    PrintToSTV("[PASS-TV] passtime_ball spawned from the right spawnpoint.");
+    TagChatSTV("passtime_ball spawned from the right spawnpoint.");
   }
   else if (StrEqual(spawnName, "passtime_ball_spawn4"))
   {
     LogToGame("passtime_ball spawned from the left spawnpoint.");
-    PrintToSTV("[PASS-TV] passtime_ball spawned from the left spawnpoint.");
+    TagChatSTV("passtime_ball spawned from the left spawnpoint.");
   }
   ibFirstGrabCheck = true;
   bBallSplashed    = false;
@@ -836,7 +844,7 @@ Action Event_PassBallBlocked(Event event, const char[] name, bool dontBroadcast)
 {
   int blocker = event.GetInt("blocker");
   int thrower = event.GetInt("owner");
-  arriPlyRoundPassStats[blocker].iPlyBlocks++;
+  arriPlyRoundPassStats[blocker].iBlocks++;
   SetLogInfo(blocker, thrower);
   LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_ball_blocked\" against \"%N<%i><%s><%s>\" (thrower_position \"%.0f %.0f %.0f\") (blocker_position \"%.0f %.0f %.0f\")",
             user1, GetClientUserId(user1), user1steamid, user1team,
@@ -862,7 +870,7 @@ Action Event_PassGet(Event event, const char[] name, bool dontBroadcast)
             user1position[0], user1position[1], user1position[2]);
   if (ibFirstGrabCheck && arrbBlastJumpStatus[iPlyWhoGotJack])
   {
-    arriPlyRoundPassStats[iPlyWhoGotJack].iPlyFirstGrabs++;
+    arriPlyRoundPassStats[iPlyWhoGotJack].iFirstGrabs++;
     arrbPanaceaCheck[iPlyWhoGotJack] = true;
     GetClientAbsOrigin(iPlyWhoGotJack, position);
     float distanceFromTopSpawner = GetVectorDistance(position, fTopSpawnPos, false);
@@ -879,7 +887,7 @@ Action Event_PassGet(Event event, const char[] name, bool dontBroadcast)
         SDKHooks_TakeDamage(iPlyWhoGotJack, iPlyWhoGotJack, iPlyWhoGotJack, 500.0);
         char winstratterName[MAX_NAME_LENGTH];
         GetClientName(iPlyWhoGotJack, winstratterName, sizeof(winstratterName));
-        PrintToAllClientsChat("\x0700ffff[PASS] \x0700ffff%s\x073BC43B tried to \x078aed8awin strat.", winstratterName);
+        TagChatAllPlayers("{cyan}%s %stried to {pass_green}win strat.", winstratterName, "{pass_green}");
       }
     }
   }
@@ -897,7 +905,7 @@ Action Event_PassGet(Event event, const char[] name, bool dontBroadcast)
   }
 
   if (arrbJackAcqSettings[iPlyWhoGotJack].bPlyChatPrintSetting)
-    PrintToChat(iPlyWhoGotJack, "\x07ffff00[PASS]\x0700ff00 YOU HAVE THE JACK!!!");
+    TagChatClient(iPlyWhoGotJack, "%sYOU HAVE THE JACK!!!", "{pass_green}");
 
   if (arrbJackAcqSettings[iPlyWhoGotJack].bPlySoundSetting)
     ClientCommand(iPlyWhoGotJack, "playgamesound Passtime.BallSmack");
@@ -937,7 +945,7 @@ Action Event_PassCaught(Handle event, const char[] name, bool dontBroadcast)
     {
       if (PlayerInEnemyGoalieZone(catcher))
       {
-        PrintToAllClientsChat("\x0700ffff[PASS] %s \x07ffff00blocked *their teammate* %s\x0700ffff from scoring!", catcherNameTeamFormat, throwerNameTeamFormat);
+        TagChatAllPlayers("%s {pass_yellow}blocked *their teammate* %s %sfrom scoring!", catcherNameTeamFormat, throwerNameTeamFormat, "{cyan}");
       }
     }
   }
@@ -948,29 +956,29 @@ Action Event_PassCaught(Handle event, const char[] name, bool dontBroadcast)
     if (PlayerInTeamGoalieZone(catcher))
     {
       bSave = true;
-      arriPlyRoundPassStats[catcher].iPlySaves++;
+      arriPlyRoundPassStats[catcher].iSaves++;
       if (bPrintStats.BoolValue)
       {
         for (int x = 1; x < MaxClients + 1; x++)
         {
           if (!IsValidClient(x) || IsClientSourceTV(x)) continue;
-          PrintToChat(x, "\x0700ffff[PASS] %s \x07ffff00blocked %s\x0700ffff from scoring!", catcherNameTeamFormat, throwerNameTeamFormat);
+          TagChatClient(x, "%s {pass_yellow}blocked %s {cyan}from scoring!", catcherNameTeamFormat, throwerNameTeamFormat);
         }
       }
-      PrintToSTV("[PASS-TV] %s blocked %s from scoring. Tick: %d", catcherName, throwerName, STVTickCount());
+      TagChatSTV("%s blocked %s from scoring. Tick: %d", catcherName, throwerName, STVTickCount());
     }
     else
     {
-      arriPlyRoundPassStats[catcher].iPlyIntercepts++;
+      arriPlyRoundPassStats[catcher].iIntercepts++;
       if (bPrintStats.BoolValue)
       {
         for (int x = 1; x < MaxClients + 1; x++)
         {
           if (!IsValidClient(x) || IsClientSourceTV(x)) continue;
-          PrintToChat(x, "\x0700ffff[PASS] %s \x07ff00ffintercepted \x0700ffff%s!", catcherNameTeamFormat, throwerNameTeamFormat);
+          TagChatClient(x, "%s {pass_magenta}intercepted %s!", catcherNameTeamFormat, throwerNameTeamFormat);
         }
       }
-      PrintToSTV("[PASS-TV] %s intercepted %s. Tick: %d", catcherName, throwerName, STVTickCount());
+      TagChatSTV("%s intercepted %s. Tick: %d", catcherName, throwerName, STVTickCount());
     }
   }
 
@@ -981,12 +989,12 @@ Action Event_PassCaught(Handle event, const char[] name, bool dontBroadcast)
       for (int x = 1; x < MaxClients + 1; x++)
       {
         if (!IsValidClient(x) || IsClientSourceTV(x)) continue;
-        PrintToChat(x, "\x0700ffff[PASS] %s \x07ffff00handed off \x0700ffffto %s!", throwerNameTeamFormat, catcherNameTeamFormat);
+        TagChatClient(x, "%s {pass_yellow}handoff to %s!", throwerNameTeamFormat, catcherNameTeamFormat);
       }
     }
-    PrintToSTV("[PASS-TV] %s handed off to %s. Tick: %d", throwerName, catcherName, STVTickCount());
+    TagChatSTV("%s handoff to %s. Tick: %d", throwerName, catcherName, STVTickCount());
     ibHandoffCheck = true;
-    arriPlyRoundPassStats[thrower].iPlyHandoffs++;
+    arriPlyRoundPassStats[thrower].iHandoffs++;
     eiPassTarget = 0;
   }
   SetLogInfo(catcher, thrower);
@@ -1017,7 +1025,7 @@ Action Event_PassStolen(Event event, const char[] name, bool dontBroadcast)
   VerboseLog("Ball picked up - tick: %d", iBallPickedUpTick);
   if (PlayerInTeamGoalieZone(thief))
   {
-    arriPlyRoundPassStats[thief].iPlySteal2Saves++;
+    arriPlyRoundPassStats[thief].iSteal2Saves++;
     steal2save = true;
   }
 
@@ -1051,16 +1059,16 @@ Action Event_PassStolen(Event event, const char[] name, bool dontBroadcast)
 
     if (PlayerInTeamGoalieZone(thief))
     {
-      PrintToAllClientsChat("\x0700ffff[PASS] %s\x07ff8000 defensively stole from\x0700ffff %s!", thiefNameTeamFormat, victimNameTeamFormat);
-      PrintToSTV("[PASS-TV] %s defensively stole from %s. Tick: %d", thiefName, victimName, STVTickCount());
+      TagChatAllPlayers("%s{pass_orange} defensively stole from{cyan} %s!", thiefNameTeamFormat, victimNameTeamFormat);
+      TagChatSTV("%s defensively stole from %s. Tick: %d", thiefName, victimName, STVTickCount());
     }
     else
     {
-      PrintToAllClientsChat("\x0700ffff[PASS] %s\x07ff8000 stole from\x0700ffff %s!", thiefNameTeamFormat, victimNameTeamFormat);
-      PrintToSTV("[PASS-TV] %s stole from %s. Tick: %d", thiefName, victimName, STVTickCount());
+      TagChatAllPlayers("%s{pass_orange} stole from{cyan} %s!", thiefNameTeamFormat, victimNameTeamFormat);
+      TagChatSTV("%s stole from %s. Tick: %d", thiefName, victimName, STVTickCount());
     }
   }
-  arriPlyRoundPassStats[thief].iPlySteals++;
+  arriPlyRoundPassStats[thief].iSteals++;
   return Plugin_Handled;
 }
 
@@ -1091,15 +1099,15 @@ Action Event_PassScore(Event event, const char[] name, bool dontBroadcast)
               user1, GetClientUserId(user1), user1steamid, user1team,
               points, arrbPanaceaCheck[scorer], arrbWinStratCheck[scorer], arrbDeathbombCheck[eiDeathBomber], dist,
               user1position[0], user1position[1], user1position[2]);
-    arriPlyRoundPassStats[eiDeathBomber].iPlyScores++;
-    arriPlyRoundPassStats[eiDeathBomber].iPlyDeathbombs++;
+    arriPlyRoundPassStats[eiDeathBomber].iScores++;
+    arriPlyRoundPassStats[eiDeathBomber].iDeathbombs++;
 
     GetClientName(scorer, assistantName, sizeof(assistantName));
     SetLogInfo(scorer);
     LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_score_assist\" (position \"%.0f %.0f %.0f\")",
               user1, GetClientUserId(user1), user1steamid, user1team,
               user1position[0], user1position[1], user1position[2]);
-    arriPlyRoundPassStats[scorer].iPlyAssists++;
+    arriPlyRoundPassStats[scorer].iAssists++;
   }
   else
   {
@@ -1108,7 +1116,7 @@ Action Event_PassScore(Event event, const char[] name, bool dontBroadcast)
               user1, GetClientUserId(user1), user1steamid, user1team,
               points, arrbPanaceaCheck[scorer], arrbWinStratCheck[scorer], arrbDeathbombCheck[eiDeathBomber], dist,
               user1position[0], user1position[1], user1position[2]);
-    arriPlyRoundPassStats[scorer].iPlyScores++;
+    arriPlyRoundPassStats[scorer].iScores++;
 
     if (assistant > 0)
     {
@@ -1117,14 +1125,14 @@ Action Event_PassScore(Event event, const char[] name, bool dontBroadcast)
       LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_score_assist\" (position \"%.0f %.0f %.0f\")",
                 user1, GetClientUserId(user1), user1steamid, user1team,
                 user1position[0], user1position[1], user1position[2]);
-      arriPlyRoundPassStats[assistant].iPlyAssists++;
+      arriPlyRoundPassStats[assistant].iAssists++;
     }
   }
 
   if (arrbPanaceaCheck[scorer] && TF2_GetPlayerClass(scorer) != TFClass_Medic)
-    arriPlyRoundPassStats[scorer].iPlyPanaceas++;
+    arriPlyRoundPassStats[scorer].iPanaceas++;
   else if (arrbWinStratCheck[scorer])
-    arriPlyRoundPassStats[scorer].iPlyWinStrats++;
+    arriPlyRoundPassStats[scorer].iWinStrats++;
 
   if (bPrintStats.BoolValue)
   {
@@ -1132,13 +1140,13 @@ Action Event_PassScore(Event event, const char[] name, bool dontBroadcast)
     FormatPlayerNameWithTeam(scorer, playerNameTeamFormatted);
     if (arrbPanaceaCheck[scorer] && TF2_GetPlayerClass(scorer) != TFClass_Medic)
     {
-      PrintToAllClientsChat("\x0700ffff[PASS] %s\x073BC43B scored a \x074df74dPanacea!", playerNameTeamFormatted);
-      PrintToSTV("[PASS-TV] %s scored a Panacea. Tick: %d", playerName, STVTickCount());
+      TagChatAllPlayers("%s{pass_green} scored a {pass_green}Panacea!", playerNameTeamFormatted);
+      TagChatSTV("%s scored a Panacea. Tick: %d", playerName, STVTickCount());
     }
     else if (arrbWinStratCheck[scorer])
     {
-      PrintToAllClientsChat("\x0700ffff[PASS] %s\x073BC43B scored a \x078aed8awin strat!", playerNameTeamFormatted);
-      PrintToSTV("[PASS-TV] %s scored a win strat. Tick: %d", playerName, STVTickCount());
+      TagChatAllPlayers("%s{pass_green} scored a {pass_green}win strat!", playerNameTeamFormatted);
+      TagChatSTV("%s scored a win strat. Tick: %d", playerName, STVTickCount());
     }
     else if (arrbDeathbombCheck[eiDeathBomber])
     {
@@ -1147,24 +1155,24 @@ Action Event_PassScore(Event event, const char[] name, bool dontBroadcast)
       int deathBomber = eiDeathBomber;
       GetClientName(deathBomber, playerName, sizeof(playerName));
       FormatPlayerNameWithTeam(deathBomber, playerNameTeamFormatted);
-      PrintToAllClientsChat("\x0700ffff[PASS] %s\x073BC43B scored a \x0797e043deathbomb!", playerNameTeamFormatted);
-      PrintToSTV("[PASS-TV] %s scored a deathbomb. Tick: %d", playerName, STVTickCount());
+      TagChatAllPlayers("%s{pass_green} scored a {pass_green}deathbomb!", playerNameTeamFormatted);
+      TagChatSTV("%s scored a deathbomb. Tick: %d", playerName, STVTickCount());
     }
     else if (dist > 1600)
     {
-      PrintToAllClientsChat("\x0700ffff[PASS] %s\x073BC43B scored a goal from a distance of %.0fhu!", playerNameTeamFormatted, dist);
-      PrintToSTV("[PASS-TV] %s scored a goal from distance of %.0fhu. Tick: %d", playerName, dist, STVTickCount());
+      TagChatAllPlayers("%s{pass_green} scored a goal from a distance of %.0fhu!", playerNameTeamFormatted, dist);
+      TagChatSTV("%s scored a goal from distance of %.0fhu. Tick: %d", playerName, dist, STVTickCount());
     }
     else if (assistant > 0)
     {
       FormatPlayerNameWithTeam(assistant, assistantNameTeamFormatted);
-      PrintToAllClientsChat("\x0700ffff[PASS] %s\x073BC43B scored a goal \x0700ffffassisted by %s!", playerNameTeamFormatted, assistantNameTeamFormatted);
-      PrintToSTV("[PASS-TV] %s scored a goal assisted by %s. Tick: %d", playerName, assistantName, STVTickCount());
+      TagChatAllPlayers("%s{pass_green} scored a goal {cyan}assisted by %s!", playerNameTeamFormatted, assistantNameTeamFormatted);
+      TagChatSTV("%s scored a goal assisted by %s. Tick: %d", playerName, assistantName, STVTickCount());
     }
     else
     {
-      PrintToAllClientsChat("\x0700ffff[PASS] %s\x073BC43B scored a goal!", playerNameTeamFormatted);
-      PrintToSTV("[PASS-TV] %s scored a goal. Tick: %d", playerName, STVTickCount());
+      TagChatAllPlayers("%s{pass_green} scored a goal!", playerNameTeamFormatted);
+      TagChatSTV("%s scored a goal. Tick: %d", playerName, STVTickCount());
     }
   }
   arrbPanaceaCheck[scorer]  = false;
@@ -1256,8 +1264,8 @@ void Hook_OnCatapult(const char[] output, int caller, int activator, float delay
       LogToGame("\"%N<%i><%s><%s>\" triggered \"%s\" with the jack (position \"%.0f %.0f %.0f\")",
                 user1, GetClientUserId(user1), user1steamid, user1team,
                 catapultName, user1position[0], user1position[1], user1position[2]);
-      arriPlyRoundPassStats[iPlyWhoGotJack].iPlyCatapults++;
-      PrintToSTV("[PASS-TV] %N triggered \"%s\" with the jack. Tick: %d", user1, catapultName, STVTickCount());
+      arriPlyRoundPassStats[iPlyWhoGotJack].iCatapults++;
+      TagChatSTV("%N triggered \"%s\" with the jack. Tick: %d", user1, catapultName, STVTickCount());
     }
   }
 }
@@ -1269,24 +1277,10 @@ void FormatPlayerNameWithTeam(int player, char[] outputString)
   GetClientName(player, playerName, sizeof(playerName));
   if (TF2_GetClientTeam(player) == TFTeam_Blue)
   {
-    Format(outputString, MAX_NAME_LENGTH + 7, "\x074EA6C1%s", playerName);
+    Format(outputString, MAX_NAME_LENGTH + 7, "{blu_team}%s", playerName);
   }
   else {
-    Format(outputString, MAX_NAME_LENGTH + 7, "\x07C43F3B%s", playerName);
-  }
-}
-
-// Prints the following message to all valid clients, EXCLUDING STV!
-void PrintToAllClientsChat(const char[] format, any...)
-{
-  // this should be a sane max string size value?
-  char stringBuffer[1024];
-  VFormat(stringBuffer, 1024, format, 2);
-  VerboseLog("Printing this message to all clients: %s", stringBuffer);
-  for (int x = 1; x < MaxClients + 1; x++)
-  {
-    if (!IsValidClient(x) || IsClientSourceTV(x)) continue;
-    PrintToChat(x, stringBuffer);
+    Format(outputString, MAX_NAME_LENGTH + 7, "{red_team}%s", playerName);
   }
 }
 

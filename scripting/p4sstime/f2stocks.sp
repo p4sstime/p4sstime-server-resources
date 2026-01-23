@@ -2,7 +2,7 @@
 // i just didn't need the whole include file so i didnt see any reason in including it all
 
 int        PrintToSTV_iLastStvClient;  // Cached STV client id
-stock void PrintToSTV(const char[] format, any...)
+stock void CPrintToSTV(const char[] format, any...)
 {
   int stv = FindSTV();
   if (stv < 1)
@@ -10,7 +10,7 @@ stock void PrintToSTV(const char[] format, any...)
 
   char buffer[512];
   VFormat(buffer, sizeof(buffer), format, 2);
-  PrintToChat(stv, "%s", buffer);
+  CPrintToChat(stv, "%s", buffer);
 }
 
 stock int FindSTV()
