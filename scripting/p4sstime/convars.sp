@@ -1,5 +1,17 @@
 // This file relates to all convars and will contain the functions for them
 
+// Macro for creating bool settings handlers
+#define CREATE_BOOL_SETTING(%1,%2,%3,%4)\
+Action %1(int client, int args) {\
+  bool value;\
+  if (GetCmdArgIntEx(1, value)) {\
+    arrbClientSettings[client].%2 = value;\
+    SetCookieBool(client, %3, arrbClientSettings[client].%2);\
+    CTagReply(client, "%4: %%s", arrbClientSettings[client].%2 ? "ON" : "OFF");\
+  } else CTagReply(client, "Invalid argument, use either 1 or 0");\
+  return Plugin_Handled;\
+}
+
 Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
   int client            = GetClientOfUserId(event.GetInt("userid"));
   arrbPlyIsDead[client] = false;
@@ -68,73 +80,10 @@ Action Command_Suicide(int client, int args) {
   return Plugin_Handled;
 }
 
-Action Command_ChatCountdown(int client, int args) {
-  int value = 0;
-  if (GetCmdArgIntEx(1, value)) {
-    if (value == 1)
-      arrbClientSettings[client].bCountdown = true;
-    else if (value == 0)
-      arrbClientSettings[client].bCountdown = false;
-    if (value == 1 || value == 0) {
-      SetCookieBool(client, cookieCountdownCaption, arrbClientSettings[client].bCountdown);
-      CTagReply(client, "JACK spawn timer captions: %s", arrbClientSettings[client].bCountdown ? "ON" : "OFF");
-    }
-  }
-  else
-    CTagReply(client, "Invalid argument");
-  return Plugin_Handled;
-}
-
-Action Command_JackPickupHud(int client, int args) {
-  int value = 0;
-  if (GetCmdArgIntEx(1, value)) {
-    if (value == 1)
-      arrbClientSettings[client].bJackHud = true;
-    else if (value == 0)
-      arrbClientSettings[client].bJackHud = false;
-    if (value == 1 || value == 0) {
-      SetCookieBool(client, cookieJACKPickupHud, arrbClientSettings[client].bJackHud);
-      CTagReply(client, "JACK pickup HUD text: %s", arrbClientSettings[client].bJackHud ? "ON" : "OFF");
-    }
-  }
-  else
-    CTagReply(client, "Invalid argument");
-  return Plugin_Handled;
-}
-
-Action Command_JackPickupChat(int client, int args) {
-  int value = 0;
-  if (GetCmdArgIntEx(1, value)) {
-    if (value == 1)
-      arrbClientSettings[client].bJackChat = true;
-    if (value == 0)
-      arrbClientSettings[client].bJackChat = false;
-    if (value == 1 || value == 0) {
-      SetCookieBool(client, cookieJACKPickupChat, arrbClientSettings[client].bJackChat);
-      CTagReply(client, "JACK pickup chat text: %s", arrbClientSettings[client].bJackChat ? "ON" : "OFF");
-    }
-  }
-  else
-    CTagReply(client, "Invalid argument");
-  return Plugin_Handled;
-}
-
-Action Command_JackPickupSound(int client, int args) {
-  int value = 0;
-  if (GetCmdArgIntEx(1, value)) {
-    if (value == 1)
-      arrbClientSettings[client].bJackSound = true;
-    if (value == 0)
-      arrbClientSettings[client].bJackSound = false;
-    if (value == 1 || value == 0) {
-      SetCookieBool(client, cookieJACKPickupSound, arrbClientSettings[client].bJackSound);
-      CTagReply(client, "JACK pickup sound: %s", arrbClientSettings[client].bJackSound ? "ON" : "OFF");
-    }
-  }
-  else
-    CTagReply(client, "Invalid argument");
-  return Plugin_Handled;
-}
+CREATE_BOOL_SETTING(Command_ChatCountdown,  bCountdown,cookieCountdownCaption,"JACK spawn timer captions")
+CREATE_BOOL_SETTING(Command_JackPickupHud,  bJackHud,  cookieJACKPickupHud,   "JACK pickup HUD text")
+CREATE_BOOL_SETTING(Command_JackPickupChat, bJackChat, cookieJACKPickupChat,  "JACK pickup chat text")
+CREATE_BOOL_SETTING(Command_JackPickupSound,bJackSound,cookieJACKPickupSound, "JACK pickup sound")
 
 void Hook_OnAllowInstantResupplyChange(ConVar convar, const char[] oldValue, const char[] newValue) {
   if (!bResupply.BoolValue)
