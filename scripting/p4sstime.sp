@@ -516,18 +516,14 @@ Action Event_PregameCountdown(Event event, const char[] name, bool dontBroadcast
   for (int x = 1; x < MaxClients + 1; x++) {
     if (!IsValidClient(x) || !arrbClientSettings[x].bCountdown) continue;
 
-    if (time == 10)
-      TagChatClient(x, "{red}10 seconds...");
-    else if (time == 5)
-      TagChatClient(x, "{pass_yellow}5 seconds...");
-    else if (time == 4)
-      TagChatClient(x, "{pass_yellow}4 seconds...");
-    else if (time == 3)
-      TagChatClient(x, "{pass_yellow}3 seconds...");
-    else if (time == 2)
-      TagChatClient(x, "{green}2 seconds...");
-    else if (time == 1)
-      TagChatClient(x, "{green}1 second...");
+    switch (time) {
+      case 10: TagChatClient(x, "{red}10 seconds...");
+      case 5:  TagChatClient(x, "{pass_yellow}5 seconds...");
+      case 4:  TagChatClient(x, "{pass_yellow}4 seconds...");
+      case 3:  TagChatClient(x, "{pass_yellow}3 seconds...");
+      case 2:  TagChatClient(x, "{green}2 seconds...");
+      case 1:  TagChatClient(x, "{green}1 second...");
+    }
   }
   return Plugin_Handled;
 }
