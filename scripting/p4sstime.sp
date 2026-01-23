@@ -71,21 +71,21 @@ enuiPlyStats    arriPlyRoundPassStats[MAXPLAYERS + 1];
 
 float           fBluGoalPos[3], fRedGoalPos[3], fTopSpawnPos[3], fFreeBallPos[3];
 
-ConVar          bEquipStockWeapons;
-ConVar          bSwitchDuringRespawn;
-ConVar          bStealBlurryOverlay;
+ConVar          bFixStocks;
+ConVar          bFixRespawnBypass;
+ConVar          bFixBlur;
 // ConVar							trikzEnable, trikzProjCollide, trikzProjDev;
-ConVar          bDroppedItemsCollision;
-ConVar          bPrintStats;
+ConVar          bFixJackCollision;
+ConVar          bChatEvents;
 ConVar          bWinstratKills;
-ConVar          bFunStats;
-ConVar          bPracticeMode;
+ConVar          bChatEventsFun;
+ConVar          bPractice;
 ConVar          bVerboseLogs;
-ConVar          bMedicArrowsNeutralizeBall;
-ConVar          bMedicArrowsPushBall;
-ConVar          bAllowInstantResupply;
-ConVar          flInstantResupplyTimeBetween;
-ConVar          flGoalHeal;
+ConVar          bMedicSplash;
+ConVar          bMedicSplashPush;
+ConVar          bResupply;
+ConVar          flResupplyCooldown;
+ConVar          flGoalRegeneration;
 
 int             iPlyWhoGotJack;
 // int			plyDirecter;
@@ -145,29 +145,31 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-  gameData               = new GameData("p4sstime");
+  gameData = new GameData("p4sstime"); // Load config
 
+  // Cookies
   cookieCountdownCaption = RegClientCookie("p4ssClientCountdownCaption",  "p4sstime's client setting (1/0) for captions for JACK spawn timer", CookieAccess_Public);
   cookieJACKPickupHud    = RegClientCookie("p4ssClientJACKPickupHudText", "p4sstime's client setting (1/0) for HUD text when picking up JACK", CookieAccess_Public);
   cookieJACKPickupChat   = RegClientCookie("p4ssClientJACKPickupChatMsg", "p4sstime's client setting (1/0) for chat msg when picking up JACK", CookieAccess_Public);
   cookieJACKPickupSound  = RegClientCookie("p4ssClientJACKPickupSound",   "p4sstime's client setting (1/0) for sound when picking up JACK",    CookieAccess_Public);
   cookieSummary          = RegClientCookie("p4ssClientSummary",           "p4sstime's client setting (0/1/2) for EoR summaries",               CookieAccess_Public);
 
-  RegConsoleCmd("sm_pt_menu",           Command_PassMenu);
-  RegConsoleCmd("sm_pt_suicide",        Command_Suicide);
-  RegConsoleCmd("sm_pt_kill",           Command_Suicide);
-  RegConsoleCmd("sm_pt_countdown",      Command_Countdown);
+  // Client commands
+  RegConsoleCmd("sm_pt_menu",           Command_Menu);
+  RegConsoleCmd("sm_pt_countdown",      Command_ChatCountdown);
+  RegConsoleCmd("sm_pt_summary",        Command_ChatSummary);
   RegConsoleCmd("sm_pt_pickup_hud",     Command_JackPickupHud);
   RegConsoleCmd("sm_pt_pickup_chat",    Command_JackPickupChat);
   RegConsoleCmd("sm_pt_pickup_sound",   Command_JackPickupSound);
-  RegConsoleCmd("sm_pt_summary",        Command_Summary);
+  RegConsoleCmd("sm_pt_suicide",        Command_Suicide);
+  RegConsoleCmd("sm_pt_kill",           Command_Suicide);
   RegConsoleCmd("sm_pt_resupply",       Command_Resupply);
 
-  RegAdminCmd("sm_pt_snapshot",  Command_Snapshot,          ADMFLAG_GENERIC, "Take a snapshot of the plugin's current variable values.");
+  // Admin commands
+  RegAdminCmd("sm_pt_snapshot",  Command_Snapshot,  ADMFLAG_GENERIC, "Take a snapshot of the plugin's current variable values.");
   RegAdminCmd("sm_pt_spawnball", Command_SpawnBall, ADMFLAG_CONFIG,  "Spawn the ball forcefully, by game starting and tournament restarting.");
 
   // Colors
-
   CAddColor("plugin_tag",   0x96BD63); // #96BD63
   CAddColor("warning",      0xECCD19); // #eccd19
   CAddColor("error",        0xd64843); // #d64843
@@ -175,7 +177,6 @@ public void OnPluginStart()
   CAddColor("chat",         0xBBBBBB); // #bbbbbb
   CAddColor("red_team",     0xD64843); // #d64843
   CAddColor("blu_team",     0x438CD6); // #438cd6
-
 
   CAddColor("pass_blue",    0x438CD6); // #438cd6
   CAddColor("pass_green",   0x3CB371); // #3CB371
@@ -185,6 +186,26 @@ public void OnPluginStart()
   CAddColor("pass_orange",  0xDD8125); // #dd8125
   CAddColor("pass_yellow",  0xECCD19); // #eccd19
 
+  // Convars
+  bFixStocks         = CreateConVar("sm_pt_fix_stocks",         "0",   "Disable equipping shotgun, stickies, and needles; the allowlist can't block stock weapons.",       FCVAR_NOTIFY);
+  bFixRespawnBypass  = CreateConVar("sm_pt_fix_respawn_bypass", "0",   "Disable switching classes while dead to respawn immediately.",                                     FCVAR_NOTIFY);
+  bFixJackCollision  = CreateConVar("sm_pt_fix_jack_collision", "1",   "Disable jack collision on ammo packs and weapons.",                                                FCVAR_NOTIFY);
+  bFixBlur           = CreateConVar("sm_pt_fix_blur",           "0",   "Enable blurry screen overlay when intercepting or stealing.",                                      FCVAR_NOTIFY);
+  bChatEvents        = CreateConVar("sm_pt_chat_events",        "0",   "Enable printing of passtime events to chat both during and after games. Does not affect logging.", FCVAR_NOTIFY);
+  bChatEventsFun     = CreateConVar("sm_pt_chat_events_fun",    "0",   "If sm_pt_print_events is 1, enable printing additional fun stats.",                                FCVAR_NOTIFY);
+  bWinstratKills     = CreateConVar("sm_pt_kill_winstrats",     "0",   "Enable killing winstratters and printing \"tried to winstrat\" in chat.",                          FCVAR_NOTIFY);
+  bVerboseLogs       = CreateConVar("sm_pt_logs_verbose",       "0",   "Enable printing additional information to logs.");
+  bMedicSplash       = CreateConVar("sm_pt_medic_splash",       "1",   "Enable medic arrows neutralizing the jack.",                                                       FCVAR_NOTIFY);
+  bMedicSplashPush   = CreateConVar("sm_pt_medic_splash_push",  "1",   "If sm_pt_medic_splash is 1, enable crossbow push on the jack.",                                    FCVAR_NOTIFY);
+  bResupply          = CreateConVar("sm_pt_resupply",           "0",   "Enable instant resupply.",                                                                         FCVAR_NOTIFY);
+  flResupplyCooldown = CreateConVar("sm_pt_resupply_cooldown",  "0.5", "Set the resupply cooldown duration in seconds.",                                                   FCVAR_NOTIFY);
+  flGoalRegeneration = CreateConVar("sm_pt_goal_regeneration",  "0",   "Set the amount of health regeneration every 500ms while in the goal zone.",                        FCVAR_NOTIFY);
+  bPractice          = CreateConVar("sm_pt_practice",           "0",   "Enable practice mode. When the round timer reaches 5 minutes, add 5 minutes to the timer.",        FCVAR_NOTIFY, true, 0.0, true, 1.0);
+  // trikzEnable	    = CreateConVar("sm_pt_trikz",                 "0", "Set 'trikz' mode. 1 adds friendly knockback for airshots, 2 adds friendly knockback for splash damage, 3 adds friendly knockback for everywhere", FCVAR_NOTIFY, true, 0.0, true, 3.0);
+  // trikzProjCollide = CreateConVar("sm_pt_trikz_projcollide",     "2", "Manually set team projectile collision behavior when trikz is on. 2 always collides, 1 will cause your projectiles to phase through if you are too close (default game behavior), 0 will cause them to never collide.", 0, true, 0.0, true, 2.0);
+  // trikzProjDev     = CreateConVar("sm_pt_trikz_projcollide_dev", "0", "DONOTUSE; This command is used solely by the plugin to change values. Changing this manually may cause issues.", FCVAR_HIDDEN, true, 0.0, true, 2.0);
+
+  // Hooks
   HookEvent("player_spawn",                 Event_PlayerSpawn);
   HookEvent("post_inventory_application",   Event_PlayerResup);
   HookEvent("player_death",                 Event_PlayerDeath);
@@ -203,33 +224,17 @@ public void OnPluginStart()
   HookEvent("teamplay_round_active",        Event_PlayersCanMove);
   HookEvent("teamplay_round_win",           Event_TeamWin);
   HookEvent("stats_resetround",             Event_RoundReset);
+
   HookEntityOutput("trigger_catapult",         "OnCatapulted", Hook_OnCatapult);
   HookEntityOutput("info_passtime_ball_spawn", "OnSpawnBall",  Hook_OnSpawnBall);
+
   AddCommandListener(OnChangeClass, "joinclass");
 
-  bEquipStockWeapons           = CreateConVar("sm_pt_stock_blocklist",          "0",   "Disable equipping shotgun, stickies, and needles. Required as the allowlist can't block stock weapons.", FCVAR_NOTIFY);
-  bSwitchDuringRespawn         = CreateConVar("sm_pt_block_instant_respawn",    "0",   "Disable switching classes while dead to respawn immediately.",                                           FCVAR_NOTIFY);
-  bStealBlurryOverlay          = CreateConVar("sm_pt_disable_intercept_blur",   "1",   "Disable blurry screen overlay when intercepting or stealing.",                                           FCVAR_NOTIFY);
-  bDroppedItemsCollision       = CreateConVar("sm_pt_jack_item_collision",      "1",   "Disable jack collision on ammo packs and weapons.",                                                      FCVAR_NOTIFY);
-  bPrintStats                  = CreateConVar("sm_pt_print_events",             "0",   "Enable printing of passtime events to chat both during and after games. Does not affect logging.",       FCVAR_NOTIFY);
-  bFunStats                    = CreateConVar("sm_pt_print_events_fun",         "0",   "If sm_pt_print_events is 1, enable printing additional fun stats.",                                      FCVAR_NOTIFY);
-  bPracticeMode                = CreateConVar("sm_pt_practice",                 "0",   "Enable practice mode. When the round timer reaches 5 minutes, add 5 minutes to the timer.",              FCVAR_NOTIFY, true, 0.0, true, 1.0);
-  bWinstratKills               = CreateConVar("sm_pt_winstrat_kills",           "0",   "Enable killing winstratters and printing \"tried to winstrat\" in chat.",                                FCVAR_NOTIFY);
-  bVerboseLogs                 = CreateConVar("sm_pt_logs_verbose",             "0",   "Enable printing additional information to logs.");
-  bMedicArrowsNeutralizeBall   = CreateConVar("sm_pt_medic_splash",             "1",   "Enable medic arrows neutralizing the jack.",                                                             FCVAR_NOTIFY);
-  bAllowInstantResupply        = CreateConVar("sm_pt_allow_instant_resupply",   "0",   "Allow sm_pt_resupply.",                                                                                  FCVAR_NOTIFY);
-  bMedicArrowsPushBall         = CreateConVar("sm_pt_medic_splash_push",        "1",   "If sm_pt_medic_splash is 1, enable crossbow push on the jack.",                                          FCVAR_NOTIFY);
-  flGoalHeal                   = CreateConVar("sm_pt_goal_heal",                "0",   "Goal heal every 500ms.",                                                                                 FCVAR_NOTIFY);
-  flInstantResupplyTimeBetween = CreateConVar("sm_pt_resupply_cooldown",        "0.5", "Resupply cooldown time in seconds.",                                                                     FCVAR_NOTIFY);
-  // trikzEnable	    = CreateConVar("sm_pt_trikz",                 "0", "Set 'trikz' mode. 1 adds friendly knockback for airshots, 2 adds friendly knockback for splash damage, 3 adds friendly knockback for everywhere", FCVAR_NOTIFY, true, 0.0, true, 3.0);
-  // trikzProjCollide = CreateConVar("sm_pt_trikz_projcollide",     "2", "Manually set team projectile collision behavior when trikz is on. 2 always collides, 1 will cause your projectiles to phase through if you are too close (default game behavior), 0 will cause them to never collide.", 0, true, 0.0, true, 2.0);
-  // trikzProjDev     = CreateConVar("sm_pt_trikz_projcollide_dev", "0", "DONOTUSE; This command is used solely by the plugin to change values. Changing this manually may cause issues.", FCVAR_HIDDEN, true, 0.0, true, 2.0);
-
+  HookConVarChange(bPractice, Hook_OnPracticeModeChange);
+  HookConVarChange(bResupply, Hook_OnAllowInstantResupplyChange);
   // HookConVarChange(trikzEnable, Hook_OnTrikzChange);
   // HookConVarChange(trikzProjCollide, Hook_OnProjCollideChange);
   // HookConVarChange(trikzProjDev, Hook_OnProjCollideDev);
-  HookConVarChange(bPracticeMode, Hook_OnPracticeModeChange);
-  HookConVarChange(bAllowInstantResupply, Hook_OnAllowInstantResupplyChange);
 
   CreateTimer(0.5, GoalHealTimer, 0, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
   /*for (int client = 1; client <= MaxClients; client++)
@@ -250,8 +255,7 @@ public void OnPluginStart()
   // check if stadium is the current map in order to set the height lower
   // see OnMapInit
   // this is necessary as OnMapInit is not called when the plugin is ran
-  if (StrContains(sMapNameBuffer, "stadium", false) != -1)
-  {
+  if (StrContains(sMapNameBuffer, "stadium", false) != -1) {
     iWinStratDistance = 150;
   }
   else {
@@ -266,6 +270,7 @@ public void OnPluginStart()
     OnLibraryAdded("updater");
   }
 
+  // SDKHooks
   StartPrepSDKCall(SDKCall_Player);
   PrepSDKCall_SetFromConf(gameData, SDKConf_Signature, "CTFPlayer::ForceRegenerateAndRespawn");
   tfPlayerForceRegenerateAndRespawn = EndPrepSDKCall();
@@ -292,7 +297,7 @@ public void OnLibraryAdded(const char[] name)
   // }
 }
 
-//#include <p4sstime/trikz.sp>
+// Modules
 #include "p4sstime/stocks.sp"
 #include "p4sstime/snapshot.sp"
 #include "p4sstime/logs.sp"
@@ -303,11 +308,12 @@ public void OnLibraryAdded(const char[] name)
 #include "p4sstime/stats_print.sp"
 #include "p4sstime/f2stocks.sp"
 #include "p4sstime/spawnball.sp"
+//#include <p4sstime/trikz.sp>
 
 public Action GoalHealTimer(Handle timer)
 {
   // LogMessage("GoalHealTimer popped");
-  if (flGoalHeal.FloatValue == 0.0) return Plugin_Continue;
+  if (flGoalRegeneration.FloatValue == 0.0) return Plugin_Continue;
   for (int client_idx = 1; client_idx < MaxClients + 1; client_idx++)
   {
     if (!IsValidClient(client_idx) || IsClientSourceTV(client_idx)) continue;
@@ -338,7 +344,7 @@ public Action GoalHealTimer(Handle timer)
     {
       VerboseLog("player \"%d\": distance '%f' (max distance '%f'), vertical_difference '%f'", client_idx, distance_sqr, GOAL_HEAL_RADIUS_SQR, vertical_difference);
 
-      SetEntityHealth(client_idx, min(health + flGoalHeal.IntValue, max_health));
+      SetEntityHealth(client_idx, min(health + flGoalRegeneration.IntValue, max_health));
     }
   }
   return Plugin_Continue;
@@ -387,7 +393,7 @@ public void OnGameFrame()
       float distFromBluGoal = GetVectorDistance(ballPos, fBluGoalPos);
       float distFromRedGoal = GetVectorDistance(ballPos, fRedGoalPos);
       VerboseLog("Loose ball distance from goals: \"blu\" \"%.2f\" \"red\" \"%.2f\"", distFromBluGoal, distFromRedGoal);
-      if (bPrintStats.BoolValue && bFunStats.BoolValue)
+      if (bChatEvents.BoolValue && bChatEventsFun.BoolValue)
       {
         if (distFromBluGoal <= 120)
         {
@@ -419,7 +425,7 @@ public void OnEntityCreated(int eIndex, const char[] eClassname)
     VerboseLog("passtime_ball spawned index \"%d\"", eIndex);
     SetJack(eIndex);
   }
-  if (bMedicArrowsNeutralizeBall.BoolValue)
+  if (bMedicSplash.BoolValue)
   {
     if (StrEqual(eClassname, "tf_projectile_healing_bolt"))
     {
@@ -455,7 +461,7 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
         char playerNameTeam[MAX_TEAMFORMAT_NAME_LENGTH];
         GetClientName(attacker, playerName, sizeof(playerName));
         FormatPlayerNameWithTeam(attacker, playerNameTeam);
-        if (bPrintStats.BoolValue)
+        if (bChatEvents.BoolValue)
         {
           TagChatAllPlayers("%s {blu_team}splashed the ball to save!", playerNameTeam);
         }
@@ -473,7 +479,7 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
         char playerNameTeam[MAX_TEAMFORMAT_NAME_LENGTH];
         GetClientName(attacker, playerName, sizeof(playerName));
         FormatPlayerNameWithTeam(attacker, playerNameTeam);
-        if (bPrintStats.BoolValue)
+        if (bChatEvents.BoolValue)
         {
           TagChatAllPlayers("%s {blu_team}splashed the ball to save!", playerNameTeam);
         }
@@ -493,7 +499,7 @@ void MedicArrowTouchedSomething(int arrow, int other)
   int eiMedicAttacker = EntRefToEntIndex(GetEntPropEnt(arrow, Prop_Data, "m_hOwnerEntity"));
   if (StrEqual(classname, "passtime_ball"))
   {
-    if (bMedicArrowsPushBall.BoolValue)
+    if (bMedicSplashPush.BoolValue)
     {
       // smart solution: damage the ball using the arrow's position relative to the jack's position
       float jackPosition[3], arrowPosition[3], damageForce[3];
@@ -520,7 +526,7 @@ void MedicArrowTouchedSomething(int arrow, int other)
       SDKHooks_TakeDamage(other, arrow, eiMedicAttacker, 50.0, -1, -1, NULL_VECTOR, NULL_VECTOR, false);
     }
 
-    if (bPrintStats.BoolValue)
+    if (bChatEvents.BoolValue)
     {
       char medicAttackerNameTeamFmt[MAX_TEAMFORMAT_NAME_LENGTH];
       FormatPlayerNameWithTeam(eiMedicAttacker, medicAttackerNameTeamFmt);
@@ -539,9 +545,9 @@ Action Event_RoundReset(Event event, const char[] name, bool dontBroadcast)
   iBluBallTime = 0;
   bBallLoose   = false;
   bRoundActive = false;
-  if (GetConVarInt(bPracticeMode) == 1)
+  if (GetConVarInt(bPractice) == 1)
   {
-    SetConVarInt(bPracticeMode, 0);
+    SetConVarInt(bPractice, 0);
     TagChatGlobal("Game started; practice mode disabled.");
   }
   bHalloweenMode  = false;
@@ -637,7 +643,7 @@ Action Event_PlayersCanMove(Event event, const char[] name, bool dontBroadcast)
 
 Action Event_TeamWin(Event event, const char[] name, bool dontBroadcast)
 {
-  if (!bPrintStats.BoolValue) return Plugin_Handled;
+  if (!bChatEvents.BoolValue) return Plugin_Handled;
   CreateTimer(0.5, Timer_DisplayStats);
   iPlyWhoGotJack = 0;  // reset this because it's a good idea. doesn't actually fix anything but this shouldn't carry over between rounds
   return Plugin_Handled;
@@ -762,7 +768,7 @@ void Hook_OnSpawnBall(const char[] name, int caller, int activator, float delay)
 
   bBallLoose         = true;
   ibBallSpawnedLower = 0;
-  if (!bDroppedItemsCollision.BoolValue) SetEntityCollisionGroup(eiJack, 4);
+  if (!bFixJackCollision.BoolValue) SetEntityCollisionGroup(eiJack, 4);
   if (bWaitingForBallSpawnToRestart)
   {
     ServerCommand("mp_tournament_restart");
@@ -941,7 +947,7 @@ Action Event_PassCaught(Handle event, const char[] name, bool dontBroadcast)
 
   if (TF2_GetClientTeam(thrower) == TFTeam_Spectator || TF2_GetClientTeam(catcher) == TFTeam_Spectator) return Plugin_Handled;
 
-  if (bFunStats.BoolValue && bPrintStats.BoolValue)
+  if (bChatEventsFun.BoolValue && bChatEvents.BoolValue)
   {
     if (GetClientTeam(thrower) == GetClientTeam(catcher))
     {
@@ -959,7 +965,7 @@ Action Event_PassCaught(Handle event, const char[] name, bool dontBroadcast)
     {
       bSave = true;
       arriPlyRoundPassStats[catcher].iSaves++;
-      if (bPrintStats.BoolValue)
+      if (bChatEvents.BoolValue)
       {
         for (int x = 1; x < MaxClients + 1; x++)
         {
@@ -972,7 +978,7 @@ Action Event_PassCaught(Handle event, const char[] name, bool dontBroadcast)
     else
     {
       arriPlyRoundPassStats[catcher].iIntercepts++;
-      if (bPrintStats.BoolValue)
+      if (bChatEvents.BoolValue)
       {
         for (int x = 1; x < MaxClients + 1; x++)
         {
@@ -986,7 +992,7 @@ Action Event_PassCaught(Handle event, const char[] name, bool dontBroadcast)
 
   if (TF2_GetClientTeam(thrower) == TF2_GetClientTeam(catcher) && eiPassTarget != catcher && !(GetEntityFlags(catcher) & FL_ONGROUND) && DistanceAboveGround(catcher) > 200)  // if on same team and catcher is not locked onto for a pass, also 200 units above ground at least (to ignore just normal non-lock passes)
   {
-    if (bPrintStats.BoolValue)
+    if (bChatEvents.BoolValue)
     {
       for (int x = 1; x < MaxClients + 1; x++)
       {
@@ -1049,7 +1055,7 @@ Action Event_PassStolen(Event event, const char[] name, bool dontBroadcast)
     SetHudTextParams(-1.0, 0.22, 3.0, 240, 0, 240, 255);
     ShowHudText(victim, 1, "");
   }
-  if (bPrintStats.BoolValue)
+  if (bChatEvents.BoolValue)
   {
     char thiefName[MAX_NAME_LENGTH], victimName[MAX_NAME_LENGTH];
     GetClientName(thief, thiefName, sizeof(thiefName));
@@ -1136,7 +1142,7 @@ Action Event_PassScore(Event event, const char[] name, bool dontBroadcast)
   else if (arrbWinStratCheck[scorer])
     arriPlyRoundPassStats[scorer].iWinStrats++;
 
-  if (bPrintStats.BoolValue)
+  if (bChatEvents.BoolValue)
   {
     char playerNameTeamFormatted[MAX_TEAMFORMAT_NAME_LENGTH], assistantNameTeamFormatted[MAX_TEAMFORMAT_NAME_LENGTH];
     FormatPlayerNameWithTeam(scorer, playerNameTeamFormatted);

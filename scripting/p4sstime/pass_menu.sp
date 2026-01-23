@@ -30,7 +30,7 @@ public OnClientCookiesCached(int client)
   arrbJackAcqSettings[client].iSummary         = GetCookieBool(client, cookieSummary);
 }
 
-Action Command_PassMenu(int client, int args)
+Action Command_Menu(int client, int args)
 {
   if (IsValidClient(client))
     ShowPassMenu(client);

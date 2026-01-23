@@ -17,7 +17,7 @@ static const char sInterceptsShort[] = "{pass_red} INT %d";
 static const char sStealsShort[]     = "{pass_orange} STL %d";
 static const char sSplashesShort[]   = "{pass_blue} SPL %d";
 
-Action Command_Summary(int client, int args)
+Action Command_ChatSummary(int client, int args)
 {
   int value = 0;
   if (GetCmdArgIntEx(1, value))

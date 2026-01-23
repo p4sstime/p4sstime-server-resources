@@ -4,7 +4,7 @@ Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
 {
   int client            = GetClientOfUserId(event.GetInt("userid"));
   arrbPlyIsDead[client] = false;
-  RemoveShotty(client);
+  RemoveStocks(client);
   if (TF2_GetPlayerClass(client) == TFClass_DemoMan) { QueryClientConVar(client, "m_filter", FilterCheck, false); }
 
   return Plugin_Handled;
@@ -32,7 +32,7 @@ Action OnChangeClass(int client, const char[] strCommand, int args)
       else if (classcheck == TFClass_Medic) med = true;
     }
   }
-  if (arrbPlyIsDead[client] == true && bSwitchDuringRespawn.BoolValue)
+  if (arrbPlyIsDead[client] == true && bFixRespawnBypass.BoolValue)
   {
     if (class == TFClass_Medic && med) return Plugin_Handled;
     else if (class == TFClass_DemoMan && demo) return Plugin_Handled;
@@ -49,7 +49,7 @@ Action OnChangeClass(int client, const char[] strCommand, int args)
 
 public void TF2_OnConditionAdded(int client, TFCond condition)
 {
-  if (condition == TFCond_PasstimeInterception && bStealBlurryOverlay.BoolValue)
+  if (condition == TFCond_PasstimeInterception && !bFixBlur.BoolValue)
   {
     ClientCommand(client, "r_screenoverlay \"\"");
   }
@@ -62,7 +62,7 @@ public void TF2_OnConditionAdded(int client, TFCond condition)
 Action Event_PlayerResup(Event event, const char[] name, bool dontBroadcast)
 {
   int client = GetClientOfUserId(event.GetInt("userid"));
-  RemoveShotty(client);
+  RemoveStocks(client);
 
   return Plugin_Handled;
 }
@@ -81,7 +81,7 @@ Action Command_Suicide(int client, int args)
   return Plugin_Handled;
 }
 
-Action Command_Countdown(int client, int args)
+Action Command_ChatCountdown(int client, int args)
 {
   int value = 0;
   if (GetCmdArgIntEx(1, value))
@@ -163,26 +163,26 @@ Action Command_JackPickupSound(int client, int args)
 
 void Hook_OnAllowInstantResupplyChange(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-  if (!bAllowInstantResupply.BoolValue)
+  if (!bResupply.BoolValue)
     return;
 
   if (tfPlayerForceRegenerateAndRespawn == null)
   {
     LogError("Cannot allow instant resupply due to missing CTFPlayer::ForceRegenerateAndRespawn function");
-    bAllowInstantResupply.BoolValue = false;
+    bResupply.BoolValue = false;
     return;
   }
 
   if (pointInRespawnRoom == null)
   {
     LogError("Cannot allow instant resupply due to missing PointInRespawnRoom function");
-    bAllowInstantResupply.BoolValue = false;
+    bResupply.BoolValue = false;
     return;
   }
 }
 Action Command_Resupply(int client, int args)
 {
-  if (!bAllowInstantResupply.BoolValue)
+  if (!bResupply.BoolValue)
     return Plugin_Handled;
 
   if (nextInstantResupplyTime[client] > GetGameTime())
@@ -197,15 +197,15 @@ Action Command_Resupply(int client, int args)
   if (!PointInRespawnRoom(client, origin, false))
     return Plugin_Handled;
 
-  nextInstantResupplyTime[client] = GetGameTime() + flInstantResupplyTimeBetween.FloatValue;
+  nextInstantResupplyTime[client] = GetGameTime() + flResupplyCooldown.FloatValue;
   ForceRegenerateAndRespawn(client);
 
   return Plugin_Handled;
 }
 
-void RemoveShotty(int client)
+void RemoveStocks(int client)
 {
-  if (bEquipStockWeapons.BoolValue)
+  if (bFixStocks.BoolValue)
   {
     TFClassType class = TF2_GetPlayerClass(client);
     int iWep;
@@ -217,9 +217,15 @@ void RemoveShotty(int client)
       char classname[64];
       GetEntityClassname(iWep, classname, sizeof(classname));
 
-      if (StrEqual(classname, "tf_weapon_shotgun_soldier") || StrEqual(classname, "tf_weapon_pipebomblauncher"))
+      if (StrEqual(classname, "tf_weapon_shotgun_soldier"))
       {
-        TagChatClient(client, "Shotgun/Stickies equipped");
+        TagChatClient(client, "Shotgun equipped");
+        TF2_RemoveWeaponSlot(client, 1);
+      }
+      
+      if (StrEqual(classname, "tf_weapon_pipebomblauncher"))
+      {
+        TagChatClient(client, "Stickies equipped");
         TF2_RemoveWeaponSlot(client, 1);
       }
 
