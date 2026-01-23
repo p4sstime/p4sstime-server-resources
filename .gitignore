@@ -30,6 +30,8 @@
 !scripting/include/
 !scripting/include/updater.inc
 !scripting/include/morecolors.inc
+!scripting/spcomp64.exe
+!scripting/spcomp.exe
 
 # FIXME: consider replacing this with a different shell script?
 !scripting/compile.sh
