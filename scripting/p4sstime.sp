@@ -17,6 +17,7 @@
 
 // Macros
 #define CV ConVar
+#define Ac Action
 #define Han Handle
 #define GD GameData 
 
@@ -586,7 +587,7 @@ pub v OnLibraryAdded(const char[] name) {
 #include "p4sstime/spawnball.sp"
 //#include <p4sstime/trikz.sp>
 
-pub Action GoalHealTimer(Han timer) {
+pub Ac GoalHealTimer(Han timer) {
   // LogMessage("GoalHealTimer popped");
   if (flGoalRegeneration.FloatValue == 0.0) PC;
   for (int client_idx = 1; client_idx < MaxClients + 1; client_idx++) {
@@ -691,7 +692,7 @@ pub v OnEntityCreated(int eIndex, const char[] eClassname) {
   }
 }
 
-Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
+Ac PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
   tballTeam = eLastTickBallTeam;
   c classname[128];
   GetEntityClassname(inflictor, classname, sizeof(classname));
@@ -775,7 +776,7 @@ v MedicArrowTouchedSomething(int arrow, int other) {
   VerboseLog("medic arrow from %d touched %s i %d", eiMedicAttacker, classname, other);
 }
 
-Action ERoundReset(Event event, const char[] name, b dontBroadcast) {
+Ac ERoundReset(Event event, const char[] name, b dontBroadcast) {
   for (int i = 0; i < MaxClients + 1; i++)
     ClearLocalStats(i);
   iRedBallTime = 0;
@@ -791,13 +792,13 @@ Action ERoundReset(Event event, const char[] name, b dontBroadcast) {
   PH;
 }
 
-Action EPregameCountdown(Event event, const char[] name, b dontBroadcast) {
+Ac EPregameCountdown(Event event, const char[] name, b dontBroadcast) {
   int time = event.GetInt("time");
   SendCountdownToClients(time);
   PH;
 }
 
-Action EMidgameCountdown(Event event, const char[] name, b dontBroadcast) {
+Ac EMidgameCountdown(Event event, const char[] name, b dontBroadcast) {
   // if it is halloween, announcer always says 10 seconds, but merasmus says 5-1
   // for pregame, announcer ALWAYS says start
 
@@ -809,7 +810,7 @@ Action EMidgameCountdown(Event event, const char[] name, b dontBroadcast) {
   PH;
 }
 
-Action EPlayersCanMove(Event event, const char[] name, b dontBroadcast) {
+Ac EPlayersCanMove(Event event, const char[] name, b dontBroadcast) {
   int offset = GameConfGetOffset(gameData, "CTFPlayer::m_bPasstimeBallSlippery");
   for (int x = 1; x < MaxClients + 1; x++) {
     if (!IsValidClient(x)) continue;
@@ -823,7 +824,7 @@ Action EPlayersCanMove(Event event, const char[] name, b dontBroadcast) {
   PH;
 }
 
-Action ETeamWin(Event event, const char[] name, b dontBroadcast) {
+Ac ETeamWin(Event event, const char[] name, b dontBroadcast) {
   if (!bChatEvents.BoolValue) PH;
   CreateTimer(0.5, Timer_DisplayStats);
   iPlyWhoGotJack = 0;  // reset this because it's a good idea. doesn't actually fix anything but this shouldn't carry over between rounds
@@ -846,7 +847,7 @@ b IsValidClient(int client, b blockbots = true) {
 }
 
 /*-------------------------------------------------- Player Events --------------------------------------------------*/
-pub Action OnClientSayCommand(int client, const char[] command, const char[] sArgs) {
+pub Ac OnClientSayCommand(int client, const char[] command, const char[] sArgs) {
   if (StrEqual(sArgs, "/more", false) || StrEqual(sArgs, ".more", false)) {
     CreateTimer(0.1, Timer_ShowMoreTF, client, TIMER_FLAG_NO_MAPCHANGE);
     PH;
@@ -880,25 +881,25 @@ f DistanceAboveGround(int victim) { // taken from mgemod
   return distance;
 }
 
-Action ERocketJump(Event event, const char[] name, b dontBroadcast) {
+Ac ERocketJump(Event event, const char[] name, b dontBroadcast) {
   int client = GetClientOfUserId(event.GetInt("userid"));
   arrbBlastJumpStatus[client] = true;
   PH;
 }
 
-Action ERocketJumpLand(Event event, const char[] name, b dontBroadcast) {
+Ac ERocketJumpLand(Event event, const char[] name, b dontBroadcast) {
   int client = GetClientOfUserId(event.GetInt("userid"));
   arrbBlastJumpStatus[client] = false;
   PH;
 }
 
-Action EPipeJump(Event event, const char[] name, b dontBroadcast) {
+Ac EPipeJump(Event event, const char[] name, b dontBroadcast) {
   int client = GetClientOfUserId(event.GetInt("userid"));
   arrbBlastJumpStatus[client] = true;
   PH;
 }
 
-Action EPipeJumpLand(Event event, const char[] name, b dontBroadcast) {
+Ac EPipeJumpLand(Event event, const char[] name, b dontBroadcast) {
   int client = GetClientOfUserId(event.GetInt("userid"));
   arrbBlastJumpStatus[client] = false;
   PH;
@@ -910,7 +911,7 @@ pub v TF2_OnConditionRemoved(int client, TFCond condition) {
     TF2_RemoveCondition(client, TFCond_UberchargeFading);
 }
 
-Action EPlayerDeath(Event event, const char[] name, b dontBroadcast) {
+Ac EPlayerDeath(Event event, const char[] name, b dontBroadcast) {
   int client = GetClientOfUserId(event.GetInt("userid"));
   arrbPlyIsDead[client] = true;
   if (client == entPassTarget) {
@@ -942,7 +943,7 @@ v EOOnSpawnBall(const char[] name, int caller, int activator, f delay) {
   bBallSplashed = false;
 }
 
-Action EPassFree(Event event, const char[] name, b dontBroadcast) {
+Ac EPassFree(Event event, const char[] name, b dontBroadcast) {
   bBallLoose = true;
   int owner = event.GetInt("owner");
   townerTeam = TF2_GetClientTeam(owner);
@@ -975,7 +976,7 @@ Action EPassFree(Event event, const char[] name, b dontBroadcast) {
 }
 
 // When an enemy player blocks a thrown ball without picking it up, via uber or rocket/sticky jumpers
-Action EPassBallBlocked(Event event, const char[] name, b dontBroadcast) {
+Ac EPassBallBlocked(Event event, const char[] name, b dontBroadcast) {
   int blocker = event.GetInt("blocker");
   int thrower = event.GetInt("owner");
   arriClientRoundStats[blocker].iBlocks++;
@@ -985,7 +986,7 @@ Action EPassBallBlocked(Event event, const char[] name, b dontBroadcast) {
 }
 
 // When a player gets a neutral ball.
-Action EPassGet(Event event, const char[] name, b dontBroadcast) {
+Ac EPassGet(Event event, const char[] name, b dontBroadcast) {
   bBallLoose = false;
   iBallPickedUpTick = GetGameTickCount();
   VerboseLog("Ball picked up - t%d", iBallPickedUpTick);
@@ -1032,7 +1033,7 @@ Action EPassGet(Event event, const char[] name, b dontBroadcast) {
 }
 
 // When a player catches a ball thrown by another player.
-Action EPassCaught(Han event, const char[] name, b dontBroadcast) {
+Ac EPassCaught(Han event, const char[] name, b dontBroadcast) {
   int thrower        = EvI(event, "passer");
   int catcher        = EvI(event, "catcher");
   f dist             = EvF(event, "dist");
@@ -1097,7 +1098,7 @@ Action EPassCaught(Han event, const char[] name, b dontBroadcast) {
 }
 
 // When a player melee steals the ball from another player.
-Action EPassStolen(Event event, const char[] name, b dontBroadcast) {
+Ac EPassStolen(Event event, const char[] name, b dontBroadcast) {
   int thief      = event.GetInt("attacker");
   int victim     = event.GetInt("victim");
   b steal2save   = false;
@@ -1139,7 +1140,7 @@ Action EPassStolen(Event event, const char[] name, b dontBroadcast) {
 }
 
 // When a player scores with the ball.
-Action EPassScore(Event event, const char[] name, b dontBroadcast) {
+Ac EPassScore(Event event, const char[] name, b dontBroadcast) {
   int scorer    = event.GetInt("scorer");
   int points    = event.GetInt("points");
   int assistant = event.GetInt("assister");
