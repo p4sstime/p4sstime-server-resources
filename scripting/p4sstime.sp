@@ -20,6 +20,28 @@
 #define Han Handle
 #define GD GameData 
 
+// Utility functions for chat events
+stock v ChatEvent(const char[] format, any ...) {
+  if (bChatEvents.BoolValue) {
+    int len = strlen(format) + 255;
+    char[] MessageToChat = new char[len];
+    VFormat(MessageToChat, len, format, 2);
+    TagChatAllPlayers(MessageToChat);
+  }
+}
+
+stock v ChatEventToClients(const char[] format, any ...) {
+  if (bChatEvents.BoolValue) {
+    int len = strlen(format) + 255;
+    char[] MessageToChat = new char[len];
+    VFormat(MessageToChat, len, format, 2);
+    for (int x = 1; x < MaxClients + 1; x++) {
+      if (!IsValidClient(x) || IsClientSourceTV(x)) continue;
+      TagChatClient(x, MessageToChat);
+    }
+  }
+}
+
 #define NOTIFY FCVAR_NOTIFY
 
 #define GENERIC ADMFLAG_GENERIC
@@ -413,10 +435,10 @@ pub v OnGameFrame() {
       VerboseLog("Loose ball distance from goals: \"blu\" \"%.2f\" \"red\" \"%.2f\"", distFromBluGoal, distFromRedGoal);
       if (bChatEvents.BoolValue && bChatEventsFun.BoolValue) {
         if (distFromBluGoal <= 120) {
-          TagChatAllPlayers("The ball went neutral %.2fhu {chat}from the goal!", distFromBluGoal - 20);
+          ChatEvent("The ball went neutral %.2fhu {chat}from the goal!", distFromBluGoal - 20);
         }
         elif (distFromRedGoal <= 120) {
-          TagChatAllPlayers("The ball went neutral %.2fhu {chat}from the goal!", distFromRedGoal - 20);
+          ChatEvent("The ball went neutral %.2fhu {chat}from the goal!", distFromRedGoal - 20);
         }
       }
     }
@@ -468,9 +490,7 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
         c playerNameTeam[MAX_TEAMFORMAT_NAME_LENGTH];
         GetClientName(attacker, playerName, sizeof(playerName));
         FormatPlayerNameWithTeam(attacker, playerNameTeam);
-        if (bChatEvents.BoolValue) {
-          TagChatAllPlayers("%s {blu_team}splashed the ball to save!", playerNameTeam);
-        }
+        ChatEvent("%s {blu_team}splashed the ball to save!", playerNameTeam);
         TagChatSTV("%s splashed the ball to save it. t%d", playerName, STVTickCount());
         arriClientRoundStats[attacker].iSplashes++;
       }
@@ -483,9 +503,7 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
         c playerNameTeam[MAX_TEAMFORMAT_NAME_LENGTH];
         GetClientName(attacker, playerName, sizeof(playerName));
         FormatPlayerNameWithTeam(attacker, playerNameTeam);
-        if (bChatEvents.BoolValue) {
-          TagChatAllPlayers("%s {blu_team}splashed the ball to save!", playerNameTeam);
-        }
+        ChatEvent("%s {blu_team}splashed the ball to save!", playerNameTeam);
         TagChatSTV("%s splashed the ball to save it. t%d", playerName, STVTickCount());
         arriClientRoundStats[attacker].iSplashes++;
       }
@@ -526,12 +544,10 @@ v MedicArrowTouchedSomething(int arrow, int other) {
       SDKHooks_TakeDamage(other, arrow, eiMedicAttacker, 50.0, -1, -1, NULL_VECTOR, NULL_VECTOR, false);
     }
 
-    if (bChatEvents.BoolValue) {
-      c medicAttackerNameTeamFmt[MAX_TEAMFORMAT_NAME_LENGTH];
-      FormatPlayerNameWithTeam(eiMedicAttacker, medicAttackerNameTeamFmt);
-      TagChatAllPlayers("%s%s direct impacted the ball with a crossbow shot!", medicAttackerNameTeamFmt, COLOR_MEDIC_SPLASH);
-    }
-    // TagChatAllPlayers("%s direct impacted the ball with a crossbow shot!", MedicAttackerName);
+    c medicAttackerNameTeamFmt[MAX_TEAMFORMAT_NAME_LENGTH];
+    FormatPlayerNameWithTeam(eiMedicAttacker, medicAttackerNameTeamFmt);
+    ChatEvent("%s%s directed the ball with an arrow!", medicAttackerNameTeamFmt, COLOR_MEDIC_SPLASH);
+    // TagChatAllPlayers("%s directed the ball with an arrow!", MedicAttackerName);
   }
   VerboseLog("medic arrow from %d touched %s i %d", eiMedicAttacker, classname, other);
 }
@@ -896,7 +912,7 @@ Action EPassCaught(Han event, const char[] name, b dontBroadcast) {
   if (bChatEventsFun.BoolValue && bChatEvents.BoolValue) {
     if (GetClientTeam(thrower) == GetClientTeam(catcher)) {
       if (PlayerInEnemyGoalieZone(catcher)) {
-        TagChatAllPlayers("%s {pass_yellow}blocked *their teammate* %s %sfrom scoring!", catcherNameTeamFormat, throwerNameTeamFormat, "{chat}");
+        ChatEvent("%s {pass_yellow}blocked *their teammate* %s %sfrom scoring!", catcherNameTeamFormat, throwerNameTeamFormat, "{chat}");
       }
     }
   }
@@ -906,33 +922,18 @@ Action EPassCaught(Han event, const char[] name, b dontBroadcast) {
     if (PlayerInTeamGoalieZone(catcher)) {
       bSave = true;
       arriClientRoundStats[catcher].iSaves++;
-      if (bChatEvents.BoolValue) {
-        for (int x = 1; x < MaxClients + 1; x++) {
-          if (!IsValidClient(x) || IsClientSourceTV(x)) continue;
-          TagChatClient(x, "%s {pass_yellow}blocked %s {chat}from scoring!", catcherNameTeamFormat, throwerNameTeamFormat);
-        }
-      }
+      ChatEventToClients("%s {pass_yellow}blocked %s {chat}from scoring!", catcherNameTeamFormat, throwerNameTeamFormat);
       TagChatSTV("%s blocked %s from scoring. t%d", catcherName, throwerName, STVTickCount());
     }
     else {
       arriClientRoundStats[catcher].iIntercepts++;
-      if (bChatEvents.BoolValue) {
-        for (int x = 1; x < MaxClients + 1; x++) {
-          if (!IsValidClient(x) || IsClientSourceTV(x)) continue;
-          TagChatClient(x, "%s {pass_magenta}intercepted %s!", catcherNameTeamFormat, throwerNameTeamFormat);
-        }
-      }
+      ChatEventToClients("%s {pass_magenta}intercepted %s!", catcherNameTeamFormat, throwerNameTeamFormat);
       TagChatSTV("%s intercepted %s. t%d", catcherName, throwerName, STVTickCount());
     }
   }
   // if on same team and catcher is not locked onto for a pass, also 200 units above ground at least (to ignore just normal non-lock passes)
   if (TF2_GetClientTeam(thrower) == TF2_GetClientTeam(catcher) && entPassTarget != catcher && !(GetEntityFlags(catcher) & FL_ONGROUND) && DistanceAboveGround(catcher) > 200) { 
-    if (bChatEvents.BoolValue) {
-      for (int x = 1; x < MaxClients + 1; x++) {
-        if (!IsValidClient(x) || IsClientSourceTV(x)) continue;
-        TagChatClient(x, "%s {pass_yellow}handoff to %s!", throwerNameTeamFormat, catcherNameTeamFormat);
-      }
-    }
+    ChatEventToClients("%s {pass_yellow}handoff to %s!", throwerNameTeamFormat, catcherNameTeamFormat);
     TagChatSTV("%s handoff to %s. t%d", throwerName, catcherName, STVTickCount());
     ibHandoffCheck = true;
     arriClientRoundStats[thrower].iHandoffs++;
@@ -985,23 +986,21 @@ Action EPassStolen(Event event, const char[] name, b dontBroadcast) {
     SetHudTextParams(-1.0, 0.22, 3.0, 240, 0, 240, 255);
     ShowHudText(victim, 1, "");
   }
-  if (bChatEvents.BoolValue) {
-    c thiefName[MAX_NAME_LENGTH], victimName[MAX_NAME_LENGTH];
-    GetClientName(thief, thiefName, sizeof(thiefName));
-    GetClientName(victim, victimName, sizeof(victimName));
-    c thiefNameTeamFormat[MAX_TEAMFORMAT_NAME_LENGTH];
-    c victimNameTeamFormat[MAX_TEAMFORMAT_NAME_LENGTH];
-    FormatPlayerNameWithTeam(thief, thiefNameTeamFormat);
-    FormatPlayerNameWithTeam(victim, victimNameTeamFormat);
+  c thiefName[MAX_NAME_LENGTH], victimName[MAX_NAME_LENGTH];
+  GetClientName(thief, thiefName, sizeof(thiefName));
+  GetClientName(victim, victimName, sizeof(victimName));
+  c thiefNameTeamFormat[MAX_TEAMFORMAT_NAME_LENGTH];
+  c victimNameTeamFormat[MAX_TEAMFORMAT_NAME_LENGTH];
+  FormatPlayerNameWithTeam(thief, thiefNameTeamFormat);
+  FormatPlayerNameWithTeam(victim, victimNameTeamFormat);
 
-    if (PlayerInTeamGoalieZone(thief)) {
-      TagChatAllPlayers("%s{pass_orange} defensively stole from{chat} %s!", thiefNameTeamFormat, victimNameTeamFormat);
-      TagChatSTV("%s defensively stole from %s. t%d", thiefName, victimName, STVTickCount());
-    }
-    else {
-      TagChatAllPlayers("%s{pass_orange} stole from{chat} %s!", thiefNameTeamFormat, victimNameTeamFormat);
-      TagChatSTV("%s stole from %s. t%d", thiefName, victimName, STVTickCount());
-    }
+  if (PlayerInTeamGoalieZone(thief)) {
+    ChatEvent("%s{pass_orange} defensively stole from{chat} %s!", thiefNameTeamFormat, victimNameTeamFormat);
+    TagChatSTV("%s defensively stole from %s. t%d", thiefName, victimName, STVTickCount());
+  }
+  else {
+    ChatEvent("%s{pass_orange} stole from{chat} %s!", thiefNameTeamFormat, victimNameTeamFormat);
+    TagChatSTV("%s stole from %s. t%d", thiefName, victimName, STVTickCount());
   }
   arriClientRoundStats[thief].iSteals++;
   PH;
@@ -1066,39 +1065,37 @@ Action EPassScore(Event event, const char[] name, b dontBroadcast) {
   elif (arrbWinStratCheck[scorer])
     arriClientRoundStats[scorer].iWinstrats++;
 
-  if (bChatEvents.BoolValue) {
-    c playerNameTeamFormatted[MAX_TEAMFORMAT_NAME_LENGTH], assistantNameTeamFormatted[MAX_TEAMFORMAT_NAME_LENGTH];
-    FormatPlayerNameWithTeam(scorer, playerNameTeamFormatted);
-    if (arrbPanaceaCheck[scorer] && TF2_GetPlayerClass(scorer) != TFClass_Medic) {
-      TagChatAllPlayers("%s{pass_green} scored a {pass_green}Panacea!", playerNameTeamFormatted);
-      TagChatSTV("%s scored a Panacea. t%d", playerName, STVTickCount());
-    }
-    elif (arrbWinStratCheck[scorer]) {
-      TagChatAllPlayers("%s{pass_green} scored a {pass_green}win strat!", playerNameTeamFormatted);
-      TagChatSTV("%s scored a win strat. t%d", playerName, STVTickCount());
-    }
-    elif (arrbDeathbombCheck[entDeathBomber]) {
-      // if we take too long to print, a race condition happens
-      // prevent that race condition
-      int deathBomber = entDeathBomber;
-      GetClientName(deathBomber, playerName, sizeof(playerName));
-      FormatPlayerNameWithTeam(deathBomber, playerNameTeamFormatted);
-      TagChatAllPlayers("%s{pass_green} scored a {pass_green}deathbomb!", playerNameTeamFormatted);
-      TagChatSTV("%s scored a deathbomb. t%d", playerName, STVTickCount());
-    }
-    elif (dist > 1600) {
-      TagChatAllPlayers("%s{pass_green} scored a goal from a distance of %.0fhu!", playerNameTeamFormatted, dist);
-      TagChatSTV("%s scored a goal from distance of %.0fhu. t%d", playerName, dist, STVTickCount());
-    }
-    elif (assistant > 0) {
-      FormatPlayerNameWithTeam(assistant, assistantNameTeamFormatted);
-      TagChatAllPlayers("%s{pass_green} scored a goal {chat}assisted by %s!", playerNameTeamFormatted, assistantNameTeamFormatted);
-      TagChatSTV("%s scored a goal assisted by %s. t%d", playerName, assistantName, STVTickCount());
-    }
-    else {
-      TagChatAllPlayers("%s{pass_green} scored a goal!", playerNameTeamFormatted);
-      TagChatSTV("%s scored a goal. t%d", playerName, STVTickCount());
-    }
+  c playerNameTeamFormatted[MAX_TEAMFORMAT_NAME_LENGTH], assistantNameTeamFormatted[MAX_TEAMFORMAT_NAME_LENGTH];
+  FormatPlayerNameWithTeam(scorer, playerNameTeamFormatted);
+  if (arrbPanaceaCheck[scorer] && TF2_GetPlayerClass(scorer) != TFClass_Medic) {
+    ChatEvent("%s{pass_green} scored a {pass_green}Panacea!", playerNameTeamFormatted);
+    TagChatSTV("%s scored a Panacea. t%d", playerName, STVTickCount());
+  }
+  elif (arrbWinStratCheck[scorer]) {
+    ChatEvent("%s{pass_green} scored a {pass_green}win strat!", playerNameTeamFormatted);
+    TagChatSTV("%s scored a win strat. t%d", playerName, STVTickCount());
+  }
+  elif (arrbDeathbombCheck[entDeathBomber]) {
+    // if we take too long to print, a race condition happens
+    // prevent that race condition
+    int deathBomber = entDeathBomber;
+    GetClientName(deathBomber, playerName, sizeof(playerName));
+    FormatPlayerNameWithTeam(deathBomber, playerNameTeamFormatted);
+    ChatEvent("%s{pass_green} scored a {pass_green}deathbomb!", playerNameTeamFormatted);
+    TagChatSTV("%s scored a deathbomb. t%d", playerName, STVTickCount());
+  }
+  elif (dist > 1600) {
+    ChatEvent("%s{pass_green} scored a goal from a distance of %.0fhu!", playerNameTeamFormatted, dist);
+    TagChatSTV("%s scored a goal from distance of %.0fhu. t%d", playerName, dist, STVTickCount());
+  }
+  elif (assistant > 0) {
+    FormatPlayerNameWithTeam(assistant, assistantNameTeamFormatted);
+    ChatEvent("%s{pass_green} scored a goal {chat}assisted by %s!", playerNameTeamFormatted, assistantNameTeamFormatted);
+    TagChatSTV("%s scored a goal assisted by %s. t%d", playerName, assistantName, STVTickCount());
+  }
+  else {
+    ChatEvent("%s{pass_green} scored a goal!", playerNameTeamFormatted);
+    TagChatSTV("%s scored a goal. t%d", playerName, STVTickCount());
   }
   arrbPanaceaCheck[scorer]  = false;
   arrbWinStratCheck[scorer] = false;  // reset these cuz its good idea
