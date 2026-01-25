@@ -42,6 +42,229 @@ stock v ChatEventToClients(const char[] format, any ...) {
   }
 }
 
+stock v SendCountdownToClients(int time) {
+  for (int x = 1; x < MaxClients + 1; x++) {
+    if (!IsValidClient(x) || !arrbClientSettings[x].bCountdown) continue;
+    
+    switch (time) {
+      case 10: TagChatClient(x, "{pass_red}10 seconds...");
+      case 5:  TagChatClient(x, "{pass_yellow}5 seconds...");
+      case 4:  TagChatClient(x, "{pass_yellow}4 seconds...");
+      case 3:  TagChatClient(x, "{pass_yellow}3 seconds...");
+      case 2:  TagChatClient(x, "{pass_green}2 seconds...");
+      case 1:  TagChatClient(x, "{pass_green}1 second...");
+    }
+  }
+}
+
+stock v SendSoundCountdownToClients(const char[] sound) {
+  for (int x = 1; x < MaxClients + 1; x++) {
+    if (!IsValidClient(x) || !arrbClientSettings[x].bCountdown) continue;
+    
+    if (StrEqual(sound, "Announcer.RoundBegins10seconds"))
+      TagChatClient(x, "{pass_red}10 seconds...");
+    elif (StrEqual(sound, "Passtime.BallSpawn"))
+      TagChatClient(x, "{pass_green}Ball has spawned!");
+    if (bHalloweenMode) {
+      if (StrEqual(sound, "Merasmus.RoundBegins5seconds"))
+        TagChatClient(x, "{pass_yellow}5 seconds...");
+      elif (StrEqual(sound, "Merasmus.RoundBegins4seconds"))
+        TagChatClient(x, "{pass_yellow}4 seconds...");
+      elif (StrEqual(sound, "Merasmus.RoundBegins3seconds"))
+        TagChatClient(x, "{pass_yellow}3 seconds...");
+      elif (StrEqual(sound, "Merasmus.RoundBegins2seconds"))
+        TagChatClient(x, "{pass_green}2 seconds...");
+      elif (StrEqual(sound, "Merasmus.RoundBegins1seconds"))
+        TagChatClient(x, "{pass_green}1 second...");
+    }
+    else {
+      if (StrEqual(sound, "Announcer.RoundBegins5seconds"))
+        TagChatClient(x, "{pass_yellow}5 seconds...");
+      elif (StrEqual(sound, "Announcer.RoundBegins4seconds"))
+        TagChatClient(x, "{pass_yellow}4 seconds...");
+      elif (StrEqual(sound, "Announcer.RoundBegins3seconds"))
+        TagChatClient(x, "{pass_yellow}3 seconds...");
+      elif (StrEqual(sound, "Announcer.RoundBegins2seconds"))
+        TagChatClient(x, "{pass_green}2 seconds...");
+      elif (StrEqual(sound, "Announcer.RoundBegins1seconds"))
+        TagChatClient(x, "{pass_green}1 second...");
+    }
+  }
+}
+
+stock v ShowJackHud(int client) {
+  if (arrbClientSettings[client].bJackHud) {
+    SetHudTextParams(-1.0, 0.22, 3.0, 240, 0, 240, 255);
+    ShowHudText(client, 1, "YOU HAVE THE JACK");
+  }
+}
+
+stock v HideJackHud(int client) {
+  if (arrbClientSettings[client].bJackHud) {
+    SetHudTextParams(-1.0, 0.22, 3.0, 240, 0, 240, 255);
+    ShowHudText(client, 1, "");
+  }
+}
+
+stock v PlayJackSound(int client) {
+  if (arrbClientSettings[client].bJackSound) {
+    ClientCommand(client, "playgamesound Passtime.BallSmack");
+  }
+}
+
+stock v ShowJackChat(int client, const char[] message) {
+  if (arrbClientSettings[client].bJackChat) {
+    TagChatClient(client, "%s%s", "{pass_green}", message);
+  }
+}
+
+stock b IsFeatureEnabled(CV cvar) {
+  return cvar.BoolValue;
+}
+
+stock v LogGameEvent(const char[] eventName, const char[] format, any ...) {
+  int len = strlen(format) + 255;
+  char[] MessageToLog = new char[len];
+  VFormat(MessageToLog, len, format, 2);
+  LogToGame("\"%s\" %s", eventName, MessageToLog);
+}
+
+stock v LogScoreEvent(int scorer, int points, bool panacea, bool winstrat, bool deathbomb, f dist) {
+  SetLogInfo(scorer);
+  LogGameEvent("pass_score", "(points \"%i\") (panacea \"%d\") (win strat \"%d\") (deathbomb \"%d\") (dist \"%.0f\") (position \"%.0f %.0f %.0f\")",
+              points, panacea, winstrat, deathbomb, dist,
+              user1position[0], user1position[1], user1position[2]);
+}
+
+stock v LogAssistEvent(int assistant) {
+  c assistantName[MAX_NAME_LENGTH];
+  GetClientName(assistant, assistantName, sizeof(assistantName));
+  SetLogInfo(assistant);
+  LogGameEvent("pass_score_assist", "(position \"%.0f %.0f %.0f\")",
+              user1position[0], user1position[1], user1position[2]);
+  arriClientRoundStats[assistant].iAssists++;
+}
+
+stock v HandleDeathbombScoring(int scorer, int points, f dist) {
+  arrbPanaceaCheck[scorer] = false;
+  LogScoreEvent(entDeathBomber, points, arrbPanaceaCheck[scorer], arrbWinStratCheck[scorer], true, dist);
+  arriClientRoundStats[entDeathBomber].iScores++;
+  arriClientRoundStats[entDeathBomber].iDeathbombs++;
+  LogAssistEvent(scorer);
+}
+
+stock v HandleNormalScoring(int scorer, int points, bool panacea, bool winstrat, bool deathbomb, f dist, int assistant) {
+  LogScoreEvent(scorer, points, panacea, winstrat, deathbomb, dist);
+  arriClientRoundStats[scorer].iScores++;
+  
+  if (assistant > 0) {
+    LogAssistEvent(assistant);
+  }
+}
+
+stock v ShowScoreMessage(int scorer, int assistant, bool panacea, bool winstrat, bool deathbomb, f dist) {
+  c playerNameTeamFormatted[MAX_TEAMFORMAT_NAME_LENGTH], assistantNameTeamFormatted[MAX_TEAMFORMAT_NAME_LENGTH];
+  FormatPlayerNameWithTeam(scorer, playerNameTeamFormatted);
+  
+  if (panacea && TF2_GetPlayerClass(scorer) != TFClass_Medic) {
+    ChatEvent("%s{pass_green} scored a {pass_green}Panacea!", playerNameTeamFormatted);
+    TagChatSTV("%s scored a Panacea. t%d", playerName, STVTickCount());
+  }
+  elif (winstrat) {
+    ChatEvent("%s{pass_green} scored a {pass_green}win strat!", playerNameTeamFormatted);
+    TagChatSTV("%s scored a win strat. t%d", playerName, STVTickCount());
+  }
+  elif (deathbomb) {
+    int deathBomber = entDeathBomber;
+    c playerName[MAX_NAME_LENGTH];
+    GetClientName(deathBomber, playerName, sizeof(playerName));
+    FormatPlayerNameWithTeam(deathBomber, playerNameTeamFormatted);
+    ChatEvent("%s{pass_green} scored a {pass_green}deathbomb!", playerNameTeamFormatted);
+    TagChatSTV("%s scored a deathbomb. t%d", playerName, STVTickCount());
+  }
+  elif (dist > 1600) {
+    ChatEvent("%s{pass_green} scored a goal from a distance of %.0fhu!", playerNameTeamFormatted, dist);
+    TagChatSTV("%s scored a goal from distance of %.0fhu. t%d", playerName, dist, STVTickCount());
+  }
+  elif (assistant > 0) {
+    FormatPlayerNameWithTeam(assistant, assistantNameTeamFormatted);
+    ChatEvent("%s{pass_green} scored a goal {chat}assisted by %s!", playerNameTeamFormatted, assistantNameTeamFormatted);
+    TagChatSTV("%s scored a goal assisted by %s. t%d", playerName, assistantName, STVTickCount());
+  }
+  else {
+    ChatEvent("%s{pass_green} scored a goal!", playerNameTeamFormatted);
+    TagChatSTV("%s scored a goal. t%d", playerName, STVTickCount());
+  }
+}
+
+stock v LogBallSpawn(const char[] spawnName, int caller) {
+  c logMessage[64];
+  if (StrEqual(spawnName, "passtime_ball_spawn1")) {
+    Format(logMessage, sizeof(logMessage), "passtime_ball spawned upper.");
+    GetEntPropVector(caller, Prop_Send, "m_vecOrigin", fTopSpawnPos);
+  }
+  elif (StrEqual(spawnName, "passtime_ball_spawn2")) {
+    Format(logMessage, sizeof(logMessage), "passtime_ball spawned lower.");
+    ibBallSpawnedLower = 1;
+  }
+  elif (StrEqual(spawnName, "passtime_ball_spawn3")) {
+    Format(logMessage, sizeof(logMessage), "passtime_ball spawned right.");
+  }
+  elif (StrEqual(spawnName, "passtime_ball_spawn4")) {
+    Format(logMessage, sizeof(logMessage), "passtime_ball spawned left.");
+  }
+  else {
+    return; // Unknown spawn name, don't log
+  }
+  
+  LogToGame(logMessage);
+  TagChatSTV("%s", logMessage);
+}
+
+stock v LogCatapultEvent(const char[] catapultName) {
+  SetLogInfo(iPlyWhoGotJack);
+  LogGameEvent("%s with the jack", catapultName, "(position \"%.0f %.0f %.0f\")",
+              user1position[0], user1position[1], user1position[2]);
+  arriClientRoundStats[iPlyWhoGotJack].iCatapults++;
+}
+
+stock v LogBallDamage(int victim, int attacker, int inflictor, f damage, int damagetype, const char[] classname) {
+  LogToGame("passtime_ball took damage victim '%d' attacker '%d' inflictor '%d' damage '%.2f' damagetype '%d' inflictor classname '%s'", 
+            victim, attacker, inflictor, damage, damagetype, classname);
+}
+
+stock v LogPassFree() {
+  SetLogInfo(owner);
+  LogGameEvent("pass_free", "(position \"%.0f %.0f %.0f\")",
+              user1position[0], user1position[1], user1position[2]);
+}
+
+stock v LogPassBallBlocked(int blocker, int thrower) {
+  SetLogInfo(blocker, thrower);
+  LogGameEvent("pass_ball_blocked", "against \"%N<%i><%s><%s>\" (thrower_position \"%.0f %.0f %.0f\") (blocker_position \"%.0f %.0f %.0f\")",
+              user2, GetClientUserId(user2), user2steamid, user2team,
+              user1position[0], user1position[1], user1position[2],
+              user2position[0], user2position[1], user2position[2]);
+}
+
+stock v LogPassCaught(int catcher, int thrower, bool intercept, bool save, bool handoff, f dist, f duration) {
+  SetLogInfo(catcher, thrower);
+  LogGameEvent("pass_pass_caught", "against \"%N<%i><%s><%s>\" (interception \"%i\") (save \"%i\") (handoff \"%i\") (dist \"%.3f\") (duration \"%.3f\") (thrower_position \"%.0f %.0f %.0f\") (catcher_position \"%.0f %.0f %.0f\")",
+              user2, GetClientUserId(user2), user2steamid, user2team,
+              intercept, save, handoff, dist, duration,
+              user1position[0], user1position[1], user1position[2],
+              user2position[0], user2position[1], user2position[2]);
+}
+
+stock v LogPassBallStolen(int thief, int victim, bool steal2save) {
+  SetLogInfo(thief, victim);
+  LogGameEvent("pass_ball_stolen", "against \"%N<%i><%s><%s>\" (steal defense \"%d\") (thief_position \"%.0f %.0f %.0f\") (victim_position \"%.0f %.0f %.0f\")",
+              user2, GetClientUserId(user2), user2steamid, user2team,
+              steal2save,
+              user1position[0], user1position[1], user1position[2],
+              user2position[0], user2position[1], user2position[2]);
+}
+
 #define NOTIFY FCVAR_NOTIFY
 
 #define GENERIC ADMFLAG_GENERIC
@@ -472,7 +695,7 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
   tballTeam = eLastTickBallTeam;
   c classname[128];
   GetEntityClassname(inflictor, classname, sizeof(classname));
-  LogToGame("passtime_ball took damage victim '%d' attacker '%d' inflictor '%d' damage '%.2f' damagetype '%d' inflictor classname '%s' ", victim, attacker, inflictor, damage, damagetype, classname);
+  LogBallDamage(victim, attacker, inflictor, damage, damagetype, classname);
   tplayerTeam = TF2_GetClientTeam(attacker);
 
   c playerName[MAX_NAME_LENGTH];
@@ -570,18 +793,7 @@ Action ERoundReset(Event event, const char[] name, b dontBroadcast) {
 
 Action EPregameCountdown(Event event, const char[] name, b dontBroadcast) {
   int time = event.GetInt("time");
-  for (int x = 1; x < MaxClients + 1; x++) {
-    if (!IsValidClient(x) || !arrbClientSettings[x].bCountdown) continue;
-
-    switch (time) {
-      case 10: TagChatClient(x, "{pass_red}10 seconds...");
-      case 5:  TagChatClient(x, "{pass_yellow}5 seconds...");
-      case 4:  TagChatClient(x, "{pass_yellow}4 seconds...");
-      case 3:  TagChatClient(x, "{pass_yellow}3 seconds...");
-      case 2:  TagChatClient(x, "{pass_green}2 seconds...");
-      case 1:  TagChatClient(x, "{pass_green}1 second...");
-    }
-  }
+  SendCountdownToClients(time);
   PH;
 }
 
@@ -590,41 +802,10 @@ Action EMidgameCountdown(Event event, const char[] name, b dontBroadcast) {
   // for pregame, announcer ALWAYS says start
 
   c sound[128];
-  event.GetString("sound", sound, sizeof(sound));
+  event.GetString("sound", sizeof(sound));
   if (StrEqual(sound, "Passtime.Merasmus.Laugh"))  // if this occurs (which it does during halloween right after ball spawn), assume halloween
     bHalloweenMode = true;
-  for (int x = 1; x < MaxClients + 1; x++) {
-    if (!IsValidClient(x) || !arrbClientSettings[x].bCountdown) continue;
-
-    if (StrEqual(sound, "Announcer.RoundBegins10seconds"))
-      TagChatClient(x, "{pass_red}10 seconds...");
-    elif (StrEqual(sound, "Passtime.BallSpawn"))
-      TagChatClient(x, "{pass_green}Ball has spawned!");
-    if (bHalloweenMode) {
-      if (StrEqual(sound, "Merasmus.RoundBegins5seconds"))
-        TagChatClient(x, "{pass_yellow}5 seconds...");
-      elif (StrEqual(sound, "Merasmus.RoundBegins4seconds"))
-        TagChatClient(x, "{pass_yellow}4 seconds...");
-      elif (StrEqual(sound, "Merasmus.RoundBegins3seconds"))
-        TagChatClient(x, "{pass_yellow}3 seconds...");
-      elif (StrEqual(sound, "Merasmus.RoundBegins2seconds"))
-        TagChatClient(x, "{pass_green}2 seconds...");
-      elif (StrEqual(sound, "Merasmus.RoundBegins1seconds"))
-        TagChatClient(x, "{pass_green}1 second...");
-    }
-    else {
-      if (StrEqual(sound, "Announcer.RoundBegins5seconds"))
-        TagChatClient(x, "{pass_yellow}5 seconds...");
-      elif (StrEqual(sound, "Announcer.RoundBegins4seconds"))
-        TagChatClient(x, "{pass_yellow}4 seconds...");
-      elif (StrEqual(sound, "Announcer.RoundBegins3seconds"))
-        TagChatClient(x, "{pass_yellow}3 seconds...");
-      elif (StrEqual(sound, "Announcer.RoundBegins2seconds"))
-        TagChatClient(x, "{pass_green}2 seconds...");
-      elif (StrEqual(sound, "Announcer.RoundBegins1seconds"))
-        TagChatClient(x, "{pass_green}1 second...");
-    }
-  }
+  SendSoundCountdownToClients(sound);
   PH;
 }
 
@@ -756,24 +937,7 @@ v EOOnSpawnBall(const char[] name, int caller, int activator, f delay) {
     bWaitingForBallSpawnToRestart = false;
   }
   GetEntPropString(caller, Prop_Data, "m_iName", spawnName, sizeof(spawnName));
-  if (StrEqual(spawnName, "passtime_ball_spawn1")) {
-    LogToGame( "passtime_ball spawned upper.");
-    TagChatSTV("passtime_ball spawned upper.");
-    GetEntPropVector(caller, Prop_Send, "m_vecOrigin", fTopSpawnPos);
-  }
-  elif (StrEqual(spawnName, "passtime_ball_spawn2")) {
-    LogToGame( "passtime_ball spawned lower.");
-    TagChatSTV("passtime_ball spawned lower.");
-    ibBallSpawnedLower = 1;
-  }
-  elif (StrEqual(spawnName, "passtime_ball_spawn3")) {
-    LogToGame( "passtime_ball spawned right.");
-    TagChatSTV("passtime_ball spawned right.");
-  }
-  elif (StrEqual(spawnName, "passtime_ball_spawn4")) {
-    LogToGame( "passtime_ball spawned left.");
-    TagChatSTV("passtime_ball spawned left.");
-  }
+  LogBallSpawn(spawnName, caller);
   ibFirstGrabCheck = true;
   bBallSplashed = false;
 }
@@ -799,20 +963,14 @@ Action EPassFree(Event event, const char[] name, b dontBroadcast) {
 
   arrbDeathbombCheck[entDeathBomber] = false;  // if anyone at all throws the ball, the deathbomb is automatically false
 
-  if (arrbClientSettings[owner].bJackHud) {
-    SetHudTextParams(-1.0, 0.22, 3.0, 240, 0, 240, 255);
-    ShowHudText(owner, 1, "");
-  }
+  HideJackHud(owner);
   GetEntPropVector(entJack, Prop_Data, "m_vecAbsOrigin", fFreeBallPos);
   entPassTarget = EntRefToEntIndex(GetEntPropEnt(owner, Prop_Send, "m_hPasstimePassTarget"));
   if (!(arrbBlastJumpStatus[owner])) {
     arrbPanaceaCheck[owner]  = false;
     arrbWinStratCheck[owner] = false;
   }
-  SetLogInfo(owner);
-  LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_free\" (position \"%.0f %.0f %.0f\")",
-            user1, GetClientUserId(user1), user1steamid, user1team,
-            user1position[0], user1position[1], user1position[2]);
+  LogPassFree();
   PH;
 }
 
@@ -821,12 +979,7 @@ Action EPassBallBlocked(Event event, const char[] name, b dontBroadcast) {
   int blocker = event.GetInt("blocker");
   int thrower = event.GetInt("owner");
   arriClientRoundStats[blocker].iBlocks++;
-  SetLogInfo(blocker, thrower);
-  LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_ball_blocked\" against \"%N<%i><%s><%s>\" (thrower_position \"%.0f %.0f %.0f\") (blocker_position \"%.0f %.0f %.0f\")",
-            user1, GetClientUserId(user1), user1steamid, user1team,
-            user2, GetClientUserId(user2), user2steamid, user2team,
-            user1position[0], user1position[1], user1position[2],
-            user2position[0], user2position[1], user2position[2]);
+  LogPassBallBlocked(blocker, thrower);
   user2 = 0;
   PH;
 }
@@ -870,16 +1023,10 @@ Action EPassGet(Event event, const char[] name, b dontBroadcast) {
   }
   ibFirstGrabCheck = false;
 
-  if (arrbClientSettings[iPlyWhoGotJack].bJackHud) {
-    SetHudTextParams(-1.0, 0.22, 3.0, 240, 0, 240, 255);
-    ShowHudText(iPlyWhoGotJack, 1, "YOU HAVE THE JACK");
-  }
-
+  ShowJackHud(iPlyWhoGotJack);
   if (arrbClientSettings[iPlyWhoGotJack].iSummary)
-    TagChatClient(iPlyWhoGotJack, "%sYOU HAVE THE JACK!!!", "{pass_green}");
-
-  if (arrbClientSettings[iPlyWhoGotJack].bJackSound)
-    ClientCommand(iPlyWhoGotJack, "playgamesound Passtime.BallSmack");
+    ShowJackChat(iPlyWhoGotJack, "YOU HAVE THE JACK!!!");
+  PlayJackSound(iPlyWhoGotJack);
 
   PH;
 }
@@ -939,13 +1086,7 @@ Action EPassCaught(Han event, const char[] name, b dontBroadcast) {
     arriClientRoundStats[thrower].iHandoffs++;
     entPassTarget = 0;
   }
-  SetLogInfo(catcher, thrower);
-  LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_pass_caught\" against \"%N<%i><%s><%s>\" (interception \"%i\") (save \"%i\") (handoff \"%i\") (dist \"%.3f\") (duration \"%.3f\") (thrower_position \"%.0f %.0f %.0f\") (catcher_position \"%.0f %.0f %.0f\")",
-            user1, GetClientUserId(user1), user1steamid, user1team,
-            user2, GetClientUserId(user2), user2steamid, user2team,
-            intercept, bSave, ibHandoffCheck, dist, duration,
-            user1position[0], user1position[1], user1position[2],
-            user2position[0], user2position[1], user2position[2]);
+  LogPassCaught(catcher, thrower, intercept, bSave, ibHandoffCheck, dist, duration);
   user2 = 0;
   arrbPanaceaCheck[thrower]  = false;
   arrbPanaceaCheck[catcher]  = false;
@@ -969,23 +1110,14 @@ Action EPassStolen(Event event, const char[] name, b dontBroadcast) {
     steal2save = true;
   }
 
-  SetLogInfo(thief, victim);
-  LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_ball_stolen\" against \"%N<%i><%s><%s>\" (steal defense \"%d\") (thief_position \"%.0f %.0f %.0f\") (victim_position \"%.0f %.0f %.0f\")",
-            user1, GetClientUserId(user1), user1steamid, user1team,
-            user2, GetClientUserId(user2), user2steamid, user2team,
-            steal2save,
-            user1position[0], user1position[1], user1position[2],
-            user2position[0], user2position[1], user2position[2]);
+  LogPassBallStolen(thief, victim, steal2save);
   user2 = 0;
   arrbPanaceaCheck[thief]   = false;
   arrbPanaceaCheck[victim]  = false;
   arrbWinStratCheck[thief]  = false;
   arrbWinStratCheck[victim] = false;
 
-  if (arrbClientSettings[victim].bJackHud) {
-    SetHudTextParams(-1.0, 0.22, 3.0, 240, 0, 240, 255);
-    ShowHudText(victim, 1, "");
-  }
+  HideJackHud(victim);
   c thiefName[MAX_NAME_LENGTH], victimName[MAX_NAME_LENGTH];
   GetClientName(thief, thiefName, sizeof(thiefName));
   GetClientName(victim, victimName, sizeof(victimName));
@@ -1025,39 +1157,10 @@ Action EPassScore(Event event, const char[] name, b dontBroadcast) {
   f dist = GetVectorDistance(fFreeBallPos, fScoredBallPos, false);
 
   if (arrbDeathbombCheck[entDeathBomber]) {
-    // both Panacea and deathbomb requirements can be true at the same time, so if deathbomb occurs just turn off panacea
-    arrbPanaceaCheck[scorer] = false;
-    SetLogInfo(entDeathBomber);
-    LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_score\" (points \"%i\") (panacea \"%d\") (win strat \"%d\") (deathbomb \"%d\") (dist \"%.0f\") (position \"%.0f %.0f %.0f\")",
-              user1, GetClientUserId(user1), user1steamid, user1team,
-              points, arrbPanaceaCheck[scorer], arrbWinStratCheck[scorer], arrbDeathbombCheck[entDeathBomber], dist,
-              user1position[0], user1position[1], user1position[2]);
-    arriClientRoundStats[entDeathBomber].iScores++;
-    arriClientRoundStats[entDeathBomber].iDeathbombs++;
-
-    GetClientName(scorer, assistantName, sizeof(assistantName));
-    SetLogInfo(scorer);
-    LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_score_assist\" (position \"%.0f %.0f %.0f\")",
-              user1, GetClientUserId(user1), user1steamid, user1team,
-              user1position[0], user1position[1], user1position[2]);
-    arriClientRoundStats[scorer].iAssists++;
+    HandleDeathbombScoring(scorer, points, dist);
   }
   else {
-    SetLogInfo(scorer);
-    LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_score\" (points \"%i\") (panacea \"%d\") (win strat \"%d\") (deathbomb \"%d\") (dist \"%.0f\") (position \"%.0f %.0f %.0f\")",
-              user1, GetClientUserId(user1), user1steamid, user1team,
-              points, arrbPanaceaCheck[scorer], arrbWinStratCheck[scorer], arrbDeathbombCheck[entDeathBomber], dist,
-              user1position[0], user1position[1], user1position[2]);
-    arriClientRoundStats[scorer].iScores++;
-
-    if (assistant > 0) {
-      GetClientName(assistant, assistantName, sizeof(assistantName));
-      SetLogInfo(assistant);
-      LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_score_assist\" (position \"%.0f %.0f %.0f\")",
-                user1, GetClientUserId(user1), user1steamid, user1team,
-                user1position[0], user1position[1], user1position[2]);
-      arriClientRoundStats[assistant].iAssists++;
-    }
+    HandleNormalScoring(scorer, points, arrbPanaceaCheck[scorer], arrbWinStratCheck[scorer], arrbDeathbombCheck[entDeathBomber], dist, assistant);
   }
 
   if (arrbPanaceaCheck[scorer] && TF2_GetPlayerClass(scorer) != TFClass_Medic)
@@ -1065,38 +1168,7 @@ Action EPassScore(Event event, const char[] name, b dontBroadcast) {
   elif (arrbWinStratCheck[scorer])
     arriClientRoundStats[scorer].iWinstrats++;
 
-  c playerNameTeamFormatted[MAX_TEAMFORMAT_NAME_LENGTH], assistantNameTeamFormatted[MAX_TEAMFORMAT_NAME_LENGTH];
-  FormatPlayerNameWithTeam(scorer, playerNameTeamFormatted);
-  if (arrbPanaceaCheck[scorer] && TF2_GetPlayerClass(scorer) != TFClass_Medic) {
-    ChatEvent("%s{pass_green} scored a {pass_green}Panacea!", playerNameTeamFormatted);
-    TagChatSTV("%s scored a Panacea. t%d", playerName, STVTickCount());
-  }
-  elif (arrbWinStratCheck[scorer]) {
-    ChatEvent("%s{pass_green} scored a {pass_green}win strat!", playerNameTeamFormatted);
-    TagChatSTV("%s scored a win strat. t%d", playerName, STVTickCount());
-  }
-  elif (arrbDeathbombCheck[entDeathBomber]) {
-    // if we take too long to print, a race condition happens
-    // prevent that race condition
-    int deathBomber = entDeathBomber;
-    GetClientName(deathBomber, playerName, sizeof(playerName));
-    FormatPlayerNameWithTeam(deathBomber, playerNameTeamFormatted);
-    ChatEvent("%s{pass_green} scored a {pass_green}deathbomb!", playerNameTeamFormatted);
-    TagChatSTV("%s scored a deathbomb. t%d", playerName, STVTickCount());
-  }
-  elif (dist > 1600) {
-    ChatEvent("%s{pass_green} scored a goal from a distance of %.0fhu!", playerNameTeamFormatted, dist);
-    TagChatSTV("%s scored a goal from distance of %.0fhu. t%d", playerName, dist, STVTickCount());
-  }
-  elif (assistant > 0) {
-    FormatPlayerNameWithTeam(assistant, assistantNameTeamFormatted);
-    ChatEvent("%s{pass_green} scored a goal {chat}assisted by %s!", playerNameTeamFormatted, assistantNameTeamFormatted);
-    TagChatSTV("%s scored a goal assisted by %s. t%d", playerName, assistantName, STVTickCount());
-  }
-  else {
-    ChatEvent("%s{pass_green} scored a goal!", playerNameTeamFormatted);
-    TagChatSTV("%s scored a goal. t%d", playerName, STVTickCount());
-  }
+  ShowScoreMessage(scorer, assistant, arrbPanaceaCheck[scorer], arrbWinStratCheck[scorer], arrbDeathbombCheck[entDeathBomber], dist);
   arrbPanaceaCheck[scorer]  = false;
   arrbWinStratCheck[scorer] = false;  // reset these cuz its good idea
 
@@ -1169,14 +1241,10 @@ v EOOnCatapult(const char[] output, int caller, int activator, f delay) {
   GetEntPropString(caller, Prop_Data, "m_iName", catapultName, sizeof(catapultName));
   if (activator == entJack && iPlyWhoGotJack != 0) {
     if (StrEqual(catapultName, "red_catapult1") || StrEqual(catapultName, "red_catapult2") || StrEqual(catapultName, "blu_catapult1") || StrEqual(catapultName, "blu_catapult2") && IsClientConnected(iPlyWhoGotJack)) {
-      SetLogInfo(iPlyWhoGotJack);
-      LogToGame("\"%N<%i><%s><%s>\" triggered \"%s\" with the jack (position \"%.0f %.0f %.0f\")",
-                user1, GetClientUserId(user1), user1steamid, user1team,
-                catapultName, user1position[0], user1position[1], user1position[2]);
-      arriClientRoundStats[iPlyWhoGotJack].iCatapults++;
-      TagChatSTV("%N triggered \"%s\" with the jack. t%d", user1, catapultName, STVTickCount());
+      LogCatapultEvent(catapultName);
     }
   }
+  TagChatSTV("%N triggered \"%s\" with the jack. t%d", user1, catapultName, STVTickCount());
 }
 
 // outputString must be of size MAX_NAME_LENGTH + 7 or greater.
