@@ -1,6 +1,6 @@
 // This file relates to all menu features for player-specific settings and will contain the functions for them
 bool GetCookieBool(int client, Ck cookie) {
-  char value[11];
+  c value[11];
   cookie.Get(client, value, sizeof(value));
 
   if (!value[0])
@@ -12,7 +12,7 @@ bool GetCookieBool(int client, Ck cookie) {
 
 v SetCookieBool(int client, Ck cookie, bool state) {
   if (AreClientCookiesCached(client)) {
-    char value[11];
+    c value[11];
     FormatEx(value, sizeof(value), "%d", state);
     cookie.Set(client, value);
   }
@@ -36,7 +36,7 @@ v ShowPassMenu(int client) {
   mPassMenu = new Menu(PassMenuHandler);
   mPassMenu.SetTitle("P4SS Menu");
 
-  char buffer[2048];
+  c buffer[2048];
 
   FormatEx(buffer, sizeof(buffer), "%s: %s", "JACK spawn timer captions", arrbClientSettings[client].bCountdown ? "ON" : "OFF");
   mPassMenu.AddItem("countdowncaption", buffer);
@@ -58,7 +58,7 @@ v ShowPassMenu(int client) {
 
 int PassMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
   if (action == MenuAction_Select) {
-    char info[32], display[255];
+    c info[32], display[255];
     mPassMenu.GetItem(param2, info, sizeof(info), _, display, sizeof(display));
     if (StrEqual(info, "countdowncaption")) {
       arrbClientSettings[param1].bCountdown = !arrbClientSettings[param1].bCountdown;

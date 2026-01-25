@@ -3,19 +3,19 @@
   #define RED false
 #endif
 
-static const char sGoals[]      = "{pass_green} goals %d";
-static const char sAssists[]    = "{pass_green} assists %d";
-static const char sSaves[]      = "{pass_yellow} saves %d";
-static const char sIntercepts[] = "{pass_red} intercepts %d";
-static const char sSteals[]     = "{pass_orange} steals %d";
-static const char sSplashes[]   = "{pass_blue} splashes %d";
+static const c sGoals[]      = "{pass_green} goals %d";
+static const c sAssists[]    = "{pass_green} assists %d";
+static const c sSaves[]      = "{pass_yellow} saves %d";
+static const c sIntercepts[] = "{pass_red} intercepts %d";
+static const c sSteals[]     = "{pass_orange} steals %d";
+static const c sSplashes[]   = "{pass_blue} splashes %d";
 
-static const char sGoalsShort[]      = "{pass_green} GLS %d";
-static const char sAssistsShort[]    = "{pass_green} AST %d";
-static const char sSavesShort[]      = "{pass_yellow} SAV %d";
-static const char sInterceptsShort[] = "{pass_red} INT %d";
-static const char sStealsShort[]     = "{pass_orange} STL %d";
-static const char sSplashesShort[]   = "{pass_blue} SPL %d";
+static const c sGoalsShort[]      = "{pass_green} GLS %d";
+static const c sAssistsShort[]    = "{pass_green} AST %d";
+static const c sSavesShort[]      = "{pass_yellow} SAV %d";
+static const c sInterceptsShort[] = "{pass_red} INT %d";
+static const c sStealsShort[]     = "{pass_orange} STL %d";
+static const c sSplashesShort[]   = "{pass_blue} SPL %d";
 
 Action CChatSummary(int client, int args) {
   int value = 0;
@@ -45,7 +45,7 @@ Action Timer_ShowMoreTF(Han timer, any client) {
   if (!IsValidClient(client))
     PS;
 
-  char num[3];
+  c num[3];
   Han Kv = CreateKeyValues("data");
   IntToString(MOTDPANEL_TYPE_URL, num, sizeof(num));
   KvSetString(Kv, "title", "MoreTF");
@@ -131,13 +131,13 @@ Action Timer_DisplayStats(Han timer) {
     }
   }
   // thanks rose! -lucy
-  char arrStrRedTeamStats[MAXPLAYERS + 1][MAX_MESSAGE_LENGTH];
-  char arrStrBluTeamStats[MAXPLAYERS + 1][MAX_MESSAGE_LENGTH];
-  char arrStrRedSimpleStats[MAXPLAYERS + 1][MAX_MESSAGE_LENGTH];
-  char arrStrBluSimpleStats[MAXPLAYERS + 1][MAX_MESSAGE_LENGTH];
+  c arrStrRedTeamStats[MAXPLAYERS + 1][MAX_MESSAGE_LENGTH];
+  c arrStrBluTeamStats[MAXPLAYERS + 1][MAX_MESSAGE_LENGTH];
+  c arrStrRedSimpleStats[MAXPLAYERS + 1][MAX_MESSAGE_LENGTH];
+  c arrStrBluSimpleStats[MAXPLAYERS + 1][MAX_MESSAGE_LENGTH];
 
-  char arrStrConsoleStatsRed[MAXPLAYERS + 1][7][MAX_MESSAGE_LENGTH];
-  char arrStrConsoleStatsBlu[MAXPLAYERS + 1][7][MAX_MESSAGE_LENGTH];
+  c arrStrConsoleStatsRed[MAXPLAYERS + 1][7][MAX_MESSAGE_LENGTH];
+  c arrStrConsoleStatsBlu[MAXPLAYERS + 1][7][MAX_MESSAGE_LENGTH];
 
   GetTeamStatsArrStr(arrStrRedTeamStats, redTeam, redAmount);
   GetTeamStatsArrStr(arrStrBluTeamStats, bluTeam, bluAmount);
@@ -196,26 +196,26 @@ Action Timer_DisplayStats(Han timer) {
   PS;
 }
 
-v GetTeamStatsArrStr(char buf[MAXPLAYERS + 1][MAX_MESSAGE_LENGTH], int[] teamMembers, int length, bool isSimple = false) {
+v GetTeamStatsArrStr(c buf[MAXPLAYERS + 1][MAX_MESSAGE_LENGTH], int[] teamMembers, int length, bool isSimple = false) {
   for (int i = 0; i < length; i++) {
-    char playerNameTeamFormatted[MAX_NAME_LENGTH + 7];
+    c playerNameTeamFormatted[MAX_NAME_LENGTH + 7];
     FormatPlayerNameWithTeam(teamMembers[i], playerNameTeamFormatted);
-    char stats[MAX_MESSAGE_LENGTH];
+    c stats[MAX_MESSAGE_LENGTH];
     AssembleColoredStatsString(stats, sizeof(stats), teamMembers[i], isSimple);
-    char out[MAX_MESSAGE_LENGTH];
+    c out[MAX_MESSAGE_LENGTH];
     Format(out, sizeof(out), "%s %s:%s", gsTag, playerNameTeamFormatted, stats);
     buf[i] = out;
   }
 }
 
 // awkward indentation as "%d" takes up two spaces but it ends up being effectively single digit
-static const char consoleFormatBlank[]    = "//                                                                        //";
-static const char consoleFormatTitleBlu[] = "//   BLU | %s";
-static const char consoleFormatTitleRed[] = "//   RED | %s";
-static const char consoleFormat1[]        = "//   %d goals, %d assists, %d saves, %d intercepts, %d steals //";
-static const char consoleFormat2[]        = "//   %d Panaceas, %d win strats, %d deathbombs, %d handoffs //";
-static const char consoleFormat3[]        = "//   %d first grabs, %d catapults, %d blocks, %d steal2saves //";
-static const char consoleFormat4[]        = "//   %d splash saves //";
+static const c consoleFormatBlank[]    = "//                                                                        //";
+static const c consoleFormatTitleBlu[] = "//   BLU | %s";
+static const c consoleFormatTitleRed[] = "//   RED | %s";
+static const c consoleFormat1[]        = "//   %d goals, %d assists, %d saves, %d intercepts, %d steals //";
+static const c consoleFormat2[]        = "//   %d Panaceas, %d win strats, %d deathbombs, %d handoffs //";
+static const c consoleFormat3[]        = "//   %d first grabs, %d catapults, %d blocks, %d steal2saves //";
+static const c consoleFormat4[]        = "//   %d splash saves //";
 
 // a player takes up 7 lines
 // this is a sad amount of arguments
@@ -223,9 +223,9 @@ static const char consoleFormat4[]        = "//   %d splash saves //";
 // dimension 1: a player
 // dimension 2: their stat strings
 
-v GetConsoleStatsArrStr(char buf[MAXPLAYERS + 1][7][MAX_MESSAGE_LENGTH], int[] teamMembers, int teamAmount, bool isBlu) {
+v GetConsoleStatsArrStr(c buf[MAXPLAYERS + 1][7][MAX_MESSAGE_LENGTH], int[] teamMembers, int teamAmount, bool isBlu) {
   for (int i = 0; i < teamAmount; i++) {
-    char playerName[MAX_NAME_LENGTH];
+    c playerName[MAX_NAME_LENGTH];
     int player = teamMembers[i];
     enuClientStats stats;
     stats = arriClientRoundStats[player];
@@ -269,12 +269,12 @@ v Print3DMultilineToConsole(int client, char[][][] lines, int length, int height
  */
 static v AssembleColoredStatsString(char[] buf, int maxLength, int client, bool simplified = false) {
   VerboseLog("Assembling stats for client: %d", client);
-  char buffer_sGoals[48];
-  char buffer_sAssists[48];
-  char buffer_sSaves[48];
-  char buffer_sIntercepts[48];
-  char buffer_sSteals[48];
-  char buffer_sSplashes[48];
+  c buffer_sGoals[48];
+  c buffer_sAssists[48];
+  c buffer_sSaves[48];
+  c buffer_sIntercepts[48];
+  c buffer_sSteals[48];
+  c buffer_sSplashes[48];
   if (simplified) {
     Format(buffer_sGoals,      sizeof(buffer_sGoals),      sGoalsShort,      arriClientRoundStats[client].iScores);
     Format(buffer_sAssists,    sizeof(buffer_sAssists),    sAssistsShort,    arriClientRoundStats[client].iAssists);

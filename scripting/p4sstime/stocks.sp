@@ -8,17 +8,17 @@
 #define COLOR_SPLASH "{turquoise}"
 #define COLOR_MEDIC_SPLASH "{mintcream}"
 
-char gsTag[32]    = "{plugin_tag}[PASS]{chat}";
-char gsTagSTV[32] = "{plugin_tag}[PASS-TV]{chat}";
+c gsTag[32]    = "{plugin_tag}[PASS]{chat}";
+c gsTagSTV[32] = "{plugin_tag}[PASS-TV]{chat}";
 
 pub v CTagReply(int client, const char[] format, any ...) {
-  char buffer[254];
+  c buffer[254];
   VFormat(buffer, sizeof(buffer), format, 2);
   CReplyToCommand(client, "%s %s", gsTag, buffer);
 }
 
 pub v TagChatGlobal(const char[] format, any ...) {
-  char buffer[254];
+  c buffer[254];
 
   for (int i = 1; i <= MaxClients; i++) {
     if (IsClientInGame(i)) {
@@ -30,7 +30,7 @@ pub v TagChatGlobal(const char[] format, any ...) {
 }
 
 pub v TagChatAllPlayers(const char[] format, any ...) {
-  char buffer[254];
+  c buffer[254];
 
   for (int i = 1; i <= MaxClients; i++) {
     if (IsClientInGame(i) && !IsClientSourceTV(i)) {
@@ -42,19 +42,19 @@ pub v TagChatAllPlayers(const char[] format, any ...) {
 }
 
 pub v TagChatClient(int client, const char[] format, any ...) {
-  char buffer[254];
+  c buffer[254];
   VFormat(buffer, sizeof(buffer), format, 2);
   CPrintToChat(client, "%s %s", gsTag, buffer);
 }
 
 pub v TagChatSTV(const char[] format, any ...) {
-  char buffer[254];
+  c buffer[254];
   VFormat(buffer, sizeof(buffer), format, 2);
   CPrintToSTV("%s %s", gsTagSTV, buffer);
 }
 
 stock char[] TFTeamToString(tinput) {
-  char string[4];
+  c string[4];
   switch (input) {
     case TFTeam_Blue: {
       string = "BLU";

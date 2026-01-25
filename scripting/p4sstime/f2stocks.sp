@@ -7,7 +7,7 @@ stock v CPrintToSTV(const char[] format, any...) {
   if (stv < 1)
     return;
 
-  char buffer[512];
+  c buffer[512];
   VFormat(buffer, sizeof(buffer), format, 2);
   CPrintToChat(stv, "%s", buffer);
 }

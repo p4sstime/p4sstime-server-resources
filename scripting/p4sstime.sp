@@ -184,10 +184,10 @@ pub v OnPluginStart() {
 
   // Cookies
   cookieCountdownCaption = RCC("p4ssClientCountdownCaption",  "p4sstime's client setting (1/0) for captions for JACK spawn timer", CookieAccess_Public);
-  cookieJACKPickupHud = RCC("p4ssClientJACKPickupHudText", "p4sstime's client setting (1/0) for HUD text when picking up JACK", CookieAccess_Public);
-  cookieJACKPickupChat = RCC("p4ssClientJACKPickupChatMsg", "p4sstime's client setting (1/0) for chat msg when picking up JACK", CookieAccess_Public);
-  cookieJACKPickupSound = RCC("p4ssClientJACKPickupSound",   "p4sstime's client setting (1/0) for sound when picking up JACK",    CookieAccess_Public);
-  cookieSummary = RCC("p4ssClientSummary",           "p4sstime's client setting (0/1/2) for EoR summaries",               CookieAccess_Public);
+  cookieJACKPickupHud =    RCC("p4ssClientJACKPickupHudText", "p4sstime's client setting (1/0) for HUD text when picking up JACK", CookieAccess_Public);
+  cookieJACKPickupChat =   RCC("p4ssClientJACKPickupChatMsg", "p4sstime's client setting (1/0) for chat msg when picking up JACK", CookieAccess_Public);
+  cookieJACKPickupSound =  RCC("p4ssClientJACKPickupSound",   "p4sstime's client setting (1/0) for sound when picking up JACK",    CookieAccess_Public);
+  cookieSummary =          RCC("p4ssClientSummary",           "p4sstime's client setting (0/1/2) for EoR summaries",               CookieAccess_Public);
 
   // Client commands
   RC("sm_pt_menu",         CMenu);
@@ -222,23 +222,23 @@ pub v OnPluginStart() {
   AC("pass_yellow",  0xECCD19); // #eccd19
 
   // ConVars
-  bFixStocks = CC("sm_pt_fix_stocks",         "0",   "Disable equipping shotgun, stickies, and needles; the allowlist can't block stock weapons.",       NOTIFY);
-  bFixRespawnBypass = CC("sm_pt_fix_respawn_bypass", "0",   "Disable switching classes while dead to respawn immediately.",                                     NOTIFY);
-  bFixJackCollision = CC("sm_pt_fix_jack_collision", "1",   "Disable jack collision on ammo packs and weapons.",                                                NOTIFY);
-  bFixBlur = CC("sm_pt_fix_blur",           "0",   "Enable blurry screen overlay when intercepting or stealing.",                                      NOTIFY);
-  bChatEvents = CC("sm_pt_chat_events",        "0",   "Enable printing of passtime events to chat both during and after games. Does not affect logging.", NOTIFY);
-  bChatEventsFun = CC("sm_pt_chat_events_fun",    "0",   "If sm_pt_print_events is 1, enable printing additional fun stats.",                                NOTIFY);
-  bWinstratKills = CC("sm_pt_kill_winstrats",     "0",   "Enable killing winstratters and printing \"tried to winstrat\" in chat.",                          NOTIFY);
-  bVerboseLogs = CC("sm_pt_logs_verbose",       "0",   "Enable printing additional information to logs.");
-  bMedicSplash = CC("sm_pt_medic_splash",       "1",   "Enable medic arrows neutralizing the jack.",                                                       NOTIFY);
-  bMedicSplashPush = CC("sm_pt_medic_splash_push",  "1",   "If sm_pt_medic_splash is 1, enable crossbow push on the jack.",                                    NOTIFY);
-  bResupply = CC("sm_pt_resupply",           "0",   "Enable instant resupply.",                                                                         NOTIFY);
-  flResupplyCooldown = CC("sm_pt_resupply_cooldown",  "0.5", "Set the resupply cooldown duration in seconds.",                                                   NOTIFY);
-  flGoalRegeneration = CC("sm_pt_goal_regeneration",  "0",   "Set the amount of health regeneration every 500ms while in the goal zone.",                        NOTIFY);
-  bPractice = CC("sm_pt_practice",           "0",   "Enable practice mode. When the round timer reaches 5 minutes, add 5 minutes to the timer.",        NOTIFY, true, 0.0, true, 1.0);
-  // trikzEnable	    = CC("sm_pt_trikz",                 "0", "Set 'trikz' mode. 1 adds friendly knockback for airshots, 2 adds friendly knockback for splash damage, 3 adds friendly knockback for everywhere", NOTIFY, true, 0.0, true, 3.0);
+  bFixStocks =          CC("sm_pt_fix_stocks",         "0",   "Disable equipping shotgun, stickies, and needles; the allowlist can't block stock weapons.",       NOTIFY);
+  bFixRespawnBypass =   CC("sm_pt_fix_respawn_bypass", "0",   "Disable switching classes while dead to respawn immediately.",                                     NOTIFY);
+  bFixJackCollision =   CC("sm_pt_fix_jack_collision", "1",   "Disable jack collision on ammo packs and weapons.",                                                NOTIFY);
+  bFixBlur =            CC("sm_pt_fix_blur",           "0",   "Enable blurry screen overlay when intercepting or stealing.",                                      NOTIFY);
+  bChatEvents =         CC("sm_pt_chat_events",        "0",   "Enable printing of passtime events to chat both during and after games. Does not affect logging.", NOTIFY);
+  bChatEventsFun =      CC("sm_pt_chat_events_fun",    "0",   "If sm_pt_print_events is 1, enable printing additional fun stats.",                                NOTIFY);
+  bWinstratKills =      CC("sm_pt_kill_winstrats",     "0",   "Enable killing winstratters and printing \"tried to winstrat\" in chat.",                          NOTIFY);
+  bVerboseLogs =        CC("sm_pt_logs_verbose",       "0",   "Enable printing additional information to logs.");
+  bMedicSplash =        CC("sm_pt_medic_splash",       "1",   "Enable medic arrows neutralizing the jack.",                                                       NOTIFY);
+  bMedicSplashPush =    CC("sm_pt_medic_splash_push",  "1",   "If sm_pt_medic_splash is 1, enable crossbow push on the jack.",                                    NOTIFY);
+  bResupply =           CC("sm_pt_resupply",           "0",   "Enable instant resupply.",                                                                         NOTIFY);
+  flResupplyCooldown =  CC("sm_pt_resupply_cooldown",  "0.5", "Set the resupply cooldown duration in seconds.",                                                   NOTIFY);
+  flGoalRegeneration =  CC("sm_pt_goal_regeneration",  "0",   "Set the amount of health regeneration every 500ms while in the goal zone.",                        NOTIFY);
+  bPractice =           CC("sm_pt_practice",           "0",   "Enable practice mode. When the round timer reaches 5 minutes, add 5 minutes to the timer.",        NOTIFY, true, 0.0, true, 1.0);
+  // trikzEnable =      CC("sm_pt_trikz",                 "0", "Set 'trikz' mode. 1 adds friendly knockback for airshots, 2 adds friendly knockback for splash damage, 3 adds friendly knockback for everywhere", NOTIFY, true, 0.0, true, 3.0);
   // trikzProjCollide = CC("sm_pt_trikz_projcollide",     "2", "Manually set team projectile collision behavior when trikz is on. 2 always collides, 1 will cause your projectiles to phase through if you are too close (default game behavior), 0 will cause them to never collide.", 0, true, 0.0, true, 2.0);
-  // trikzProjDev = CC("sm_pt_trikz_projcollide_dev", "0", "DONOTUSE; This command is used solely by the plugin to change values. Changing this manually may cause issues.", FCVAR_HIDDEN, true, 0.0, true, 2.0);
+  // trikzProjDev =     CC("sm_pt_trikz_projcollide_dev", "0", "DONOTUSE; This command is used solely by the plugin to change values. Changing this manually may cause issues.", FCVAR_HIDDEN, true, 0.0, true, 2.0);
 
   // Hooks
   HE("player_spawn",                 EPlayerSpawn);

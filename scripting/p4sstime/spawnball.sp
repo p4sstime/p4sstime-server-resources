@@ -1,5 +1,5 @@
 Action CSpawnBall(int client, int args) {
-  char name[MAX_NAME_LENGTH];
+  c name[MAX_NAME_LENGTH];
   VerboseLog("ptspawnball called from client %d", client);
   if (client == 0) name = "CONSOLE";
   else GetClientName(client, name, sizeof(name));

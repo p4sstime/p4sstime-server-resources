@@ -73,14 +73,14 @@ float DistanceAboveGround(int victim) // taken from mgemod {
 }
 
 Action EOnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3], int damagecustom) {
-  char victimName[MAX_NAME_LENGTH], attackerName[MAX_NAME_LENGTH];
-  char steamid_victim[16];
-  char team_victim[12];
+  c victimName[MAX_NAME_LENGTH], attackerName[MAX_NAME_LENGTH];
+  c steamid_victim[16];
+  c team_victim[12];
   GetClientName(victim, victimName, sizeof(victimName));
   GetClientAuthId(victim, AuthId_Steam3, steamid_victim, sizeof(steamid_victim));
   if (victim != attacker && !(GetEntityFlags(victim) & FL_ONGROUND) && DistanceAboveGround(victim) > 200 && plyTakenDirectHit[victim] && GetEntProp(victim, Prop_Send, "m_bHasPasstimeBall") == 1 && TF2_GetClientTeam(victim) != TF2_GetClientTeam(attacker)) {
-    char steamid_attacker[16];
-    char team_attacker[12];
+    c steamid_attacker[16];
+    c team_attacker[12];
     GetClientName(attacker, attackerName, sizeof(attackerName));
     GetClientAuthId(attacker, AuthId_Steam3, steamid_attacker, sizeof(steamid_attacker));
     if (bPrintStats.BoolValue)
@@ -95,8 +95,8 @@ Action EOnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, i
     SetConVarInt(trikzProjDev, trikzProjCollideSave);
     TF2_AddCondition(victim, TFCond_PasstimeInterception, 0.05 , 0);
     if (DistanceAboveGround(victim) > 200) {
-      char steamid_attacker[16];
-      char team_attacker[12];
+      c steamid_attacker[16];
+      c team_attacker[12];
       GetClientName(attacker, attackerName, sizeof(attackerName));
       GetClientAuthId(attacker, AuthId_Steam3, steamid_attacker, sizeof(steamid_attacker));
       if (bPrintStats.BoolValue)

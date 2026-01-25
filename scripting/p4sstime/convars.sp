@@ -24,7 +24,7 @@ Action EPlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
 Action OnChangeClass(int client, const char[] strCommand, int args) {
   // class limits; demo = 1, med = 1, soldier = 3
   // essentially we just check every time someone changes class if the class change is possible. i dont like doing it this way but alternative is dhooks :vomit:
-  char sChosenClass[12];
+  c sChosenClass[12];
   bool demo = false;
   bool med = false;
   int solly = 0;
@@ -131,7 +131,7 @@ v RemoveStocks(int client) {
     elif (class == TFClass_Medic) iWep = GetPlayerWeaponSlot(client, 0);
 
     if (iWep >= 0) {
-      char classname[64];
+      c classname[64];
       GetEntityClassname(iWep, classname, sizeof(classname));
 
       if (StrEqual(classname, "tf_weapon_shotgun_soldier")) {
