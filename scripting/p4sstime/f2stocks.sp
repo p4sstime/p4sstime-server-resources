@@ -1,8 +1,8 @@
 // this entire file is from f2stocks.inc available here: https://github.com/F2/F2s-sourcemod-plugins/blob/master/includes/f2stocks.inc
 // i just didn't need the whole include file so i didnt see any reason in including it all
 
-int        PrintToSTV_iLastStvClient;  // Cached STV client id
-stock void CPrintToSTV(const char[] format, any...) {
+int PrintToSTV_iLastStvClient;  // Cached STV client id
+stock v CPrintToSTV(const char[] format, any...) {
   int stv = FindSTV();
   if (stv < 1)
     return;

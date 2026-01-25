@@ -1,24 +1,24 @@
 // This file relates to the planned "trikz" mode
 
-/*public OnClientPutInServer(client) {
-  //SDKHook(client, SDKHook_OnTakeDamage, Event_OnTakeDamage);
+/*pub OnClientPutInServer(client) {
+  //SDKHook(client, SDKHook_OnTakeDamage, EOnTakeDamage);
 }
 
-// following classnames are taken from here: https://developer.valvesoftware.com/w/index.php?title=Category:Point_Entities&pagefrom=Prop+glass+futbol#mw-pages
-public void OnEntityCreated(int entity, const char[] classname) {
+// following classnames are taken from here: https://developer.valvesoftware.com/w/i.php?title=Category:Point_Entities&pagefrom=Prop+glass+futbol#mw-pages
+pub v OnEntityCreated(int entity, const char[] classname) {
   //DHooks_OnEntityCreated(entity, classname);
   if (StrEqual(classname, "tf_projectile_rocket") || StrEqual(classname, "tf_projectile_pipe"))
     SDKHook(entity, SDKHook_Touch, OnProjectileTouch);
 }
 
-void OnProjectileTouch(int entity, int other) // direct hit detector, taken from MGEMod {
+v OnProjectileTouch(int entity, int other) // direct hit detector, taken from MGEMod {
   plyDirecter = other;
   if (other > 0 && other <= MaxClients) {
     plyTakenDirectHit[plyDirecter] = true;
   }
 }
 
-void Hook_OnProjCollideChange(ConVar convar, const char[] oldValue, const char[] newValue) {
+v Hook_OnProjCollideChange(ConVar convar, const char[] oldValue, const char[] newValue) {
   if (newValue[0] == '0')
     trikzProjCollideSave = 0;
   if (newValue[0] == '1')
@@ -27,7 +27,7 @@ void Hook_OnProjCollideChange(ConVar convar, const char[] oldValue, const char[]
     trikzProjCollideSave = 2;
 }
 
-void Hook_OnProjCollideDev(ConVar convar, const char[] oldValue, const char[] newValue) {
+v Hook_OnProjCollideDev(ConVar convar, const char[] oldValue, const char[] newValue) {
   if(FindConVar("sm_projectiles_ignore_teammates") != null)
     SetConVarInt(FindConVar("sm_projectiles_ignore_teammates"), 0);
   if (newValue[0] == '0')
@@ -42,7 +42,7 @@ int ProjCollideValue() {
   return trikzProjCollideCurVal;
 }
 
-void Hook_OnTrikzChange(ConVar convar, const char[] oldValue, const char[] newValue) {
+v Hook_OnTrikzChange(ConVar convar, const char[] oldValue, const char[] newValue) {
   if (newValue[0] == '0')
     SetConVarInt(FindConVar("mp_friendlyfire"), 0);
   if (newValue[0] == '1' || newValue[0] == '2' || newValue[0] == '3')
@@ -58,7 +58,7 @@ float DistanceAboveGround(int victim) // taken from mgemod {
   float vEnd[3];
   float vAngles[3] =  { 90.0, 0.0, 0.0 };
   GetClientAbsOrigin(victim, vStart);
-  Handle trace = TR_TraceRayFilterEx(vStart, vAngles, MASK_PLAYERSOLID, RayType_Infinite, TraceEntityFilterPlayer);
+  Han trace = TR_TraceRayFilterEx(vStart, vAngles, MASK_PLAYERSOLID, RayType_Infinite, TraceEntityFilterPlayer);
 
   float distance = -1.0;
   if (TR_DidHit(trace)) {
@@ -72,7 +72,7 @@ float DistanceAboveGround(int victim) // taken from mgemod {
   return distance;
 }
 
-Action Event_OnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3], int damagecustom) {
+Action EOnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3], int damagecustom) {
   char victimName[MAX_NAME_LENGTH], attackerName[MAX_NAME_LENGTH];
   char steamid_victim[16];
   char team_victim[12];
@@ -89,7 +89,7 @@ Action Event_OnTakeDamage(int victim, int& attacker, int& inflictor, float& dama
   }
   if (trikzEnable.IntValue == 0 || attacker <= 0 || !IsClientInGame(attacker) || !IsValidClient(victim)) // should not damage {
     SetConVarInt(trikzProjDev, 0); // reset
-    return Plugin_Continue;	// end function early if attacker or victim is not legit player in game
+    PC;	// end function early if attacker or victim is not legit player in game
   }
   if (trikzEnable.IntValue == 1 && TF2_GetClientTeam(victim) == TF2_GetClientTeam(attacker) && victim != attacker && !(GetEntityFlags(victim) & FL_ONGROUND) && plyTakenDirectHit[victim]) {
     SetConVarInt(trikzProjDev, trikzProjCollideSave);
@@ -104,47 +104,47 @@ Action Event_OnTakeDamage(int victim, int& attacker, int& inflictor, float& dama
       LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_friendly_airshot\" against \"%N<%i><%s><%s>\"", attacker, GetClientUserId(attacker), steamid_attacker, team_attacker, victim, GetClientUserId(victim), steamid_victim, team_victim);
     }
     plyTakenDirectHit[victim] = false;
-    return Plugin_Changed;
+    PCh;
   }
-  else if (trikzEnable.IntValue == 1 && TF2_GetClientTeam(victim) == TF2_GetClientTeam(attacker) && victim != attacker) // should not damage {
+  elif (trikzEnable.IntValue == 1 && TF2_GetClientTeam(victim) == TF2_GetClientTeam(attacker) && victim != attacker) // should not damage {
     SetConVarInt(trikzProjDev, 0); // never collide
     damage = 0.0;
-    return Plugin_Changed;
+    PCh;
   }
   if (trikzEnable.IntValue == 2 && TF2_GetClientTeam(victim) == TF2_GetClientTeam(attacker) && victim != attacker && !(GetEntityFlags(victim) & FL_ONGROUND)) {
     SetConVarInt(trikzProjDev, trikzProjCollideSave);
     TF2_AddCondition(victim, TFCond_PasstimeInterception, 0.05 , 0);
-    return Plugin_Changed;
+    PCh;
   }
-  else if (trikzEnable.IntValue == 2 && TF2_GetClientTeam(victim) == TF2_GetClientTeam(attacker) && victim != attacker) // should not damage {
+  elif (trikzEnable.IntValue == 2 && TF2_GetClientTeam(victim) == TF2_GetClientTeam(attacker) && victim != attacker) // should not damage {
     SetConVarInt(trikzProjDev, 0); // never collide
     damage = 0.0;
-    return Plugin_Changed;
+    PCh;
   }
   if (trikzEnable.IntValue == 3 && TF2_GetClientTeam(victim) == TF2_GetClientTeam(attacker) && victim != attacker) {
     SetConVarInt(trikzProjDev, trikzProjCollideSave);
     TF2_AddCondition(victim, TFCond_PasstimeInterception, 0.05 , 0);
-    return Plugin_Changed;
+    PCh;
   }
-  return Plugin_Continue;
+  PC;
 }
 
-Handle g_hook_CBaseProjectile_CanCollideWithTeammates;
+Han g_hook_CBaseProjectile_CanCollideWithTeammates;
 
-void DHooks_Initialize(GameData gamedata) {
+v DHooks_Initialize(GD gamedata) {
   g_dynamicHookIds = new ArrayList();
 
   g_dhook_CBaseProjectile_CanCollideWithTeammates = DHooks_AddDynamicHook(gamedata, "CBaseProjectile::CanCollideWithTeammates");
 }
 
-void DHooks_OnEntityCreated(int entity, const char[] classname) {
+v DHooks_OnEntityCreated(int entity, const char[] classname) {
   if (strncmp(classname, "tf_projectile_", 14) != 0 && ProjCollideValue() != 1) // if 1, just use default tf2 behavior {
     // Fixes projectiles sometimes not colliding with teammates
     DHookToggleEntityListener(ListenType_Created, WhenEntityCreated, true);
   }
 }
 
-static MRESReturn Hook_CBaseProjectile_CanCollideWithTeammates(int self, Handle ret) {
+static MRESReturn Hook_CBaseProjectile_CanCollideWithTeammates(int self, Han ret) {
     if (ProjCollideValue() == 0) // never collide projectiles with teammates {
     ret.Value = false;
     return MRES_Supercede;

@@ -1,5 +1,5 @@
 // This file relates to all menu features for player-specific settings and will contain the functions for them
-bool GetCookieBool(int client, Cookie cookie) {
+bool GetCookieBool(int client, Ck cookie) {
   char value[11];
   cookie.Get(client, value, sizeof(value));
 
@@ -10,7 +10,7 @@ bool GetCookieBool(int client, Cookie cookie) {
   return !StrEqual(value, "0");
 }
 
-void SetCookieBool(int client, Cookie cookie, bool state) {
+v SetCookieBool(int client, Ck cookie, bool state) {
   if (AreClientCookiesCached(client)) {
     char value[11];
     FormatEx(value, sizeof(value), "%d", state);
@@ -18,21 +18,21 @@ void SetCookieBool(int client, Cookie cookie, bool state) {
   }
 }
 
-public OnClientCookiesCached(int client) {
+pub OnClientCookiesCached(int client) {
   arrbClientSettings[client].bCountdown = GetCookieBool(client, cookieCountdownCaption);
-  arrbClientSettings[client].bJackHud         = GetCookieBool(client, cookieJACKPickupHud);
-  arrbClientSettings[client].bJackChat       = GetCookieBool(client, cookieJACKPickupChat);
-  arrbClientSettings[client].bJackSound           = GetCookieBool(client, cookieJACKPickupSound);
-  arrbClientSettings[client].iSummary         = GetCookieBool(client, cookieSummary);
+  arrbClientSettings[client].bJackHud = GetCookieBool(client, cookieJACKPickupHud);
+  arrbClientSettings[client].bJackChat = GetCookieBool(client, cookieJACKPickupChat);
+  arrbClientSettings[client].bJackSound = GetCookieBool(client, cookieJACKPickupSound);
+  arrbClientSettings[client].iSummary = GetCookieBool(client, cookieSummary);
 }
 
-Action Command_Menu(int client, int args) {
+Action CMenu(int client, int args) {
   if (IsValidClient(client))
     ShowPassMenu(client);
-  return Plugin_Handled;
+  PH;
 }
 
-void ShowPassMenu(int client) {
+v ShowPassMenu(int client) {
   mPassMenu = new Menu(PassMenuHandler);
   mPassMenu.SetTitle("P4SS Menu");
 
@@ -70,17 +70,17 @@ int PassMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
       SetCookieBool(param1, cookieJACKPickupHud, arrbClientSettings[param1].bJackHud);
       ShowPassMenu(param1);
     }
-    else if (StrEqual(info, "jackpickupchat")) {
+    elif (StrEqual(info, "jackpickupchat")) {
       arrbClientSettings[param1].bJackChat = !arrbClientSettings[param1].bJackChat;
       SetCookieBool(param1, cookieJACKPickupChat, arrbClientSettings[param1].bJackChat);
       ShowPassMenu(param1);
     }
-    else if (StrEqual(info, "jackpickupsound")) {
+    elif (StrEqual(info, "jackpickupsound")) {
       arrbClientSettings[param1].bJackSound = !arrbClientSettings[param1].bJackSound;
       SetCookieBool(param1, cookieJACKPickupSound, arrbClientSettings[param1].bJackSound);
       ShowPassMenu(param1);
     }
-    else if (StrEqual(info, "summary")) {
+    elif (StrEqual(info, "summary")) {
       switch (arrbClientSettings[param1].iSummary) {
         case 0: arrbClientSettings[param1].iSummary = 1;
         case 1: arrbClientSettings[param1].iSummary = 2;

@@ -1,4 +1,4 @@
-Action Command_SpawnBall(int client, int args) {
+Action CSpawnBall(int client, int args) {
   char name[MAX_NAME_LENGTH];
   VerboseLog("ptspawnball called from client %d", client);
   if (client == 0) name = "CONSOLE";
@@ -10,5 +10,5 @@ Action Command_SpawnBall(int client, int args) {
   TagChatAllPlayers("{pass_yellow}THE GAME IS {red}NOT {pass_yellow}STARTING!");
   bWaitingForBallSpawnToRestart = true;
   ServerCommand("mp_restartgame_immediate 1");
-  return Plugin_Handled;
+  PH;
 }

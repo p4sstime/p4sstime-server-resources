@@ -1,12 +1,12 @@
 // This file relates to all logging features and will contain the functions for them
-public void LogUploaded(bool success, const char[] logid, const char[] url) {
+pub v LogUploaded(bool success, const char[] logid, const char[] url) {
   if (!success) return;
   moreurl = "https://more.tf/log/";
   StrCat(moreurl, sizeof(moreurl), logid);
   TagChatGlobal("{pass_green}Type /more or .more to view logs.");
 }
 
-void SetLogInfo(int p1, int p2 = 0) {
+v SetLogInfo(int p1, int p2 = 0) {
   user1 = p1;
   GetClientAbsOrigin(p1, user1position);
   GetClientAuthId(p1, AuthId_Steam3, user1steamid, sizeof(user1steamid));

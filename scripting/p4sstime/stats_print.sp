@@ -17,7 +17,7 @@ static const char sInterceptsShort[] = "{pass_red} INT %d";
 static const char sStealsShort[]     = "{pass_orange} STL %d";
 static const char sSplashesShort[]   = "{pass_blue} SPL %d";
 
-Action Command_ChatSummary(int client, int args) {
+Action CChatSummary(int client, int args) {
   int value = 0;
   if (GetCmdArgIntEx(1, value)) {
     switch (value) {
@@ -38,15 +38,15 @@ Action Command_ChatSummary(int client, int args) {
   }
   else
     CTagReply(client, "Invalid argument, use 0, 1, or 2");
-  return Plugin_Handled;
+  PH;
 }
 
-Action Timer_ShowMoreTF(Handle timer, any client) {
+Action Timer_ShowMoreTF(Han timer, any client) {
   if (!IsValidClient(client))
-    return Plugin_Stop;
+    PS;
 
-  char   num[3];
-  Handle Kv = CreateKeyValues("data");
+  char num[3];
+  Han Kv = CreateKeyValues("data");
   IntToString(MOTDPANEL_TYPE_URL, num, sizeof(num));
   KvSetString(Kv, "title", "MoreTF");
   KvSetString(Kv, "type",  num);
@@ -55,34 +55,34 @@ Action Timer_ShowMoreTF(Handle timer, any client) {
   ShowVGUIPanel(client, "info", Kv);
   CloseHandle(Kv);
 
-  return Plugin_Stop;
+  PS;
 }
 
 // Clear all plugin stats for the specified client.
-void ClearLocalStats(int client) {
+v ClearLocalStats(int client) {
   arrbPlyIsDead[client]       = false;
   arrbBlastJumpStatus[client] = false;
   arrbPanaceaCheck[client]    = false;
   arrbWinStratCheck[client]   = false;
 
-  arriClientRoundStats[client].iScores      = 0;
-  arriClientRoundStats[client].iAssists     = 0;
-  arriClientRoundStats[client].iSaves       = 0;
-  arriClientRoundStats[client].iSplashes    = 0;
-  arriClientRoundStats[client].iIntercepts  = 0;
-  arriClientRoundStats[client].iSteals      = 0;
-  arriClientRoundStats[client].iPanaceas    = 0;
-  arriClientRoundStats[client].iWinstrats   = 0;
-  arriClientRoundStats[client].iDeathbombs  = 0;
-  arriClientRoundStats[client].iHandoffs    = 0;
-  arriClientRoundStats[client].iFirstGrabs  = 0;
-  arriClientRoundStats[client].iCatapults   = 0;
-  arriClientRoundStats[client].iBlocks      = 0;
+  arriClientRoundStats[client].iScores = 0;
+  arriClientRoundStats[client].iAssists = 0;
+  arriClientRoundStats[client].iSaves = 0;
+  arriClientRoundStats[client].iSplashes = 0;
+  arriClientRoundStats[client].iIntercepts = 0;
+  arriClientRoundStats[client].iSteals = 0;
+  arriClientRoundStats[client].iPanaceas = 0;
+  arriClientRoundStats[client].iWinstrats = 0;
+  arriClientRoundStats[client].iDeathbombs = 0;
+  arriClientRoundStats[client].iHandoffs = 0;
+  arriClientRoundStats[client].iFirstGrabs = 0;
+  arriClientRoundStats[client].iCatapults = 0;
+  arriClientRoundStats[client].iBlocks = 0;
   arriClientRoundStats[client].iSteal2Saves = 0;
 }
 
 // this is really fucking sloppy but shrug
-Action Timer_DisplayStats(Handle timer) {
+Action Timer_DisplayStats(Han timer) {
   int redTeam[16], bluTeam[16];
   int redAmount, bluAmount = 0;
   // calculate possession time
@@ -125,7 +125,7 @@ Action Timer_DisplayStats(Handle timer) {
       redAmount++;
     }
 
-    else if (TF2_GetClientTeam(x) == TFTeam_Blue) {
+    elif (TF2_GetClientTeam(x) == TFTeam_Blue) {
       bluTeam[bluAmount] = x;
       bluAmount++;
     }
@@ -154,7 +154,7 @@ Action Timer_DisplayStats(Handle timer) {
 
     LogToGame("Printing for client: %d", x);
 
-    bool isStv               = IsClientSourceTV(x);
+    bool isStv = IsClientSourceTV(x);
     bool shouldPrintBluFirst = (TF2_GetClientTeam(x) == TFTeam_Red);
 
     // smelly!
@@ -193,11 +193,11 @@ Action Timer_DisplayStats(Handle timer) {
   for (int i = 0; i < MaxClients + 1; i++)
     ClearLocalStats(i);
 
-  return Plugin_Stop;
+  PS;
 }
 
-void GetTeamStatsArrStr(char buf[MAXPLAYERS + 1][MAX_MESSAGE_LENGTH], int[] teamMembers, int len, bool isSimple = false) {
-  for (int i = 0; i < len; i++) {
+v GetTeamStatsArrStr(char buf[MAXPLAYERS + 1][MAX_MESSAGE_LENGTH], int[] teamMembers, int length, bool isSimple = false) {
+  for (int i = 0; i < length; i++) {
     char playerNameTeamFormatted[MAX_NAME_LENGTH + 7];
     FormatPlayerNameWithTeam(teamMembers[i], playerNameTeamFormatted);
     char stats[MAX_MESSAGE_LENGTH];
@@ -212,10 +212,10 @@ void GetTeamStatsArrStr(char buf[MAXPLAYERS + 1][MAX_MESSAGE_LENGTH], int[] team
 static const char consoleFormatBlank[]    = "//                                                                        //";
 static const char consoleFormatTitleBlu[] = "//   BLU | %s";
 static const char consoleFormatTitleRed[] = "//   RED | %s";
-static const char consoleFormat1[]        = "//   %d goals, %d assists, %d saves, %d intercepts, %d steals                  //";
-static const char consoleFormat2[]        = "//   %d Panaceas, %d win strats, %d deathbombs, %d handoffs                   //";
-static const char consoleFormat3[]        = "//   %d first grabs, %d catapults, %d blocks, %d steal2saves                  //";
-static const char consoleFormat4[]        = "//   %d splash saves                                                       //";
+static const char consoleFormat1[]        = "//   %d goals, %d assists, %d saves, %d intercepts, %d steals //";
+static const char consoleFormat2[]        = "//   %d Panaceas, %d win strats, %d deathbombs, %d handoffs //";
+static const char consoleFormat3[]        = "//   %d first grabs, %d catapults, %d blocks, %d steal2saves //";
+static const char consoleFormat4[]        = "//   %d splash saves //";
 
 // a player takes up 7 lines
 // this is a sad amount of arguments
@@ -223,10 +223,10 @@ static const char consoleFormat4[]        = "//   %d splash saves               
 // dimension 1: a player
 // dimension 2: their stat strings
 
-void              GetConsoleStatsArrStr(char buf[MAXPLAYERS + 1][7][MAX_MESSAGE_LENGTH], int[] teamMembers, int teamAmount, bool isBlu) {
+v GetConsoleStatsArrStr(char buf[MAXPLAYERS + 1][7][MAX_MESSAGE_LENGTH], int[] teamMembers, int teamAmount, bool isBlu) {
   for (int i = 0; i < teamAmount; i++) {
-    char         playerName[MAX_NAME_LENGTH];
-    int          player = teamMembers[i];
+    char playerName[MAX_NAME_LENGTH];
+    int player = teamMembers[i];
     enuClientStats stats;
     stats = arriClientRoundStats[player];
     GetClientName(player, playerName, sizeof(playerName));
@@ -245,7 +245,7 @@ void              GetConsoleStatsArrStr(char buf[MAXPLAYERS + 1][7][MAX_MESSAGE_
   }
 }
 
-void CPrintMultiline(int client, char[][] lines, int len) {
+v CPrintMultiline(int client, char[][] lines, int len) {
   for (int i = 0; i < len; i++) {
     if (!StrEqual(lines[i], "")) {
       CPrintToChat(client, lines[i]);
@@ -254,7 +254,7 @@ void CPrintMultiline(int client, char[][] lines, int len) {
   return;
 }
 
-void Print3DMultilineToConsole(int client, char[][][] lines, int length, int height) {
+v Print3DMultilineToConsole(int client, char[][][] lines, int length, int height) {
   for (int i = 0; i < length; i++) {
     for (int j = 0; j < height; j++) {
       if (!StrEqual(lines[i][j], "")) {
@@ -267,7 +267,7 @@ void Print3DMultilineToConsole(int client, char[][][] lines, int length, int hei
 /**
  * @param simplified whether to use the simplified 3 letter abbreviations (true) or long names (false)
  */
-static void AssembleColoredStatsString(char[] buf, int maxLength, int client, bool simplified = false) {
+static v AssembleColoredStatsString(char[] buf, int maxLength, int client, bool simplified = false) {
   VerboseLog("Assembling stats for client: %d", client);
   char buffer_sGoals[48];
   char buffer_sAssists[48];
