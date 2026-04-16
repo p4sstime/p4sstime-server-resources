@@ -43,7 +43,7 @@ enum
 // if anyone else was confused on wtf an enum struct was:
 // read: https://wiki.alliedmods.net/SourcePawn_Transitional_Syntax#Enum_Structs
 // basically: emulating a struct through an array. i.e. an array with named indices
-// because SOURCEPAWN DOESN'T SUPPORT STRUCTS??
+// because SOURCEPAWN DOESNT SUPPORT STRUCTS??
 enum struct enubPlySettings
 {
     bool bPlyCoundownCaptionSetting;
@@ -77,7 +77,7 @@ enum struct enuiPlyStats
 enubPlySettings arrbJackAcqSettings[MAXPLAYERS + 1];
 enuiPlyStats    arriPlyRoundPassStats[MAXPLAYERS + 1];
 
-float           fBluGoalPos[3], fRedGoalPos[3], fTopSpawnPos[3], fFreeBallPos[3];
+float           fBluGoalPos[3], fRedGoalPos[3], fTopSpawnPos[3], fFreeBallPos[3], fFreeBallThrowerVec[3];
 
 ConVar          bEquipStockWeapons;
 ConVar          bSwitchDuringRespawn;
@@ -237,15 +237,16 @@ public void OnPluginStart()
     char sMapNameBuffer[256];
     GetCurrentMap(sMapNameBuffer, 256);
     VerboseLog("Current map buffer -> %s", sMapNameBuffer);
-    // check if stadium is the current map in order to set the height lower
+    // check if stadium or fountain spawner is the current map in order to set the height lower
     // see OnMapInit
     // this is necessary as OnMapInit is not called when the plugin is ran
-    if (StrContains(sMapNameBuffer, "stadium", false) != -1)
+    if ((StrContains(sMapNameBuffer, "obelisk", false) != -1) || (StrContains(sMapNameBuffer, "arena2_b16a", false) != -1))
+    {
+        iWinStratDistance = 0;
+    }
+    else if (StrContains(sMapNameBuffer, "stadium", false) != -1)
     {
         iWinStratDistance = 150;
-    }
-    else {
-        iWinStratDistance = 400;
     }
 
     int jackIndex = FindEntityByClassname(-1, "passtime_ball");
@@ -352,10 +353,18 @@ public Action GoalHealTimer(Handle timer)
 
 public void OnMapInit(const char[] mapName)
 {
-    if (StrContains(mapName, "stadium", false) != -1)    // stadium has much lower top spawner so do this to avoid false positive win strats
+    if ((StrContains(mapName, "obelisk", false) != -1) || (StrContains(mapName, "arena2_b16a", false) != -1))
+    {
+        iWinStratDistance = 0;
+    }
+    else if (StrContains(mapName, "stadium", false) != -1)    // stadium has much lower top spawner so do this to avoid false positive win strats
+    {
         iWinStratDistance = 150;
+    }
     else
+    {
         iWinStratDistance = 400;
+    }
 }
 
 public void OnMapStart()    // getgoallocations
@@ -450,6 +459,8 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
     // so incredibly ugly
     VerboseLog("passtime_ball damage debug: playerWhoSplashed: \"%d\", playerTeam: \"%s\", ballTeam: \"%s\"", attacker, TFTeamToString(playerTeam), TFTeamToString(ballTeam));
     bBallSplashed = true;
+    float fSplashedBallPos[3];
+    GetEntPropVector(eiJack, Prop_Send, "m_vecOrigin", fSplashedBallPos);
     switch (playerTeam)
     {
         case TFTeam_Blue:
@@ -466,6 +477,10 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
                     PrintToAllClientsChat("\x0700ffff[PASS] %s\x075bd4b3 splashed the ball to save!", playerNameTeam);
                 }
                 PrintToSTV("[PASS-TV] %s splashed the ball to save it. Tick: %d", playerName, STVTickCount());
+                SetLogInfo(attacker);
+                LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_splash_defense\" (ball position \"%.0f %.0f %.0f\")",
+                          user1, GetClientUserId(user1), user1steamid, user1team,
+                          fSplashedBallPos[0], fSplashedBallPos[1], fSplashedBallPos[2]);
                 arriPlyRoundPassStats[attacker].iPlySplashSaves++;
             }
         }
@@ -484,6 +499,10 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
                     PrintToAllClientsChat("\x0700ffff[PASS] %s\x075bd4b3 splashed the ball to save!", playerNameTeam);
                 }
                 PrintToSTV("[PASS-TV] %s splashed the ball to save it. Tick: %d", playerName, STVTickCount());
+                SetLogInfo(attacker);
+                LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_splash_defense\" (ball position \"%.0f %.0f %.0f\")",
+                          user1, GetClientUserId(user1), user1steamid, user1team,
+                          fSplashedBallPos[0], fSplashedBallPos[1], fSplashedBallPos[2]);
                 arriPlyRoundPassStats[attacker].iPlySplashSaves++;
             }
         }
@@ -834,6 +853,7 @@ Action Event_PassFree(Event event, const char[] name, bool dontBroadcast)
         ShowHudText(owner, 1, "");
     }
     GetEntPropVector(eiJack, Prop_Data, "m_vecAbsOrigin", fFreeBallPos);
+    GetEntPropVector(owner, Prop_Data, "m_vecAbsVelocity", fFreeBallThrowerVec);
     eiPassTarget = EntRefToEntIndex(GetEntPropEnt(owner, Prop_Send, "m_hPasstimePassTarget"));
     if (!(arrbBlastJumpStatus[owner]))
     {
@@ -1097,15 +1117,16 @@ Action Event_PassScore(Event event, const char[] name, bool dontBroadcast)
 
     float fScoredBallPos[3];
     GetEntPropVector(eiJack, Prop_Send, "m_vecOrigin", fScoredBallPos);
-    float dist = GetVectorDistance(fFreeBallPos, fScoredBallPos, false);
+    float dist  = GetVectorDistance(fFreeBallPos, fScoredBallPos, false);
+    float speed = GetVectorLength(fFreeBallThrowerVec, false);
 
     if (arrbDeathbombCheck[eiDeathBomber])
     {
         arrbPanaceaCheck[scorer] = false;    // both Panacea and deathbomb requirements can be true at the same time, so if deathbomb occurs just turn off panacea
         SetLogInfo(eiDeathBomber);
-        LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_score\" (points \"%i\") (panacea \"%d\") (win strat \"%d\") (deathbomb \"%d\") (dist \"%.0f\") (position \"%.0f %.0f %.0f\")",
+        LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_score\" (points \"%i\") (panacea \"%d\") (win strat \"%d\") (deathbomb \"%d\") (dist \"%.0f\") (speed \"%.0f\") (position \"%.0f %.0f %.0f\")",
                   user1, GetClientUserId(user1), user1steamid, user1team,
-                  points, arrbPanaceaCheck[scorer], arrbWinStratCheck[scorer], arrbDeathbombCheck[eiDeathBomber], dist,
+                  points, arrbPanaceaCheck[scorer], arrbWinStratCheck[scorer], arrbDeathbombCheck[eiDeathBomber], dist, speed,
                   user1position[0], user1position[1], user1position[2]);
         arriPlyRoundPassStats[eiDeathBomber].iPlyScores++;
         arriPlyRoundPassStats[eiDeathBomber].iPlyDeathbombs++;
@@ -1120,9 +1141,9 @@ Action Event_PassScore(Event event, const char[] name, bool dontBroadcast)
     else
     {
         SetLogInfo(scorer);
-        LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_score\" (points \"%i\") (panacea \"%d\") (win strat \"%d\") (deathbomb \"%d\") (dist \"%.0f\") (position \"%.0f %.0f %.0f\")",
+        LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_score\" (points \"%i\") (panacea \"%d\") (win strat \"%d\") (deathbomb \"%d\") (dist \"%.0f\") (speed \"%.0f\") (position \"%.0f %.0f %.0f\")",
                   user1, GetClientUserId(user1), user1steamid, user1team,
-                  points, arrbPanaceaCheck[scorer], arrbWinStratCheck[scorer], arrbDeathbombCheck[eiDeathBomber], dist,
+                  points, arrbPanaceaCheck[scorer], arrbWinStratCheck[scorer], arrbDeathbombCheck[eiDeathBomber], dist, speed,
                   user1position[0], user1position[1], user1position[2]);
         arriPlyRoundPassStats[scorer].iPlyScores++;
 
@@ -1166,11 +1187,17 @@ Action Event_PassScore(Event event, const char[] name, bool dontBroadcast)
             PrintToAllClientsChat("\x0700ffff[PASS] %s\x073BC43B scored a \x0797e043deathbomb!", playerNameTeamFormatted);
             PrintToSTV("[PASS-TV] %s scored a deathbomb. Tick: %d", playerName, STVTickCount());
         }
+        else if (speed > 1350)
+        {
+            PrintToAllClientsChat("\x0700ffff[PASS] %s\x073BC43B scored a goal going %.0fhu/s!", playerNameTeamFormatted, speed);
+            PrintToSTV("[PASS-TV] %s scored a goal going %.0fhu/s. Tick: %d", playerName, speed, STVTickCount());
+        }
         else if (dist > 1600)
         {
             PrintToAllClientsChat("\x0700ffff[PASS] %s\x073BC43B scored a goal from a distance of %.0fhu!", playerNameTeamFormatted, dist);
             PrintToSTV("[PASS-TV] %s scored a goal from distance of %.0fhu. Tick: %d", playerName, dist, STVTickCount());
         }
+
         else if (assistant > 0)
         {
             FormatPlayerNameWithTeam(assistant, assistantNameTeamFormatted);
