@@ -43,6 +43,7 @@ rm -f p4sstime_compatibility.zip
 rm -f p4sstime_sm_1_12.tar.xz
 rm -f p4sstime_sm_1_12.zip
 
+set -x
 # Build gamedata and compiled binary to tar
 tar -cJf p4sstime.tar.xz \
   "plugins/$NAME11" \
@@ -60,6 +61,7 @@ zip p4sstime.zip \
   # "plugins/$NAME12" \
   # gamedata/p4sstime.txt
 
+set +x
 # Move back plugins to compiled folder
 # mv "plugins/$NAME12" compiled
 mv "plugins/$NAME11" compiled
