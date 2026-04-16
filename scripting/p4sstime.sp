@@ -3,16 +3,15 @@
 #define REQUIRE_PLUGIN
 
 #include <tf2_stocks>
+#include <sourcemod>
 #include <sdkhooks>
-//#include <dhooks>
-#include <vector>
 #include <clientprefs>
-#include <sdktools_functions>
+//#include <dhooks>
 
 #pragma semicolon 1    // required for logs.tf
 #pragma newdecls required
 
-#define VERSION            "2.6.1"
+#define VERSION            "2.6.2"
 
 #define GOALSCOLOR         "\x073BC43B"
 #define ASSISTSCOLOR       "\x073bc48f"
@@ -295,25 +294,42 @@ public void OnLibraryAdded(const char[] name)
 #include "p4sstime/f2stocks.sp"
 #include "p4sstime/spawnball.sp"
 
+static char client_name[MAX_NAME_LENGTH] = "";
+
 public Action GoalHealTimer(Handle timer)
 {
-    // LogMessage("GoalHealTimer popped");
+    VerboseLog("GoalHealTimer popped");
     if (flGoalHeal.FloatValue == 0.0) return Plugin_Continue;
     for (int client_idx = 1; client_idx < MaxClients + 1; client_idx++)
     {
-        if (!IsValidClient(client_idx) || IsClientSourceTV(client_idx)) continue;
-        float position[3];
-        GetClientAbsOrigin(client_idx, position);
+        if (!IsValidClient(client_idx) || IsClientSourceTV(client_idx))
+        {
+            // VerboseLog("%d is not a valid client, skipping", client_idx);
+            continue;
+        }
+
+        // for logging
+        if (bVerboseLogs.BoolValue)
+        {
+            GetClientName(client_idx, client_name, sizeof(client_name));
+        }
 
         TFTeam team = TF2_GetClientTeam(client_idx);
         if (team == TFTeam_Spectator || team == TFTeam_Unassigned)
         {
             continue;    // skip this player
         }
+
+        float position[3];
+        GetClientAbsOrigin(client_idx, position);
+        VerboseLog("%s position: \"%.3f %.3f %.3f\"", client_name, position[0], position[1], position[2]);
         int health     = GetClientHealth(client_idx);
         int max_health = GetPlayerMaxHealthTF2(client_idx);
 
-        if (health >= max_health) return Plugin_Continue;
+        if (health >= max_health)
+        {
+            continue;
+        }
 
         float distance_sqr, vertical_difference;
         if (team == TFTeam_Red)
@@ -327,8 +343,7 @@ public Action GoalHealTimer(Handle timer)
         }
         if (distance_sqr < GOAL_HEAL_RADIUS_SQR && vertical_difference < GOAL_HEAL_HEIGHT)
         {
-            VerboseLog("player \"%d\": distance '%f' (max distance '%f'), vertical_difference '%f'", client_idx, distance_sqr, GOAL_HEAL_RADIUS_SQR, vertical_difference);
-
+            VerboseLog("player \"%s\": distance '%f' (max distance '%f'), vertical_difference '%f'", client_name, distance_sqr, GOAL_HEAL_RADIUS_SQR, vertical_difference);
             SetEntityHealth(client_idx, min(health + flGoalHeal.IntValue, max_health));
         }
     }

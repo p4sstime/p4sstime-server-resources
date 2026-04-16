@@ -1,13 +1,14 @@
-#!/usr/bin/env -S bash -ex
+#!/usr/bin/env -S bash -e
 cd "$(dirname "$0")/../scripting"
 
 # OPTIONS:
 # -;   : require semicolons
 # -v 0 : disable copyright output
-options='-; -v 0'
+options='-; -v0'
 
 mkdir -p ../compiled
 echo -e "\nCompiling p4sstime.smx... (for sourcemod 1.12)"
+set -x
 ./spcomp $options p4sstime.sp -o../compiled/p4sstime_sm_1_12.smx
 
 # if [[ $# -ne 0 ]]; then
