@@ -3,19 +3,19 @@
   #define RED false
 #endif
 
-static const c sGoals[]      = "{pass_green} goals %d";
-static const c sAssists[]    = "{pass_green} assists %d";
-static const c sSaves[]      = "{pass_yellow} saves %d";
-static const c sIntercepts[] = "{pass_red} intercepts %d";
-static const c sSteals[]     = "{pass_orange} steals %d";
-static const c sSplashes[]   = "{pass_blue} splashes %d";
+static const char sGoals[]      = "{pfgreen} goals %d";
+static const char sAssists[]    = "{pfgreen} assists %d";
+static const char sSaves[]      = "{pfyellow} saves %d";
+static const char sIntercepts[] = "{pfred} intercepts %d";
+static const char sSteals[]     = "{pforange} steals %d";
+static const char sSplashes[]   = "{pfblue} splashes %d";
 
-static const c sGoalsShort[]      = "{pass_green} GLS %d";
-static const c sAssistsShort[]    = "{pass_green} AST %d";
-static const c sSavesShort[]      = "{pass_yellow} SAV %d";
-static const c sInterceptsShort[] = "{pass_red} INT %d";
-static const c sStealsShort[]     = "{pass_orange} STL %d";
-static const c sSplashesShort[]   = "{pass_blue} SPL %d";
+static const char sGoalsShort[]      = "{pfgreen} GLS %d";
+static const char sAssistsShort[]    = "{pfgreen} AST %d";
+static const char sSavesShort[]      = "{pfyellow} SAV %d";
+static const char sInterceptsShort[] = "{pfred} INT %d";
+static const char sStealsShort[]     = "{pforange} STL %d";
+static const char sSplashesShort[]   = "{pfblue} SPL %d";
 
 Action CChatSummary(int client, int args) {
   int value = 0;
@@ -23,15 +23,15 @@ Action CChatSummary(int client, int args) {
     switch (value) {
       case 0: {
         arrbClientSettings[client].iSummary = 0;
-        CTagReply(client, "Round summary: {pass_blue}Off{chat}|{darkgray}Long{chat}|{darkgray}Short{chat}");
+        CTagReply(client, "Round summary: {pfblue}Off{chat}|{darkgray}Long{chat}|{darkgray}Short{chat}");
       }
       case 1: {
         arrbClientSettings[client].iSummary = 1;
-        CTagReply(client, "Round summary: {darkgray}Off{chat}|{pass_blue}Long{chat}|{darkgray}Short{chat}");
+        CTagReply(client, "Round summary: {darkgray}Off{chat}|{pfblue}Long{chat}|{darkgray}Short{chat}");
       }
       case 2: {
         arrbClientSettings[client].iSummary = 2;
-        CTagReply(client, "Round summary: {darkgray}Off{chat}|{darkgray}Long{chat}|{pass_blue}Short{chat}");
+        CTagReply(client, "Round summary: {darkgray}Off{chat}|{darkgray}Long{chat}|{pfblue}Short{chat}");
       }
     }
     SetCookieBool(client, cookieSummary, arrbClientSettings[client].iSummary);
@@ -41,12 +41,12 @@ Action CChatSummary(int client, int args) {
   PH;
 }
 
-Action Timer_ShowMoreTF(Han timer, any client) {
+Action Timer_ShowMoreTF(Handle timer, any client) {
   if (!IsValidClient(client))
     PS;
 
-  c num[3];
-  Han Kv = CreateKeyValues("data");
+  char num[3];
+  Handle Kv = CreateKeyValues("data");
   IntToString(MOTDPANEL_TYPE_URL, num, sizeof(num));
   KvSetString(Kv, "title", "MoreTF");
   KvSetString(Kv, "type",  num);
@@ -59,7 +59,7 @@ Action Timer_ShowMoreTF(Han timer, any client) {
 }
 
 // Clear all plugin stats for the specified client.
-v ClearLocalStats(int client) {
+void ClearLocalStats(int client) {
   arrbPlyIsDead[client]       = false;
   arrbBlastJumpStatus[client] = false;
   arrbPanaceaCheck[client]    = false;
@@ -82,7 +82,7 @@ v ClearLocalStats(int client) {
 }
 
 // this is really fucking sloppy but shrug
-Action Timer_DisplayStats(Han timer) {
+Action Timer_DisplayStats(Handle timer) {
   int redTeam[16], bluTeam[16];
   int redAmount, bluAmount = 0;
   // calculate possession time
@@ -131,13 +131,13 @@ Action Timer_DisplayStats(Han timer) {
     }
   }
   // thanks rose! -lucy
-  c arrStrRedTeamStats[MAXPLAYERS + 1][MAX_MESSAGE_LENGTH];
-  c arrStrBluTeamStats[MAXPLAYERS + 1][MAX_MESSAGE_LENGTH];
-  c arrStrRedSimpleStats[MAXPLAYERS + 1][MAX_MESSAGE_LENGTH];
-  c arrStrBluSimpleStats[MAXPLAYERS + 1][MAX_MESSAGE_LENGTH];
+  char arrStrRedTeamStats[MAXPLAYERS + 1][MAX_MESSAGE_LENGTH];
+  char arrStrBluTeamStats[MAXPLAYERS + 1][MAX_MESSAGE_LENGTH];
+  char arrStrRedSimpleStats[MAXPLAYERS + 1][MAX_MESSAGE_LENGTH];
+  char arrStrBluSimpleStats[MAXPLAYERS + 1][MAX_MESSAGE_LENGTH];
 
-  c arrStrConsoleStatsRed[MAXPLAYERS + 1][7][MAX_MESSAGE_LENGTH];
-  c arrStrConsoleStatsBlu[MAXPLAYERS + 1][7][MAX_MESSAGE_LENGTH];
+  char arrStrConsoleStatsRed[MAXPLAYERS + 1][7][MAX_MESSAGE_LENGTH];
+  char arrStrConsoleStatsBlu[MAXPLAYERS + 1][7][MAX_MESSAGE_LENGTH];
 
   GetTeamStatsArrStr(arrStrRedTeamStats, redTeam, redAmount);
   GetTeamStatsArrStr(arrStrBluTeamStats, bluTeam, bluAmount);
@@ -179,7 +179,7 @@ Action Timer_DisplayStats(Han timer) {
       }
     }
   
-    TagChatClient(x, "{red_team}RED {pass_green}possession: %.1f%%, {blu_team}BLU {pass_green}possession: %.1f%%", redBallPossessionPercent, bluBallPossessionPercent);
+    TagChatClient(x, "{red_team}RED {pfgreen}possession: %.1f%%, {blu_team}BLU {pfgreen}possession: %.1f%%", redBallPossessionPercent, bluBallPossessionPercent);
     if (isStv) {
       TagChatSTV("BLU possession time in ticks: %d", iRedBallTime);
       TagChatSTV("RED possession time in ticks: %d", iBluBallTime);
@@ -196,26 +196,26 @@ Action Timer_DisplayStats(Han timer) {
   PS;
 }
 
-v GetTeamStatsArrStr(c buf[MAXPLAYERS + 1][MAX_MESSAGE_LENGTH], int[] teamMembers, int length, bool isSimple = false) {
+void GetTeamStatsArrStr(char buf[MAXPLAYERS + 1][MAX_MESSAGE_LENGTH], int[] teamMembers, int length, bool isSimple = false) {
   for (int i = 0; i < length; i++) {
-    c playerNameTeamFormatted[MAX_NAME_LENGTH + 7];
+    char playerNameTeamFormatted[MAX_NAME_LENGTH + 7];
     FormatPlayerNameWithTeam(teamMembers[i], playerNameTeamFormatted);
-    c stats[MAX_MESSAGE_LENGTH];
+    char stats[MAX_MESSAGE_LENGTH];
     AssembleColoredStatsString(stats, sizeof(stats), teamMembers[i], isSimple);
-    c out[MAX_MESSAGE_LENGTH];
+    char out[MAX_MESSAGE_LENGTH];
     Format(out, sizeof(out), "%s %s:%s", gsTag, playerNameTeamFormatted, stats);
     buf[i] = out;
   }
 }
 
 // awkward indentation as "%d" takes up two spaces but it ends up being effectively single digit
-static const c consoleFormatBlank[]    = "//                                                                        //";
-static const c consoleFormatTitleBlu[] = "//   BLU | %s";
-static const c consoleFormatTitleRed[] = "//   RED | %s";
-static const c consoleFormat1[]        = "//   %d goals, %d assists, %d saves, %d intercepts, %d steals //";
-static const c consoleFormat2[]        = "//   %d Panaceas, %d win strats, %d deathbombs, %d handoffs //";
-static const c consoleFormat3[]        = "//   %d first grabs, %d catapults, %d blocks, %d steal2saves //";
-static const c consoleFormat4[]        = "//   %d splash saves //";
+static const char consoleFormatBlank[]    = "//                                                                        //";
+static const char consoleFormatTitleBlu[] = "//   BLU | %s";
+static const char consoleFormatTitleRed[] = "//   RED | %s";
+static const char consoleFormat1[]        = "//   %d goals, %d assists, %d saves, %d intercepts, %d steals //";
+static const char consoleFormat2[]        = "//   %d Panaceas, %d win strats, %d deathbombs, %d handoffs //";
+static const char consoleFormat3[]        = "//   %d first grabs, %d catapults, %d blocks, %d steal2saves //";
+static const char consoleFormat4[]        = "//   %d splash saves //";
 
 // a player takes up 7 lines
 // this is a sad amount of arguments
@@ -223,9 +223,9 @@ static const c consoleFormat4[]        = "//   %d splash saves //";
 // dimension 1: a player
 // dimension 2: their stat strings
 
-v GetConsoleStatsArrStr(c buf[MAXPLAYERS + 1][7][MAX_MESSAGE_LENGTH], int[] teamMembers, int teamAmount, bool isBlu) {
+void GetConsoleStatsArrStr(char buf[MAXPLAYERS + 1][7][MAX_MESSAGE_LENGTH], int[] teamMembers, int teamAmount, bool isBlu) {
   for (int i = 0; i < teamAmount; i++) {
-    c playerName[MAX_NAME_LENGTH];
+    char playerName[MAX_NAME_LENGTH];
     int player = teamMembers[i];
     enuClientStats stats;
     stats = arriClientRoundStats[player];
@@ -245,7 +245,7 @@ v GetConsoleStatsArrStr(c buf[MAXPLAYERS + 1][7][MAX_MESSAGE_LENGTH], int[] team
   }
 }
 
-v CPrintMultiline(int client, char[][] lines, int len) {
+void CPrintMultiline(int client, char[][] lines, int len) {
   for (int i = 0; i < len; i++) {
     if (!StrEqual(lines[i], "")) {
       CPrintToChat(client, lines[i]);
@@ -254,7 +254,7 @@ v CPrintMultiline(int client, char[][] lines, int len) {
   return;
 }
 
-v Print3DMultilineToConsole(int client, char[][][] lines, int length, int height) {
+void Print3DMultilineToConsole(int client, char[][][] lines, int length, int height) {
   for (int i = 0; i < length; i++) {
     for (int j = 0; j < height; j++) {
       if (!StrEqual(lines[i][j], "")) {
@@ -267,14 +267,14 @@ v Print3DMultilineToConsole(int client, char[][][] lines, int length, int height
 /**
  * @param simplified whether to use the simplified 3 letter abbreviations (true) or long names (false)
  */
-static v AssembleColoredStatsString(char[] buf, int maxLength, int client, bool simplified = false) {
+static void AssembleColoredStatsString(char[] buf, int maxLength, int client, bool simplified = false) {
   VerboseLog("Assembling stats for client: %d", client);
-  c buffer_sGoals[48];
-  c buffer_sAssists[48];
-  c buffer_sSaves[48];
-  c buffer_sIntercepts[48];
-  c buffer_sSteals[48];
-  c buffer_sSplashes[48];
+  char buffer_sGoals[48];
+  char buffer_sAssists[48];
+  char buffer_sSaves[48];
+  char buffer_sIntercepts[48];
+  char buffer_sSteals[48];
+  char buffer_sSplashes[48];
   if (simplified) {
     Format(buffer_sGoals,      sizeof(buffer_sGoals),      sGoalsShort,      arriClientRoundStats[client].iScores);
     Format(buffer_sAssists,    sizeof(buffer_sAssists),    sAssistsShort,    arriClientRoundStats[client].iAssists);

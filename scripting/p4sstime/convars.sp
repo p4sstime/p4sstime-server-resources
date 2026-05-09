@@ -16,6 +16,8 @@ Action EPlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
   int client = GetClientOfUserId(event.GetInt("userid"));
   arrbPlyIsDead[client] = false;
   RemoveStocks(client);
+  ApplyDemoResistance(client);
+  ApplyBootsAttributes(client);
   if (TF2_GetPlayerClass(client) == TFClass_DemoMan) { QueryClientConVar(client, "m_filter", FilterCheck, false); }
 
   PH;
@@ -24,13 +26,13 @@ Action EPlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
 Action OnChangeClass(int client, const char[] strCommand, int args) {
   // class limits; demo = 1, med = 1, soldier = 3
   // essentially we just check every time someone changes class if the class change is possible. i dont like doing it this way but alternative is dhooks :vomit:
-  c sChosenClass[12];
+  char    sChosenClass[12];
   bool demo = false;
   bool med = false;
-  int solly = 0;
+  int  solly = 0;
   GetCmdArg(1, sChosenClass, sizeof(sChosenClass));
   TFClassType class = TF2_GetClass(sChosenClass);
-  tcurrentTeam = TF2_GetClientTeam(client);
+  TFTeam currentTeam = TF2_GetClientTeam(client);
   for (int x = 1; x < MaxClients + 1; x++) {
     if (!IsValidClient(x)) continue;
     if (TF2_GetClientTeam(x) == currentTeam) {
@@ -53,7 +55,7 @@ Action OnChangeClass(int client, const char[] strCommand, int args) {
   PC;
 }
 
-pub v TF2_OnConditionAdded(int client, TFCond condition) {
+public void TF2_OnConditionAdded(int client, TFCond condition) {
   if (condition == TFCond_PasstimeInterception && !bFixBlur.BoolValue) {
     ClientCommand(client, "r_screenoverlay \"\"");
   }
@@ -65,6 +67,8 @@ pub v TF2_OnConditionAdded(int client, TFCond condition) {
 Action EPlayerResup(Event event, const char[] name, bool dontBroadcast) {
   int client = GetClientOfUserId(event.GetInt("userid"));
   RemoveStocks(client);
+  ApplyDemoResistance(client);
+  ApplyBootsAttributes(client);
 
   PH;
 }
@@ -72,10 +76,6 @@ Action EPlayerResup(Event event, const char[] name, bool dontBroadcast) {
 Action CSuicide(int client, int args) {
   if (bRoundActive) {
     ForcePlayerSuicide(client);
-    CTagReply(client, "Committed suicide");
-  }
-  else {
-    CTagReply(client, "Round is not active");
   }
   PH;
 }
@@ -85,7 +85,7 @@ CREATE_BOOL_SETTING(CJackPickupHud,  bJackHud,  cookieJACKPickupHud,   "JACK pic
 CREATE_BOOL_SETTING(CJackPickupChat, bJackChat, cookieJACKPickupChat,  "JACK pickup chat text")
 CREATE_BOOL_SETTING(CJackPickupSound,bJackSound,cookieJACKPickupSound, "JACK pickup sound")
 
-v Hook_OnAllowInstantResupplyChange(ConVar convar, const char[] oldValue, const char[] newValue) {
+void Hook_OnAllowInstantResupplyChange(ConVar convar, const char[] oldValue, const char[] newValue) {
   if (!bResupply.BoolValue)
     return;
 
@@ -119,11 +119,45 @@ Action CResupply(int client, int args) {
 
   nextInstantResupplyTime[client] = GetGameTime() + flResupplyCooldown.FloatValue;
   ForceRegenerateAndRespawn(client);
+  ApplyBootsAttributes(client);
 
   PH;
 }
 
-v RemoveStocks(int client) {
+Action CResupDn(int client, int args) {
+  if (!bResupply.BoolValue) PH;
+  if (!IsClientInGame(client)) PH;
+
+  g_bResupplyDn[client] = true;
+  g_bResupplyUp[client] = false;
+
+  BufferedResupply(client);
+  PH;
+}
+
+Action CResupUp(int client, int args) {
+  if (!IsClientInGame(client)) PH;
+  g_bResupplyDn[client] = false;
+  PH;
+}
+
+void BufferedResupply(int client) {
+  if (!bResupply.BoolValue) return;
+  if (!g_bResupplyDn[client] || g_bResupplyUp[client]) return;
+  if (!IsPlayerAlive(client)) return;
+  if (nextInstantResupplyTime[client] > GetGameTime()) return;
+
+  float origin[3];
+  GetClientAbsOrigin(client, origin);
+  if (!PointInRespawnRoom(client, origin, false)) return;
+
+  nextInstantResupplyTime[client] = GetGameTime() + flResupplyCooldown.FloatValue;
+  ForceRegenerateAndRespawn(client);
+  ApplyBootsAttributes(client);
+  g_bResupplyUp[client] = true;
+}
+
+void RemoveStocks(int client) {
   if (bFixStocks.BoolValue) {
     TFClassType class = TF2_GetPlayerClass(client);
     int iWep;
@@ -131,7 +165,7 @@ v RemoveStocks(int client) {
     elif (class == TFClass_Medic) iWep = GetPlayerWeaponSlot(client, 0);
 
     if (iWep >= 0) {
-      c classname[64];
+      char classname[64];
       GetEntityClassname(iWep, classname, sizeof(classname));
 
       if (StrEqual(classname, "tf_weapon_shotgun_soldier")) {

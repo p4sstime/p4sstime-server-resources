@@ -1,5 +1,5 @@
 // This file relates to all anticheat features and will contain the functions for them
-v TurnBindCheck(int client) {
+void TurnBindCheck(int client) {
   SetLogInfo(client);
   if (GetClientButtons(client) & IN_LEFT) {
     LogToGame("\"%N<%i><%s><%s>\" used \"+left\" as \"demoman\" (position \"%.0f %.0f %.0f\")",
@@ -13,7 +13,7 @@ v TurnBindCheck(int client) {
   }
 }
 
-v FilterCheck(QueryCookie cookie, int client, ConVarQueryResult result, const char[] cvarName, const char[] cvarValue, any value) {
+void FilterCheck(QueryCookie cookie, int client, ConVarQueryResult result, const char[] cvarName, const char[] cvarValue, any value) {
   if (!StrEqual(cvarValue, "0") && !value) {
     SetLogInfo(client);
     LogToGame("\"%N<%i><%s><%s>\" spawned with m_filter on",  // log plugins already say "spawned as demoman" so we don't need to put that here
@@ -26,7 +26,7 @@ v FilterCheck(QueryCookie cookie, int client, ConVarQueryResult result, const ch
   }
 }
 
-Action MultiCheck(Han timer, any client) {
+Action MultiCheck(Handle timer, any client) {
   QueryClientConVar(client, "m_filter", FilterCheck, true);
   TurnBindCheck(client);  // would prefer to check every tick but im too lazy to implement. this should be good enough for our purposes tho
   PH;

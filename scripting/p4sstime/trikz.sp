@@ -5,20 +5,20 @@
 }
 
 // following classnames are taken from here: https://developer.valvesoftware.com/w/i.php?title=Category:Point_Entities&pagefrom=Prop+glass+futbol#mw-pages
-pub v OnEntityCreated(int entity, const char[] classname) {
+public void OnEntityCreated(int entity, const char[] classname) {
   //DHooks_OnEntityCreated(entity, classname);
   if (StrEqual(classname, "tf_projectile_rocket") || StrEqual(classname, "tf_projectile_pipe"))
     SDKHook(entity, SDKHook_Touch, OnProjectileTouch);
 }
 
-v OnProjectileTouch(int entity, int other) // direct hit detector, taken from MGEMod {
+void OnProjectileTouch(int entity, int other) // direct hit detector, taken from MGEMod {
   plyDirecter = other;
   if (other > 0 && other <= MaxClients) {
     plyTakenDirectHit[plyDirecter] = true;
   }
 }
 
-v Hook_OnProjCollideChange(ConVar convar, const char[] oldValue, const char[] newValue) {
+void Hook_OnProjCollideChange(ConVar convar, const char[] oldValue, const char[] newValue) {
   if (newValue[0] == '0')
     trikzProjCollideSave = 0;
   if (newValue[0] == '1')
@@ -27,7 +27,7 @@ v Hook_OnProjCollideChange(ConVar convar, const char[] oldValue, const char[] ne
     trikzProjCollideSave = 2;
 }
 
-v Hook_OnProjCollideDev(ConVar convar, const char[] oldValue, const char[] newValue) {
+void Hook_OnProjCollideDev(ConVar convar, const char[] oldValue, const char[] newValue) {
   if(FindConVar("sm_projectiles_ignore_teammates") != null)
     SetConVarInt(FindConVar("sm_projectiles_ignore_teammates"), 0);
   if (newValue[0] == '0')
@@ -42,7 +42,7 @@ int ProjCollideValue() {
   return trikzProjCollideCurVal;
 }
 
-v Hook_OnTrikzChange(ConVar convar, const char[] oldValue, const char[] newValue) {
+void Hook_OnTrikzChange(ConVar convar, const char[] oldValue, const char[] newValue) {
   if (newValue[0] == '0')
     SetConVarInt(FindConVar("mp_friendlyfire"), 0);
   if (newValue[0] == '1' || newValue[0] == '2' || newValue[0] == '3')
@@ -84,7 +84,7 @@ Action EOnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, i
     GetClientName(attacker, attackerName, sizeof(attackerName));
     GetClientAuthId(attacker, AuthId_Steam3, steamid_attacker, sizeof(steamid_attacker));
     if (bPrintStats.BoolValue)
-      TagChatGlobal("%s {pass_yellow}airshot {chat}ball carrier %s!", attackerName, victimName);
+      TagChatGlobal("%s {pfyellow}airshot {chat}ball carrier %s!", attackerName, victimName);
     LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_carrier_airshot\" against \"%N<%i><%s><%s>\"", attacker, GetClientUserId(attacker), steamid_attacker, team_attacker, victim, GetClientUserId(victim), steamid_victim, team_victim);
   }
   if (trikzEnable.IntValue == 0 || attacker <= 0 || !IsClientInGame(attacker) || !IsValidClient(victim)) // should not damage {
@@ -100,7 +100,7 @@ Action EOnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, i
       GetClientName(attacker, attackerName, sizeof(attackerName));
       GetClientAuthId(attacker, AuthId_Steam3, steamid_attacker, sizeof(steamid_attacker));
       if (bPrintStats.BoolValue)
-        TagChatGlobal("%s {pass_yellow}airshot {chat}%s!", attackerName, victimName);
+        TagChatGlobal("%s {pfyellow}airshot {chat}%s!", attackerName, victimName);
       LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_friendly_airshot\" against \"%N<%i><%s><%s>\"", attacker, GetClientUserId(attacker), steamid_attacker, team_attacker, victim, GetClientUserId(victim), steamid_victim, team_victim);
     }
     plyTakenDirectHit[victim] = false;
@@ -131,13 +131,13 @@ Action EOnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, i
 
 Han g_hook_CBaseProjectile_CanCollideWithTeammates;
 
-v DHooks_Initialize(GD gamedata) {
+void DHooks_Initialize(GD gamedata) {
   g_dynamicHookIds = new ArrayList();
 
   g_dhook_CBaseProjectile_CanCollideWithTeammates = DHooks_AddDynamicHook(gamedata, "CBaseProjectile::CanCollideWithTeammates");
 }
 
-v DHooks_OnEntityCreated(int entity, const char[] classname) {
+void DHooks_OnEntityCreated(int entity, const char[] classname) {
   if (strncmp(classname, "tf_projectile_", 14) != 0 && ProjCollideValue() != 1) // if 1, just use default tf2 behavior {
     // Fixes projectiles sometimes not colliding with teammates
     DHookToggleEntityListener(ListenType_Created, WhenEntityCreated, true);
