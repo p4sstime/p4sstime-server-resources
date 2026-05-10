@@ -18,6 +18,7 @@ Action EPlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
   RemoveStocks(client);
   ApplyDemoResistance(client);
   ApplyBootsAttributes(client);
+  RestoreFOV(client);
   if (TF2_GetPlayerClass(client) == TFClass_DemoMan) { QueryClientConVar(client, "m_filter", FilterCheck, false); }
 
   PH;

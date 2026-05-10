@@ -157,6 +157,15 @@ bool g_bBootsAttributesApplied[MAXPLAYERS + 1];
 // Buffered resupply
 bool g_bResupplyDn[MAXPLAYERS + 1];
 bool g_bResupplyUp[MAXPLAYERS + 1];
+
+// FOV
+ConVar cvFOVMin;
+ConVar cvFOVMax;
+Cookie cookieFOV;
+bool g_bSteamOnline = true;
+bool g_bBackupFOVDB;
+bool g_bPlayerTracked[MAXPLAYERS + 1];
+int  g_iPlayerFOV[MAXPLAYERS + 1];
 // b plyTakenDirectHit[MAXPLAYERS + 1];
 Cookie cookieCountdownCaption, cookieJACKPickupHud, cookieJACKPickupChat, cookieJACKPickupSound, cookieSummary;
 
@@ -444,6 +453,7 @@ public void OnPluginStart() {
   cookieJACKPickupChat =   RCC("p4ssClientJACKPickupChatMsg", "p4sstime's client setting (1/0) for chat msg when picking up JACK", CookieAccess_Public);
   cookieJACKPickupSound =  RCC("p4ssClientJACKPickupSound",   "p4sstime's client setting (1/0) for sound when picking up JACK",    CookieAccess_Public);
   cookieSummary =          RCC("p4ssClientSummary",           "p4sstime's client setting (0/1/2) for EoR summaries",               CookieAccess_Public);
+  cookieFOV =              RCC("p4ssClientFOV",               "p4sstime's client FOV setting",                                     CookieAccess_Private);
 
   // Client commands
   RC("sm_pt_menu",         CMenu);
@@ -461,6 +471,8 @@ public void OnPluginStart() {
   RC("-sm_resupply",       CResupUp);
   RC("+resupply",          CResupDn);
   RC("-resupply",          CResupUp);
+  RC("sm_pt_fov",           CSetFOV);
+  RC("sm_fov",              CSetFOV);
 
   // Admin commands
   RA("sm_pt_snapshot",    CSnapshot,        GENERIC, "Take a snapshot of the plugin's current variable values.");
@@ -505,6 +517,10 @@ public void OnPluginStart() {
   cvBootsMaxHealth  = CC("sm_pt_boots_max_health",  "25.0", "Max health additive bonus for Demoman boots",          NOTIFY);
   cvBootsKillRefill = CC("sm_pt_boots_kill_refill", "0.25", "Kill refills meter value for Demoman boots",           NOTIFY);
   cvBootsMoveSpeed  = CC("sm_pt_boots_move_speed",  "1.10", "Move speed bonus (shield required) for Demoman boots", NOTIFY);
+
+  // FOV ConVars
+  cvFOVMin = CC("sm_pt_fov_min", "70",  "Minimum client field of view", _, true, 1.0, true, 175.0);
+  cvFOVMax = CC("sm_pt_fov_max", "120", "Maximum client field of view", _, true, 1.0, true, 175.0);
   // trikzEnable =      CC("sm_pt_trikz",                 "0", "Set 'trikz' mode. 1 adds friendly knockback for airshots, 2 adds friendly knockback for splash damage, 3 adds friendly knockback for everywhere", NOTIFY, true, 0.0, true, 3.0);
   // trikzProjCollide = CC("sm_pt_trikz_projcollide",     "2", "Manually set team projectile collision behavior when trikz is on. 2 always collides, 1 will cause your projectiles to phase through if you are too close (default game behavior), 0 will cause them to never collide.", 0, true, 0.0, true, 2.0);
   // trikzProjDev =     CC("sm_pt_trikz_projcollide_dev", "0", "DONOTUSE; This command is used solely by the plugin to change values. Changing this manually may cause issues.", FCVAR_HIDDEN, true, 0.0, true, 2.0);
@@ -608,6 +624,7 @@ public void OnLibraryAdded(const char[] name) {
 #include "p4sstime/anticheat.sp"
 #include "p4sstime/attributes.sp"
 #include "p4sstime/demoman.sp"
+#include "p4sstime/fov.sp"
 #include "p4sstime/convars.sp"
 #include "p4sstime/stats_print.sp"
 #include "p4sstime/f2stocks.sp"
@@ -961,6 +978,7 @@ Action EPlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 public void OnClientDisconnect(int client) {
   ClearLocalStats(client);
   ClearDemoClientState(client);
+  ClearFOVClientState(client);
   g_bResupplyDn[client] = false;
   g_bResupplyUp[client] = false;
 }
