@@ -855,15 +855,27 @@ Action Event_PassFree(Event event, const char[] name, bool dontBroadcast)
     GetEntPropVector(eiJack, Prop_Data, "m_vecAbsOrigin", fFreeBallPos);
     GetEntPropVector(owner, Prop_Data, "m_vecAbsVelocity", fFreeBallThrowerVec);
     eiPassTarget = EntRefToEntIndex(GetEntPropEnt(owner, Prop_Send, "m_hPasstimePassTarget"));
+    if (eiPassTarget != -1) // ball was thrown with lock-on
+    {
+        SetLogInfo(owner, eiPassTarget);
+        LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_free\" to \"%N<%i><%s><%s>\" (has_lock \"1\") (thrower_position \"%.0f %.0f %.0f\") (target_position \"%.0f %.0f %.0f\")",
+                  user1, GetClientUserId(user1), user1steamid, user1team,
+                  user2, GetClientUserId(user2), user2steamid, user2team,
+                  user1position[0], user1position[1], user1position[2],
+                  user2position[0], user2position[1], user2position[2]);
+    }
+    else    // ball was thrown loose
+    {
+        SetLogInfo(owner);
+        LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_free\" (has_lock \"0\") (thrower_position \"%.0f %.0f %.0f\")",
+                  user1, GetClientUserId(user1), user1steamid, user1team,
+                  user1position[0], user1position[1], user1position[2]);
+    }
     if (!(arrbBlastJumpStatus[owner]))
     {
         arrbPanaceaCheck[owner]  = false;
         arrbWinStratCheck[owner] = false;
     }
-    SetLogInfo(owner);
-    LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_free\" (position \"%.0f %.0f %.0f\")",
-              user1, GetClientUserId(user1), user1steamid, user1team,
-              user1position[0], user1position[1], user1position[2]);
     return Plugin_Handled;
 }
 
