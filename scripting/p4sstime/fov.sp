@@ -9,10 +9,10 @@ bool GetFOVCookie(int client) {
   char cookie[4];
   GetClientCookie(client, cookieFOV, cookie, sizeof(cookie));
   int fov = StringToInt(cookie);
-  int min = cvFOVMin.IntValue;
-  int max = cvFOVMax.IntValue;
+  int minFov = cvFOVMin.IntValue;
+  int maxFov = cvFOVMax.IntValue;
 
-  if (fov < min || fov > max) return false;
+  if (fov < minFov || fov > maxFov) return false;
 
   if (g_bBackupFOVDB) {
     g_iPlayerFOV[client] = fov;
@@ -75,8 +75,8 @@ Action CSetFOV(int client, int args) {
   }
 
   int fov = GetCmdArgInt(1);
-  int min = cvFOVMin.IntValue;
-  int max = cvFOVMax.IntValue;
+  int minFov = cvFOVMin.IntValue;
+  int maxFov = cvFOVMax.IntValue;
 
   if (fov == 0) {
     QueryClientConVar(client, "fov_desired", OnFOVQueried);
@@ -84,12 +84,12 @@ Action CSetFOV(int client, int args) {
     PH;
   }
 
-  if (fov < min) {
-    CTagReply(client, "The minimum FOV you can set is %d.", min);
+  if (fov < minFov) {
+    CTagReply(client, "The minimum FOV you can set is %d.", minFov);
     PH;
   }
-  if (fov > max) {
-    CTagReply(client, "The maximum FOV you can set is %d.", max);
+  if (fov > maxFov) {
+    CTagReply(client, "The maximum FOV you can set is %d.", maxFov);
     PH;
   }
 

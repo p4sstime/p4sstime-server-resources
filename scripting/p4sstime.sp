@@ -10,6 +10,22 @@
 #include <clientprefs>
 #include <sdktools_functions>
 
+// Modules
+#include "p4sstime/stocks.sp"
+#include "p4sstime/snapshot.sp"
+#include "p4sstime/logs.sp"
+#include "p4sstime/pass_menu.sp"
+#include "p4sstime/practice.sp"
+#include "p4sstime/anticheat.sp"
+#include "p4sstime/attributes.sp"
+#include "p4sstime/demoman.sp"
+#include "p4sstime/fov.sp"
+#include "p4sstime/convars.sp"
+#include "p4sstime/stats_print.sp"
+#include "p4sstime/f2stocks.sp"
+#include "p4sstime/spawnball.sp"
+//#include <p4sstime/trikz.sp>
+
 #pragma semicolon 1 // required for logs.tf
 #pragma newdecls required
 
@@ -124,35 +140,35 @@ int iRedBallTime;
 int iBluBallTime;
 // i trikzProjCollideCurVal;
 // i trikzProjCollideSave = 2;
-Menu mPassMenu;
-bool bWaitingForBallSpawnToRestart;
-bool bRoundActive;
-bool bHalloweenMode;
-bool bBallLoose;         // Is the ball currently loose (is the passtime_ball entity on the map)?
-bool bBallSplashed;      // check if ball splashed for panacea checks
+Menu   mPassMenu;
+bool   bWaitingForBallSpawnToRestart;
+bool   bRoundActive;
+bool   bHalloweenMode;
+bool   bBallLoose;         // Is the ball currently loose (is the passtime_ball entity on the map)?
+bool   bBallSplashed;      // check if ball splashed for panacea checks
 TFTeam eLastTickBallTeam;  // in effect, this is "last thrown ball team"
-bool arrbPlyIsDead [MAXPLAYERS + 1];
-bool arrbBlastJumpStatus [MAXPLAYERS + 1];  // true if blast jumping, false if has landed
-bool arrbPanaceaCheck [MAXPLAYERS + 1];
-bool arrbWinStratCheck [MAXPLAYERS + 1];
-bool arrbDeathbombCheck [MAXPLAYERS + 1];
-float nextInstantResupplyTime[MAXPLAYERS + 1];
+bool   arrbPlyIsDead [MAXPLAYERS + 1];
+bool   arrbBlastJumpStatus [MAXPLAYERS + 1];  // true if blast jumping, false if has landed
+bool   arrbPanaceaCheck [MAXPLAYERS + 1];
+bool   arrbWinStratCheck [MAXPLAYERS + 1];
+bool   arrbDeathbombCheck [MAXPLAYERS + 1];
+float  nextInstantResupplyTime[MAXPLAYERS + 1];
 
 // Demoman blast resistance
-bool g_bDemoResistEnabled;
+bool  g_bDemoResistEnabled;
 float g_fCurrentDemoResistValue[MAXPLAYERS + 1];
-bool g_bDemoResistApplied[MAXPLAYERS + 1];
+bool  g_bDemoResistApplied[MAXPLAYERS + 1];
 
 // Demoman boots attributes
 ConVar cvBootsChargeTurn;
 ConVar cvBootsMaxHealth;
 ConVar cvBootsKillRefill;
 ConVar cvBootsMoveSpeed;
-float g_fCurrentBootsChargeTurn[MAXPLAYERS + 1];
-float g_fCurrentBootsMaxHealth[MAXPLAYERS + 1];
-float g_fCurrentBootsKillRefill[MAXPLAYERS + 1];
-float g_fCurrentBootsMoveSpeed[MAXPLAYERS + 1];
-bool g_bBootsAttributesApplied[MAXPLAYERS + 1];
+float  g_fCurrentBootsChargeTurn[MAXPLAYERS + 1];
+float  g_fCurrentBootsMaxHealth[MAXPLAYERS + 1];
+float  g_fCurrentBootsKillRefill[MAXPLAYERS + 1];
+float  g_fCurrentBootsMoveSpeed[MAXPLAYERS + 1];
+bool   g_bBootsAttributesApplied[MAXPLAYERS + 1];
 
 // Buffered resupply
 bool g_bResupplyDn[MAXPLAYERS + 1];
@@ -170,20 +186,20 @@ int  g_iPlayerFOV[MAXPLAYERS + 1];
 Cookie cookieCountdownCaption, cookieJACKPickupHud, cookieJACKPickupChat, cookieJACKPickupSound, cookieSummary;
 
 // log variables
-int user1;
-char user1steamid[16];
-char user1team[12];
+int   user1;
+char  user1steamid[16];
+char  user1team[12];
 float user1position[3];
-int user2;
-char user2steamid[16];
-char user2team[12];
+int   user2;
+char  user2steamid[16];
+char  user2team[12];
 float user2position[3];
 
 // stats menu variables
 char moreurl[128];
 
-Handle tfPlayerForceRegenerateAndRespawn;
-Handle pointInRespawnRoom;
+Handle   tfPlayerForceRegenerateAndRespawn;
+Handle   pointInRespawnRoom;
 GameData gameData;
 
 // Utility functions for chat events
@@ -437,11 +453,11 @@ stock void LogPassBallStolen(int thief, int victim, bool steal2save) {
 }
 
 public Plugin myinfo = {
-  name = "4v4 PASS Time Extension",
-  author = "https://discord.passtime.tf/",
+  name        = "4v4 PASS Time Extension",
+  author      = "https://discord.passtime.tf/",
   description = "The main plugin for 4v4 Competitive PASS Time.",
-  version = VERSION,
-  url = "https://github.com/p4sstime/p4sstime-server-resources/releases"
+  version     = VERSION,
+  url         = "https://github.com/p4sstime/p4sstime-server-resources/releases"
 };
 
 public void OnPluginStart() {
@@ -614,22 +630,6 @@ public void OnLibraryAdded(const char[] name) {
   //     "https://raw.githubusercontent.com/p4sstime/p4sstime-server-resources/refs/heads/updater/updatefile.txt");
   // }
 }
-
-// Modules
-#include "p4sstime/stocks.sp"
-#include "p4sstime/snapshot.sp"
-#include "p4sstime/logs.sp"
-#include "p4sstime/pass_menu.sp"
-#include "p4sstime/practice.sp"
-#include "p4sstime/anticheat.sp"
-#include "p4sstime/attributes.sp"
-#include "p4sstime/demoman.sp"
-#include "p4sstime/fov.sp"
-#include "p4sstime/convars.sp"
-#include "p4sstime/stats_print.sp"
-#include "p4sstime/f2stocks.sp"
-#include "p4sstime/spawnball.sp"
-//#include <p4sstime/trikz.sp>
 
 public Action GoalHealTimer(Handle timer) {
   // LogMessage("GoalHealTimer popped");
