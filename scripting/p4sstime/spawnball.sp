@@ -6,8 +6,6 @@ Action CSpawnBall(int client, int args) {
 
   TagChatAllPlayers("{default}: Spawning the ball for practice...", name);
   TagChatAllPlayers("{pfyellow}THE GAME IS {red}NOT {pfyellow}STARTING!");
-  TagChatAllPlayers("{pfyellow}THE GAME IS {red}NOT {pfyellow}STARTING!");
-  TagChatAllPlayers("{pfyellow}THE GAME IS {red}NOT {pfyellow}STARTING!");
   bWaitingForBallSpawnToRestart = true;
   ServerCommand("mp_restartgame_immediate 1");
   PH;
