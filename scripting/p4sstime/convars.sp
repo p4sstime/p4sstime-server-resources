@@ -75,9 +75,7 @@ Action EPlayerResup(Event event, const char[] name, bool dontBroadcast) {
 }
 
 Action CSuicide(int client, int args) {
-  if (bRoundActive) {
-    ForcePlayerSuicide(client);
-  }
+  ForcePlayerSuicide(client);
   PH;
 }
 
@@ -102,31 +100,12 @@ void Hook_OnAllowInstantResupplyChange(ConVar convar, const char[] oldValue, con
     return;
   }
 }
-Action CResupply(int client, int args) {
-  if (!bResupply.BoolValue)
-    PH;
-
-  if (nextInstantResupplyTime[client] > GetGameTime())
-    PH;
-
-  if (!IsPlayerAlive(client))
-    PH;
-
-  float origin[3];
-  GetClientAbsOrigin(client, origin);
-
-  if (!PointInRespawnRoom(client, origin, false))
-    PH;
-
-  nextInstantResupplyTime[client] = GetGameTime() + flResupplyCooldown.FloatValue;
-  ForceRegenerateAndRespawn(client);
-  ApplyBootsAttributes(client);
-
-  PH;
-}
 
 Action CResupDn(int client, int args) {
-  if (!bResupply.BoolValue) PH;
+  if (!bResupply.BoolValue) {
+    PrintToConsole(client, "[PASS] +resupply is disabled.");
+    PH;
+  }
   if (!IsClientInGame(client)) PH;
 
   g_bResupplyDn[client] = true;
@@ -146,13 +125,61 @@ void BufferedResupply(int client) {
   if (!bResupply.BoolValue) return;
   if (!g_bResupplyDn[client] || g_bResupplyUp[client]) return;
   if (!IsPlayerAlive(client)) return;
-  if (nextInstantResupplyTime[client] > GetGameTime()) return;
+
+  // Check if cooldown is active (blocked input)
+  if (nextInstantResupplyTime[client] > 0.0) return;
 
   float origin[3];
   GetClientAbsOrigin(client, origin);
   if (!PointInRespawnRoom(client, origin, false)) return;
 
-  nextInstantResupplyTime[client] = GetGameTime() + flResupplyCooldown.FloatValue;
+  // SUCCESSFUL input: apply decay-based cooldown
+  float maxDecay = flResupplyCooldown.FloatValue;
+  float decayAddition = flResupplyDecayAddition.FloatValue;
+
+  // 1. Current decay determines the cooldown applied to this click
+  nextInstantResupplyTime[client] = resupplyDecay[client] < maxDecay ? resupplyDecay[client] : maxDecay;
+
+  // 2. Add decay penalty for subsequent presses
+  float newDecay = resupplyDecay[client] + decayAddition;
+  resupplyDecay[client] = newDecay < maxDecay ? newDecay : maxDecay;
+
+  // Try to use side-aware spawnpoint selection if mirror system is available
+  if (g_bMirrorSystemInitialized) {
+    TFTeam clientTeam = TF2_GetClientTeam(client);
+    int teamIndex = (clientTeam == TFTeam_Red) ? 0 : 1;
+
+    if (teamIndex == 0 || teamIndex == 1) {
+      float playerOrigin[3];
+      GetClientAbsOrigin(client, playerOrigin);
+
+      int currentSide = (playerOrigin[0] < g_fMirrorPlaneX) ? 0 : 1;
+      int targetSide = (currentSide == 0) ? 1 : 0;
+
+      ArrayList targetSpawns = g_hMirrorSpawnPoints[teamIndex][targetSide];
+
+      if (targetSpawns.Length > 0) {
+        int spawnIndex = g_iCurrentSpawnIndex[teamIndex][targetSide];
+        int spawnEntity = targetSpawns.Get(spawnIndex);
+
+        g_iCurrentSpawnIndex[teamIndex][targetSide] = (spawnIndex + 1) % targetSpawns.Length;
+
+        if (IsValidEntity(spawnEntity)) {
+          float spawnOrigin[3], spawnAngles[3];
+          GetEntPropVector(spawnEntity, Prop_Data, "m_vecOrigin", spawnOrigin);
+          GetEntPropVector(spawnEntity, Prop_Data, "m_angRotation", spawnAngles);
+
+          TF2_RespawnPlayer(client);
+          TeleportEntity(client, spawnOrigin, spawnAngles, {0.0, 0.0, 0.0});
+          ApplyBootsAttributes(client);
+          g_bResupplyUp[client] = true;
+          return;
+        }
+      }
+    }
+  }
+
+  // Fallback to default resupply
   ForceRegenerateAndRespawn(client);
   ApplyBootsAttributes(client);
   g_bResupplyUp[client] = true;
@@ -185,4 +212,114 @@ void RemoveStocks(int client) {
       }
     }
   }
+}
+
+// Build entity cache for mirror spawnpoint system
+void BuildEntityCache() {
+  g_hCachedSpawnRooms.Clear();
+  g_hCachedSpawnPoints[0].Clear();
+  g_hCachedSpawnPoints[1].Clear();
+  g_iCachedTimerEntity = -1;
+
+  // Cache team_round_timer entities
+  int entity = -1;
+  while ((entity = FindEntityByClassname(entity, "team_round_timer")) != -1) {
+    if (IsValidEntity(entity)) {
+      g_iCachedTimerEntity = entity;
+      break;
+    }
+  }
+
+  // Cache func_respawnroom entities
+  entity = -1;
+  while ((entity = FindEntityByClassname(entity, "func_respawnroom")) != -1) {
+    if (IsValidEntity(entity)) {
+      g_hCachedSpawnRooms.Push(entity);
+    }
+  }
+
+  // Cache info_player_teamspawn entities
+  entity = -1;
+  while ((entity = FindEntityByClassname(entity, "info_player_teamspawn")) != -1) {
+    if (IsValidEntity(entity)) {
+      int team = GetEntProp(entity, Prop_Send, "m_iTeamNum");
+      if (team == 2) {
+        g_hCachedSpawnPoints[0].Push(entity);
+      }
+      else if (team == 3) {
+        g_hCachedSpawnPoints[1].Push(entity);
+      }
+    }
+  }
+
+  PrintToServer("[p4sstime] Entity cache built: %d spawn rooms, %d RED spawns, %d BLU spawns, timer: %d",
+                 g_hCachedSpawnRooms.Length, g_hCachedSpawnPoints[0].Length, g_hCachedSpawnPoints[1].Length, g_iCachedTimerEntity);
+
+  AnalyzeMirrorSpawnpoints();
+}
+
+// Analyze spawnpoints for mirror system - determine left/right split based on coordinates
+void AnalyzeMirrorSpawnpoints() {
+  g_hMirrorSpawnPoints[0][0].Clear();
+  g_hMirrorSpawnPoints[0][1].Clear();
+  g_hMirrorSpawnPoints[1][0].Clear();
+  g_hMirrorSpawnPoints[1][1].Clear();
+
+  g_iCurrentSpawnIndex[0][0] = 0;
+  g_iCurrentSpawnIndex[0][1] = 0;
+  g_iCurrentSpawnIndex[1][0] = 0;
+  g_iCurrentSpawnIndex[1][1] = 0;
+
+  int totalSpawns = g_hCachedSpawnPoints[0].Length + g_hCachedSpawnPoints[1].Length;
+  if (totalSpawns < 2) {
+    g_bMirrorSystemInitialized = false;
+    PrintToServer("[p4sstime] Mirror system disabled: insufficient spawnpoints (%d)", totalSpawns);
+    return;
+  }
+
+  float totalX = 0.0, totalY = 0.0;
+  int count = 0;
+
+  for (int team = 0; team < 2; team++) {
+    int spawnCount = g_hCachedSpawnPoints[team].Length;
+    for (int j = 0; j < spawnCount; j++) {
+      int entity = g_hCachedSpawnPoints[team].Get(j);
+      if (IsValidEntity(entity)) {
+        float origin[3];
+        GetEntPropVector(entity, Prop_Data, "m_vecOrigin", origin);
+        totalX += origin[0];
+        totalY += origin[1];
+        count++;
+      }
+    }
+  }
+
+  if (count < 2) {
+    g_bMirrorSystemInitialized = false;
+    PrintToServer("[p4sstime] Mirror system disabled: insufficient valid spawnpoints (%d)", count);
+    return;
+  }
+
+  g_fMirrorPlaneX = totalX / count;
+  g_fMirrorPlaneY = totalY / count;
+
+  for (int team = 0; team < 2; team++) {
+    int spawnCount = g_hCachedSpawnPoints[team].Length;
+    for (int j = 0; j < spawnCount; j++) {
+      int entity = g_hCachedSpawnPoints[team].Get(j);
+      if (IsValidEntity(entity)) {
+        float origin[3];
+        GetEntPropVector(entity, Prop_Data, "m_vecOrigin", origin);
+
+        int side = (origin[0] < g_fMirrorPlaneX) ? 0 : 1;
+        g_hMirrorSpawnPoints[team][side].Push(entity);
+      }
+    }
+  }
+
+  g_bMirrorSystemInitialized = true;
+  PrintToServer("[p4sstime] Mirror system initialized: plane at (%.1f, %.1f), RED spawns: %d left/%d right, BLU spawns: %d left/%d right",
+                 g_fMirrorPlaneX, g_fMirrorPlaneY,
+                 g_hMirrorSpawnPoints[0][0].Length, g_hMirrorSpawnPoints[0][1].Length,
+                 g_hMirrorSpawnPoints[1][0].Length, g_hMirrorSpawnPoints[1][1].Length);
 }

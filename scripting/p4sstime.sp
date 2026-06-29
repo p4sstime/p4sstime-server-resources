@@ -9,21 +9,6 @@
 #include <vector>
 #include <clientprefs>
 #include <sdktools_functions>
-
-// Modules
-#include "p4sstime/stocks.sp"
-#include "p4sstime/snapshot.sp"
-#include "p4sstime/logs.sp"
-#include "p4sstime/pass_menu.sp"
-#include "p4sstime/practice.sp"
-#include "p4sstime/anticheat.sp"
-#include "p4sstime/attributes.sp"
-#include "p4sstime/demoman.sp"
-#include "p4sstime/fov.sp"
-#include "p4sstime/convars.sp"
-#include "p4sstime/stats_print.sp"
-#include "p4sstime/f2stocks.sp"
-#include "p4sstime/spawnball.sp"
 //#include <p4sstime/trikz.sp>
 
 #pragma semicolon 1 // required for logs.tf
@@ -55,7 +40,7 @@
 #define PH      return Plugin_Handled
 #define PS      return Plugin_Stop
 
-#define elif    else if
+#define elif else if
 
 enum {
   COLOR_FORMAT_LENGTH = 7,
@@ -124,6 +109,8 @@ ConVar bMedicSplash;
 ConVar bMedicSplashPush;
 ConVar bResupply;
 ConVar flResupplyCooldown;
+ConVar flResupplyDecayRate;
+ConVar flResupplyDecayAddition;
 ConVar flGoalRegeneration;
 
 int iPlyWhoGotJack;
@@ -153,6 +140,7 @@ bool   arrbPanaceaCheck [MAXPLAYERS + 1];
 bool   arrbWinStratCheck [MAXPLAYERS + 1];
 bool   arrbDeathbombCheck [MAXPLAYERS + 1];
 float  nextInstantResupplyTime[MAXPLAYERS + 1];
+float  resupplyDecay[MAXPLAYERS + 1];
 
 // Demoman blast resistance
 bool  g_bDemoResistEnabled;
@@ -173,6 +161,16 @@ bool   g_bBootsAttributesApplied[MAXPLAYERS + 1];
 // Buffered resupply
 bool g_bResupplyDn[MAXPLAYERS + 1];
 bool g_bResupplyUp[MAXPLAYERS + 1];
+
+// Mirror spawnpoint system for side-aware resupply
+ArrayList g_hCachedSpawnRooms;
+ArrayList g_hCachedSpawnPoints[2];  // RED and BLU spawn points
+ArrayList g_hMirrorSpawnPoints[2][2];  // [team][side] where team=0=RED,1=BLU and side=0=left,1=right
+int g_iCurrentSpawnIndex[2][2];  // [team][side] current spawnpoint index
+float g_fMirrorPlaneX = 0.0;  // X coordinate of the middle plane
+float g_fMirrorPlaneY = 0.0;  // Y coordinate of the middle plane
+bool g_bMirrorSystemInitialized = false;
+int g_iCachedTimerEntity = -1;
 
 // FOV
 ConVar cvFOVMin;
@@ -452,6 +450,21 @@ stock void LogPassBallStolen(int thief, int victim, bool steal2save) {
               user2position[0], user2position[1], user2position[2]);
 }
 
+// Modules
+#include "p4sstime/stocks.sp"
+#include "p4sstime/snapshot.sp"
+#include "p4sstime/logs.sp"
+#include "p4sstime/pass_menu.sp"
+#include "p4sstime/practice.sp"
+#include "p4sstime/anticheat.sp"
+#include "p4sstime/attributes.sp"
+#include "p4sstime/demoman.sp"
+#include "p4sstime/fov.sp"
+#include "p4sstime/convars.sp"
+#include "p4sstime/stats_print.sp"
+#include "p4sstime/f2stocks.sp"
+#include "p4sstime/spawnball.sp"
+
 public Plugin myinfo = {
   name        = "4v4 PASS Time Extension",
   author      = "https://discord.passtime.tf/",
@@ -462,6 +475,15 @@ public Plugin myinfo = {
 
 public void OnPluginStart() {
   gameData = new GameData("p4sstime"); // Load config
+
+  // Initialize mirror spawnpoint arrays
+  g_hCachedSpawnRooms = new ArrayList();
+  g_hCachedSpawnPoints[0] = new ArrayList();  // RED
+  g_hCachedSpawnPoints[1] = new ArrayList();  // BLU
+  g_hMirrorSpawnPoints[0][0] = new ArrayList();  // RED left
+  g_hMirrorSpawnPoints[0][1] = new ArrayList();  // RED right
+  g_hMirrorSpawnPoints[1][0] = new ArrayList();  // BLU left
+  g_hMirrorSpawnPoints[1][1] = new ArrayList();  // BLU right
 
   // Cookies
   cookieCountdownCaption = RCC("p4ssClientCountdownCaption",  "p4sstime's client setting (1/0) for captions for JACK spawn timer", CookieAccess_Public);
@@ -480,7 +502,6 @@ public void OnPluginStart() {
   RC("sm_pt_pickup_sound", CJackPickupSound);
   RC("sm_pt_suicide",      CSuicide);
   RC("sm_pt_kill",         CSuicide);
-  RC("sm_pt_resupply",     CResupply);
   RC("+sm_pt_resupply",    CResupDn);
   RC("-sm_pt_resupply",    CResupUp);
   RC("+sm_resupply",       CResupDn);
@@ -501,7 +522,7 @@ public void OnPluginStart() {
   AC("error",     0xd64843); // #d64843
 
   AC("chat",      0xBBBBBB); // #bbbbbb
-  AC("teamblue",  0x99CCFF); // #99ccff
+  AC("teamblu",   0x99CCFF); // #99ccff
   AC("teamred",   0xFF3F35); // #ff3f35
   
   AC("pfblue",    0x438CD6); // #438cd6
@@ -513,20 +534,22 @@ public void OnPluginStart() {
   AC("pfyellow",  0xECCD19); // #eccd19
 
   // ConVars
-  bFixStocks =          CC("sm_pt_fix_stocks",         "0",   "Disable equipping shotgun, stickies, and needles; the allowlist can't block stock weapons.",       NOTIFY);
-  bFixRespawnBypass =   CC("sm_pt_fix_respawn_bypass", "0",   "Disable switching classes while dead to respawn immediately.",                                     NOTIFY);
-  bFixJackCollision =   CC("sm_pt_fix_jack_collision", "1",   "Disable jack collision on ammo packs and weapons.",                                                NOTIFY);
-  bFixBlur =            CC("sm_pt_fix_blur",           "0",   "Enable blurry screen overlay when intercepting or stealing.",                                      NOTIFY);
-  bChatEvents =         CC("sm_pt_chat_events",        "0",   "Enable printing of passtime events to chat both during and after games. Does not affect logging.", NOTIFY);
-  bChatEventsFun =      CC("sm_pt_chat_events_fun",    "0",   "If sm_pt_print_events is 1, enable printing additional fun stats.",                                NOTIFY);
-  bWinstratKills =      CC("sm_pt_kill_winstrats",     "0",   "Enable killing winstratters and printing \"tried to winstrat\" in chat.",                          NOTIFY);
-  bVerboseLogs =        CC("sm_pt_logs_verbose",       "0",   "Enable printing additional information to logs.");
-  bMedicSplash =        CC("sm_pt_medic_splash",       "1",   "Enable medic arrows neutralizing the jack.",                                                       NOTIFY);
-  bMedicSplashPush =    CC("sm_pt_medic_splash_push",  "1",   "If sm_pt_medic_splash is 1, enable crossbow push on the jack.",                                    NOTIFY);
-  bResupply =           CC("sm_pt_resupply",           "0",   "Enable instant resupply.",                                                                         NOTIFY);
-  flResupplyCooldown =  CC("sm_pt_resupply_cooldown",  "0.5", "Set the resupply cooldown duration in seconds.",                                                   NOTIFY);
-  flGoalRegeneration =  CC("sm_pt_goal_regeneration",  "0",   "Set the amount of health regeneration every 500ms while in the goal zone.",                        NOTIFY);
-  bPractice =           CC("sm_pt_practice",           "0",   "Enable practice mode. When the round timer reaches 5 minutes, add 5 minutes to the timer.",        NOTIFY, true, 0.0, true, 1.0);
+  bFixStocks =              CC("sm_pt_fix_stocks",              "1",   "Disable equipping shotgun, stickies, and needles; the allowlist can't block stock weapons.",       NOTIFY);
+  bFixRespawnBypass =       CC("sm_pt_fix_respawn_bypass",      "1",   "Disable switching classes while dead to respawn immediately.",                                     NOTIFY);
+  bFixJackCollision =       CC("sm_pt_fix_jack_collision",      "1",   "Disable jack collision on ammo packs and weapons.",                                                NOTIFY);
+  bFixBlur =                CC("sm_pt_fix_blur",                "1",   "Disable blurry screen overlay when intercepting or stealing.",                                      NOTIFY);
+  bChatEvents =             CC("sm_pt_chat_events",             "1",   "Enable printing of passtime events to chat both during and after games. Does not affect logging.", NOTIFY);
+  bChatEventsFun =          CC("sm_pt_chat_events_fun",         "0",   "If sm_pt_print_events is 1, enable printing additional fun stats.",                                NOTIFY);
+  bWinstratKills =          CC("sm_pt_kill_winstrats",          "0",   "Enable killing winstratters and printing \"tried to winstrat\" in chat.",                          NOTIFY);
+  bVerboseLogs =            CC("sm_pt_logs_verbose",            "0",   "Enable printing additional information to logs.");
+  bMedicSplash =            CC("sm_pt_medic_splash",            "1",   "Enable medic arrows neutralizing the jack.",                                                       NOTIFY);
+  bMedicSplashPush =        CC("sm_pt_medic_splash_push",       "1",   "If sm_pt_medic_splash is 1, enable crossbow push on the jack.",                                    NOTIFY);
+  bResupply =               CC("sm_pt_resupply",                "1",   "Enable instant resupply.",                                                                      NOTIFY);
+  flResupplyCooldown =      CC("sm_pt_resupply_cooldown",       "0.5", "Set the resupply cooldown duration in seconds (also used as max decay cap).",                   NOTIFY);
+  flResupplyDecayRate =     CC("sm_pt_resupply_decay_rate",     "0.15", "Set the resupply decay rate (seconds of decay recovered per second).",                        NOTIFY);
+  flResupplyDecayAddition = CC("sm_pt_resupply_decay_addition", "0.2", "Set the resupply decay addition per successful resupply.",                                    NOTIFY);
+  flGoalRegeneration =      CC("sm_pt_goal_regeneration",       "0",   "Set the amount of health regeneration every 500ms while in the goal zone.",                    NOTIFY);
+  bPractice =               CC("sm_pt_practice",                "0",   "Enable practice mode. When the round timer reaches 5 minutes, add 5 minutes to the timer.",        NOTIFY, true, 0.0, true, 1.0);
 
   // Demoman boots attribute ConVars
   cvBootsChargeTurn = CC("sm_pt_boots_charge_turn", "3.0",  "Charge turn control multiplier for Demoman boots",     NOTIFY);
@@ -685,6 +708,9 @@ public void OnMapStart() { // get goal locations
     GetEntPropVector(goal2, Prop_Send, "m_vecOrigin", fBluGoalPos);
     GetEntPropVector(goal1, Prop_Send, "m_vecOrigin", fRedGoalPos);
   }
+
+  // Build entity cache for mirror spawnpoint system
+  BuildEntityCache();
 }
 
 public void OnMapEnd() {
@@ -718,6 +744,15 @@ public void OnGameFrame() {
   if (bResupply.BoolValue) {
     for (int i = 1; i <= MaxClients; i++) {
       if (!IsClientInGame(i) || !IsPlayerAlive(i)) continue;
+
+      // Update decay timers
+      float decayRate = flResupplyDecayRate.FloatValue;
+      float frameTime = GetTickInterval();
+      float newCooldown = nextInstantResupplyTime[i] - frameTime;
+      nextInstantResupplyTime[i] = newCooldown > 0.0 ? newCooldown : 0.0;
+      float newDecay = resupplyDecay[i] - decayRate * frameTime;
+      resupplyDecay[i] = newDecay > 0.0 ? newDecay : 0.0;
+
       if (g_bResupplyDn[i] && !g_bResupplyUp[i])
         BufferedResupply(i);
     }
@@ -981,6 +1016,8 @@ public void OnClientDisconnect(int client) {
   ClearFOVClientState(client);
   g_bResupplyDn[client] = false;
   g_bResupplyUp[client] = false;
+  nextInstantResupplyTime[client] = 0.0;
+  resupplyDecay[client] = 0.0;
 }
 
 /*-------------------------------------------------- PASS Events --------------------------------------------------*/
@@ -990,7 +1027,7 @@ void EOOnSpawnBall(const char[] name, int caller, int activator, float delay) {
 
   bBallLoose = true;
   ibBallSpawnedLower = 0;
-  if (!bFixJackCollision.BoolValue) SetEntityCollisionGroup(entJack, 4);
+  if (bFixJackCollision.BoolValue) SetEntityCollisionGroup(entJack, 4);
   if (bWaitingForBallSpawnToRestart) {
     ServerCommand("mp_tournament_restart");
     bWaitingForBallSpawnToRestart = false;

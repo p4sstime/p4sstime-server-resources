@@ -13,7 +13,7 @@ char gsTagSTV[32] = "{plugintag}[PASS-TV]{chat}";
 
 public void CTagReply(int client, const char[] format, any ...) {
   char buffer[254];
-  VFormat(buffer, sizeof(buffer), format, 2);
+  VFormat(buffer, sizeof(buffer), format, 3);
   CReplyToCommand(client, "%s %s", gsTag, buffer);
 }
 
@@ -43,7 +43,7 @@ public void TagChatAllPlayers(const char[] format, any ...) {
 
 public void TagChatClient(int client, const char[] format, any ...) {
   char buffer[254];
-  VFormat(buffer, sizeof(buffer), format, 2);
+  VFormat(buffer, sizeof(buffer), format, 3);
   CPrintToChat(client, "%s %s", gsTag, buffer);
 }
 

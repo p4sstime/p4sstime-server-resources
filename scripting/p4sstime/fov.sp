@@ -112,6 +112,6 @@ Action CSetFOV(int client, int args) {
 
   SetFOV(client, fov);
 
-  CTagReply(client, "Your FOV has been set to %d.%s", fov, cookieSuccess ? "" : " (Steam is down, the change will not be permanent.)");
+  CTagReply(client, "Your FOV has been set to %d.%s", fov, cookieSuccess ? "" : " (Steam is down, this will be reset on leaving.)");
   PH;
 }
