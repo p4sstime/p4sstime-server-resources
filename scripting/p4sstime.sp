@@ -305,7 +305,7 @@ stock bool IsFeatureEnabled(ConVar cvar) {
 stock void LogGameEvent(const char[] eventName, const char[] format, any ...) {
   int len = strlen(format) + 255;
   char[] MessageToLog = new char[len];
-  VFormat(MessageToLog, len, format, 2);
+  VFormat(MessageToLog, len, format, 3);
   LogToGame("\"%s\" %s", eventName, MessageToLog);
 }
 
@@ -801,10 +801,12 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
       if (EntInBluGoalZone(entJack) && ballTeam == TFTeam_Red) {
         VerboseLog("passtime_ball damage debug: successful splash");
         char playerNameTeam[MAX_TEAMFORMAT_NAME_LENGTH];
+        char throwerNameTeam[MAX_TEAMFORMAT_NAME_LENGTH];
         GetClientName(attacker, playerName, sizeof(playerName));
         FormatPlayerNameWithTeam(attacker, playerNameTeam);
-        ChatEvent("%s {teamblu}splashed the ball to save!", playerNameTeam);
-        TagChatSTV("%s splashed the ball to save it. t%d", playerName, STVTickCount());
+        FormatPlayerNameWithTeam(iPlyWhoGotJack, throwerNameTeam);
+        ChatEvent("%s {pfyellow}blocked %s {chat}from scoring with a splash!", playerNameTeam, throwerNameTeam);
+        TagChatSTV("%s blocked %N from scoring with a splash. t%d", playerName, iPlyWhoGotJack, STVTickCount());
         arriClientRoundStats[attacker].iSplashes++;
       }
     }
@@ -814,10 +816,12 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
       if (EntInRedGoalZone(entJack) && ballTeam == TFTeam_Blue) {
         VerboseLog("passtime_ball damage debug: successful splash");
         char playerNameTeam[MAX_TEAMFORMAT_NAME_LENGTH];
+        char throwerNameTeam[MAX_TEAMFORMAT_NAME_LENGTH];
         GetClientName(attacker, playerName, sizeof(playerName));
         FormatPlayerNameWithTeam(attacker, playerNameTeam);
-        ChatEvent("%s {teamblu}splashed the ball to save!", playerNameTeam);
-        TagChatSTV("%s splashed the ball to save it. t%d", playerName, STVTickCount());
+        FormatPlayerNameWithTeam(iPlyWhoGotJack, throwerNameTeam);
+        ChatEvent("%s {pfyellow}blocked %s {chat}from scoring with a splash!", playerNameTeam, throwerNameTeam);
+        TagChatSTV("%s blocked %N from scoring with a splash. t%d", playerName, iPlyWhoGotJack, STVTickCount());
         arriClientRoundStats[attacker].iSplashes++;
       }
     }
@@ -1131,6 +1135,7 @@ Action EPassGet(Event event, const char[] name, bool dontBroadcast) {
 Action EPassCaught(Handle event, const char[] name, bool dontBroadcast) {
   int thrower        = EvI(event, "passer");
   int catcher        = EvI(event, "catcher");
+  if (!IsValidClient(thrower) || !IsValidClient(catcher)) PH;
   float dist             = EvF(event, "dist");
   float duration         = EvF(event, "duration");
   int intercept      = false;
