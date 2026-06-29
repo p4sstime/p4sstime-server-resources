@@ -368,17 +368,17 @@ stock void ShowScoreMessage(int scorer, int assistant, bool panacea, bool winstr
     TagChatSTV("%s scored a deathbomb. t%d", deathBomberName, STVTickCount());
   }
   elif (dist > 1600) {
-    ChatEvent("%s{pfgreen} scored a goal from a distance of %.0fhu!", playerNameTeamFormatted, dist);
-    TagChatSTV("%s scored a goal from distance of %.0fhu. t%d", playerName, dist, STVTickCount());
+    ChatEvent("%s{pfgreen} scored from a distance of %.0fhu!", playerNameTeamFormatted, dist);
+    TagChatSTV("%s scored from distance of %.0fhu. t%d", playerName, dist, STVTickCount());
   }
   elif (assistant > 0) {
     FormatPlayerNameWithTeam(assistant, assistantNameTeamFormatted);
-    ChatEvent("%s{pfgreen} scored a goal {chat}assisted by %s!", playerNameTeamFormatted, assistantNameTeamFormatted);
-    TagChatSTV("%s scored a goal assisted by %s. t%d", playerName, assistantName, STVTickCount());
+    ChatEvent("%s{pfgreen} scored {chat}assisted by %s!", playerNameTeamFormatted, assistantNameTeamFormatted);
+    TagChatSTV("%s scored assisted by %s. t%d", playerName, assistantName, STVTickCount());
   }
   else {
-    ChatEvent("%s{pfgreen} scored a goal!", playerNameTeamFormatted);
-    TagChatSTV("%s scored a goal. t%d", playerName, STVTickCount());
+    ChatEvent("%s{pfgreen} scored!", playerNameTeamFormatted);
+    TagChatSTV("%s scored. t%d", playerName, STVTickCount());
   }
 }
 
@@ -799,7 +799,7 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
     case TFTeam_Blue: {
       VerboseLog("passtime_ball damage debug: player team is BLU, checking if in blu goal and if ball is red.");
       if (EntInBluGoalZone(entJack) && ballTeam == TFTeam_Red) {
-        VerboseLog("passtime_ball damage debug: all successful, this is a successful splash");
+        VerboseLog("passtime_ball damage debug: successful splash");
         char playerNameTeam[MAX_TEAMFORMAT_NAME_LENGTH];
         GetClientName(attacker, playerName, sizeof(playerName));
         FormatPlayerNameWithTeam(attacker, playerNameTeam);
@@ -812,7 +812,7 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
       VerboseLog("passtime_ball damage debug: player team is RED, checking if in red goal and if ball is blu.");
 
       if (EntInRedGoalZone(entJack) && ballTeam == TFTeam_Blue) {
-        VerboseLog("passtime_ball damage debug: all successful, this is a successful splash");
+        VerboseLog("passtime_ball damage debug: successful splash");
         char playerNameTeam[MAX_TEAMFORMAT_NAME_LENGTH];
         GetClientName(attacker, playerName, sizeof(playerName));
         FormatPlayerNameWithTeam(attacker, playerNameTeam);
