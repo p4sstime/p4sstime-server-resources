@@ -75,3 +75,13 @@ stock int min(int x, int y) {
 stock int GetPlayerMaxHealthTF2(int client) {
   return GetEntProp(GetPlayerResourceEntity(), Prop_Send, "m_iMaxHealth", _, client);
 }
+
+void RegAdminCmdWithShort(const char[] name, const char[] shortName, ConCmd handler, int flags, const char[] description) {
+  RegAdminCmd(name,      handler, flags, description);
+  RegAdminCmd(shortName, handler, flags, description);
+}
+
+void RegConsoleCmdWithShort(const char[] name, const char[] shortName, ConCmd handler, const char[] description) {
+  RegConsoleCmd(name,      handler, description);
+  RegConsoleCmd(shortName, handler, description);
+}

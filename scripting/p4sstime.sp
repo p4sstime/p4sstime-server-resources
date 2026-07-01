@@ -34,6 +34,8 @@
 #define CC      CreateConVar
 #define EvI     GetEventInt
 #define EvF     GetEventFloat
+#define ACS     RegAdminCmdWithShort
+#define CCS     RegConsoleCmdWithShort
 
 #define PC      return Plugin_Continue
 #define PCh     return Plugin_Changed
@@ -467,6 +469,7 @@ stock void LogPassBallStolen(int thief, int victim, bool steal2save) {
 #include "p4sstime/demoman.sp"
 #include "p4sstime/fov.sp"
 #include "p4sstime/immunity.sp"
+#include "p4sstime/match.sp"
 #include "p4sstime/convars.sp"
 #include "p4sstime/stats_print.sp"
 #include "p4sstime/f2stocks.sp"
@@ -503,31 +506,35 @@ public void OnPluginStart() {
   cookieInfiniteAmmo =     RCC("p4ssClientInfiniteAmmo",      "p4sstime's infinite ammo setting",                                  CookieAccess_Private);
 
   // Client commands
-  RC("sm_pt_menu",         CMenu);
-  RC("sm_pt_countdown",    CChatCountdown);
-  RC("sm_pt_summary",      CChatSummary);
-  RC("sm_pt_pickup_hud",   CJackPickupHud);
-  RC("sm_pt_pickup_chat",  CJackPickupChat);
-  RC("sm_pt_pickup_sound", CJackPickupSound);
-  RC("sm_pt_suicide",      CSuicide);
-  RC("sm_pt_kill",         CSuicide);
+  RC("sm_pt_menu",         CMenu,            "Open the PASS Time menu");
+  RC("sm_pt_countdown",    CChatCountdown,   "Toggle JACK spawn timer captions");
+  RC("sm_pt_summary",      CChatSummary,     "Toggle end-of-round summaries");
+  RC("sm_pt_pickup_hud",   CJackPickupHud,   "Toggle JACK pickup HUD text");
+  RC("sm_pt_pickup_chat",  CJackPickupChat,  "Toggle JACK pickup chat message");
+  RC("sm_pt_pickup_sound", CJackPickupSound, "Toggle JACK pickup sound");
+  RC("sm_pt_suicide",      CSuicide,         "Kill yourself");
+  RC("sm_pt_kill",         CSuicide,         "Kill yourself");
   RC("+sm_pt_resupply",    CResupDn);
   RC("-sm_pt_resupply",    CResupUp);
   RC("+sm_resupply",       CResupDn);
   RC("-sm_resupply",       CResupUp);
   RC("+resupply",          CResupDn);
   RC("-resupply",          CResupUp);
-  RC("sm_pt_fov",          CSetFOV);
-  RC("sm_fov",             CSetFOV);
-  RC("sm_immune",          CImmune);
-  RC("sm_i",               CImmune);
-  RC("sm_ammo",            CInfAmmo);
-  RC("sm_a",               CInfAmmo);
+  RC("sm_pt_fov",          CSetFOV,          "Set your field of view");
+  RC("sm_fov",             CSetFOV,          "Set your field of view");
+  CCS("sm_immune",  "sm_i",    CImmune,  "Toggle immunity");
+  CCS("sm_ammo",    "sm_a",    CInfAmmo, "Toggle infinite ammo");
 
   // Admin commands
   RA("sm_pt_snapshot",    CSnapshot,         GENERIC, "Take a snapshot of the plugin's current variable values.");
   RA("sm_pt_spawnball",   CSpawnBall,        GENERIC, "Spawn the ball forcefully, by game starting and tournament restarting.");
   RA("sm_pt_demoresist",  CToggleDemoResist, GENERIC, "Toggle demo blast vulnerability");
+  ACS("sm_force_ready",   "sm_fr",  CForceReady, GENERIC, "Set a team's ready status");
+  ACS("sm_setteam",       "sm_st",  CSetTeam,    GENERIC, "Set a client's team");
+  ACS("sm_setclass",      "sm_sc",  CSetClass,   GENERIC, "Set a client's class");
+  CCS("sm_diceroll",    "sm_dice", CDice,     "Select a random player from targets");
+  CCS("sm_ready",      "sm_r",    CReady,    "Toggle your team's ready state");
+  CCS("sm_team_name",  "sm_tn",   CTeamName, "Rename your team");
 
   // Colors
   AC("plugintag", 0x96BD63); // #96BD63
