@@ -1,6 +1,7 @@
 // Match utility commands: force ready, team/class control, dice roll, ready, team name
 
-bool g_bIsTeamReady[2] = { false, false };
+bool  g_bIsTeamReady[2]     = { false, false };
+float g_flUnreadyCooldown[2] = { -1.0, -1.0 };
 
 // ====================================================================================================
 // HELPERS
@@ -259,23 +260,36 @@ Action CReady(int client, int args) {
   bool currentReadyState  = view_as<bool>(GameRules_GetProp("m_bTeamReady", _, gameRulesOffset));
   bool newReadyState      = !currentReadyState;
 
+  if (!newReadyState) {
+    float elapsed = GetGameTime() - g_flUnreadyCooldown[teamIndex];
+    if (elapsed < 5.0) {
+      TagChatClient(client, "Wait %.0f more second%s before unreadying.", 5.0 - elapsed, (5.0 - elapsed < 2.0) ? "" : "s");
+      PH;
+    }
+    g_flUnreadyCooldown[teamIndex] = GetGameTime();
+  }
+
   GameRules_SetProp("m_bTeamReady", newReadyState ? 1 : 0, 1, gameRulesOffset);
   g_bIsTeamReady[teamIndex] = newReadyState;
 
-  if (!newReadyState && g_iCachedTimerEntity != -1 && IsValidEntity(g_iCachedTimerEntity)) {
-    bool  timerPaused   = view_as<bool>(GetEntProp(g_iCachedTimerEntity, Prop_Send, "m_bTimerPaused"));
-    bool  isDisabled    = view_as<bool>(GetEntProp(g_iCachedTimerEntity, Prop_Send, "m_bIsDisabled"));
-    float timeRemaining = GetEntPropFloat(g_iCachedTimerEntity, Prop_Send, "m_flTimeRemaining");
+  ConVar cvRestart = FindConVar("mp_restartgame");
 
-    if (!timerPaused && !isDisabled && timeRemaining > 0.0) {
-      SetEntProp(g_iCachedTimerEntity, Prop_Send, "m_bTimerPaused",    1);
-      SetEntProp(g_iCachedTimerEntity, Prop_Send, "m_bAutoCountdown",  0);
-      SetEntPropFloat(g_iCachedTimerEntity, Prop_Send, "m_flTimeRemaining", 0.0);
-      SetEntProp(g_iCachedTimerEntity, Prop_Send, "m_bIsDisabled",     1);
+  if (newReadyState) {
+    bool redReady = view_as<bool>(GameRules_GetProp("m_bTeamReady", _, 2));
+    bool bluReady = view_as<bool>(GameRules_GetProp("m_bTeamReady", _, 3));
+    if (redReady && bluReady) {
+      GameRules_SetProp("m_bAwaitingReadyRestart", 0);
+      if (cvRestart != null) cvRestart.SetInt(5);
+    }
+  } else {
+    float restartTime = GameRules_GetPropFloat("m_flRestartRoundTime");
+    if (restartTime > GetGameTime()) {
+      GameRules_SetPropFloat("m_flRestartRoundTime", -1.0);
+      GameRules_SetProp("m_bAwaitingReadyRestart", 1);
+      if (cvRestart != null) cvRestart.SetInt(0);
 
       char teamName[4];
       strcopy(teamName, sizeof(teamName), (clientTeam == TFTeam_Red) ? "RED" : "BLU");
-      CPrintToChatAll("{default}Countdown cancelled: %s team is not ready", teamName);
     }
   }
 

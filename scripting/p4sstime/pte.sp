@@ -824,7 +824,6 @@ NEW_CMD( CReady ) {
                 // Announce countdown cancellation
                 char teamName[ 8 ];
                 STRCP( teamName, ( clientTeam == TFTeam_Red ) ? "RED" : "BLU" );
-                CPrintToChatAll( "{default}Countdown cancelled: %s team is not ready", teamName );
             }
         }
     }

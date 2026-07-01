@@ -540,21 +540,23 @@ public void OnPluginStart() {
   ACS("sm_setclass",      "sm_sc",  CSetClass,   GENERIC, "Set a client's class");
 
   // Colors
-  AC("plugintag", 0x96BD63); // #96BD63
-  AC("warning",   0xECCD19); // #eccd19
-  AC("error",     0xd64843); // #d64843
+  AC("steamlightgreen", 0x9DC250); // #9DC250
 
-  AC("chat",      0xBBBBBB); // #bbbbbb
-  AC("teamblu",   0x99CCFF); // #99ccff
-  AC("teamred",   0xFF3F35); // #ff3f35
+  AC("plugintag",       0x96BD63); // #96BD63
+  AC("warning",         0xECCD19); // #eccd19
+  AC("error",           0xd64843); // #d64843
+
+  AC("chat",            0xBBBBBB); // #bbbbbb
+  AC("teamblu",         0x99CCFF); // #99ccff
+  AC("teamred",         0xFF3F35); // #ff3f35
   
-  AC("pfblue",    0x438CD6); // #438cd6
-  AC("pfgreen",   0x3CB371); // #3CB371 (also used in ShowJackHud and HideJackHud as an RGBA value, it needs to be manually updated there for now when changing this)
-  AC("pfteal",    0x008B8B); // #008B8B
-  AC("pfred",     0xD64843); // #d64843
-  AC("pfmagenta", 0xA946C7); // #a946c7
-  AC("pforange",  0xDD8125); // #dd8125
-  AC("pfyellow",  0xECCD19); // #eccd19
+  AC("pfblue",          0x438CD6); // #438cd6
+  AC("pfgreen",         0x3CB371); // #3CB371 (also used in ShowJackHud and HideJackHud as an RGBA value, it needs to be manually updated there for now when changing this)
+  AC("pfteal",          0x008B8B); // #008B8B
+  AC("pfred",           0xD64843); // #d64843
+  AC("pfmagenta",       0xA946C7); // #a946c7
+  AC("pforange",        0xDD8125); // #dd8125
+  AC("pfyellow",        0xECCD19); // #eccd19
 
   // ConVars
   bFixStocks =              CC("sm_pt_fix_stocks",              "1",    "Disable equipping shotgun, stickies, and needles; the allowlist can't block stock weapons.",       NOTIFY);
@@ -567,7 +569,7 @@ public void OnPluginStart() {
   bVerboseLogs =            CC("sm_pt_logs_verbose",            "0",    "Enable printing additional information to logs.");
   bMedicSplash =            CC("sm_pt_medic_splash",            "1",    "Enable medic arrows neutralizing the jack.",                                                       NOTIFY);
   bMedicSplashPush =        CC("sm_pt_medic_splash_push",       "1",    "If sm_pt_medic_splash is 1, enable crossbow push on the jack.",                                    NOTIFY);
-  bResupply =               CC("sm_pt_resupply",                "1",    "Enable instant resupply.",                                                                         NOTIFY);
+  bResupply =               CC("sm_pt_resupply_enabled",        "1",    "Enable instant resupply.",                                                                         NOTIFY);
   flResupplyCooldown =      CC("sm_pt_resupply_cooldown",       "0.5",  "Set the resupply cooldown duration in seconds (also used as max decay cap).",                      NOTIFY);
   flResupplyDecayRate =     CC("sm_pt_resupply_decay_rate",     "0.15", "Set the resupply decay rate (seconds of decay recovered per second).",                             NOTIFY);
   flResupplyDecayAddition = CC("sm_pt_resupply_decay_addition", "0.2",  "Set the resupply decay addition per successful resupply.",                                         NOTIFY);
