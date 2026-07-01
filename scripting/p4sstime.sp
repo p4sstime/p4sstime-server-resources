@@ -512,29 +512,32 @@ public void OnPluginStart() {
   RC("sm_pt_pickup_hud",   CJackPickupHud,   "Toggle JACK pickup HUD text");
   RC("sm_pt_pickup_chat",  CJackPickupChat,  "Toggle JACK pickup chat message");
   RC("sm_pt_pickup_sound", CJackPickupSound, "Toggle JACK pickup sound");
-  RC("sm_pt_suicide",      CSuicide,         "Kill yourself");
-  RC("sm_pt_kill",         CSuicide,         "Kill yourself");
-  RC("+sm_pt_resupply",    CResupDn);
+  RC("sm_pt_suicide",      CSuicide,         "Killbind with no cooldown");
+  RC("sm_pt_kill",         CSuicide,         "Killbind with no cooldown");
+  RC("+sm_pt_resupply",    CResupDn,         "Instant buffered resupply in spawn");
   RC("-sm_pt_resupply",    CResupUp);
-  RC("+sm_resupply",       CResupDn);
+  RC("+sm_resupply",       CResupDn,         "Instant buffered resupply in spawn");
   RC("-sm_resupply",       CResupUp);
-  RC("+resupply",          CResupDn);
+  RC("+resupply",          CResupDn,         "Instant buffered resupply in spawn");
   RC("-resupply",          CResupUp);
-  RC("sm_pt_fov",          CSetFOV,          "Set your field of view");
   RC("sm_fov",             CSetFOV,          "Set your field of view");
-  CCS("sm_immune",  "sm_i",    CImmune,  "Toggle immunity");
-  CCS("sm_ammo",    "sm_a",    CInfAmmo, "Toggle infinite ammo");
+
+  // Client commands with short aliases
+  CCS("sm_immune",    "sm_i",    CImmune,   "Toggle immunity");
+  CCS("sm_ammo",      "sm_a",    CInfAmmo,  "Toggle infinite ammo");
+  CCS("sm_diceroll",  "sm_dice", CDice,     "Select a random player from targets");
+  CCS("sm_ready",     "sm_r",    CReady,    "Toggle your team's ready state");
+  CCS("sm_team_name", "sm_tn",   CTeamName, "Rename your team");
 
   // Admin commands
   RA("sm_pt_snapshot",    CSnapshot,         GENERIC, "Take a snapshot of the plugin's current variable values.");
   RA("sm_pt_spawnball",   CSpawnBall,        GENERIC, "Spawn the ball forcefully, by game starting and tournament restarting.");
   RA("sm_pt_demoresist",  CToggleDemoResist, GENERIC, "Toggle demo blast vulnerability");
+
+  // Admin commands with short aliases
   ACS("sm_force_ready",   "sm_fr",  CForceReady, GENERIC, "Set a team's ready status");
   ACS("sm_setteam",       "sm_st",  CSetTeam,    GENERIC, "Set a client's team");
   ACS("sm_setclass",      "sm_sc",  CSetClass,   GENERIC, "Set a client's class");
-  CCS("sm_diceroll",    "sm_dice", CDice,     "Select a random player from targets");
-  CCS("sm_ready",      "sm_r",    CReady,    "Toggle your team's ready state");
-  CCS("sm_team_name",  "sm_tn",   CTeamName, "Rename your team");
 
   // Colors
   AC("plugintag", 0x96BD63); // #96BD63
