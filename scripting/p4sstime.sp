@@ -280,14 +280,14 @@ stock void SendSoundCountdownToClients(const char[] sound) {
 
 stock void ShowJackHud(int client) {
   if (arrbClientSettings[client].bJackHud) {
-    SetHudTextParams(-1.0, 0.22, 3.0, 240, 0, 240, 255);
+    SetHudTextParams(-1.0, 0.22, 3.0, 60, 179, 113, 255);
     ShowHudText(client, 1, "YOU HAVE THE JACK");
   }
 }
 
 stock void HideJackHud(int client) {
   if (arrbClientSettings[client].bJackHud) {
-    SetHudTextParams(-1.0, 0.22, 3.0, 240, 0, 240, 255);
+    SetHudTextParams(-1.0, 0.22, 3.0, 60, 179, 113, 255);
     ShowHudText(client, 1, "");
   }
 }
@@ -484,9 +484,9 @@ public void OnPluginStart() {
   gameData = new GameData("p4sstime"); // Load config
 
   // Initialize mirror spawnpoint arrays
-  g_hCachedSpawnRooms = new ArrayList();
-  g_hCachedSpawnPoints[0] = new ArrayList();  // RED
-  g_hCachedSpawnPoints[1] = new ArrayList();  // BLU
+  g_hCachedSpawnRooms =        new ArrayList();
+  g_hCachedSpawnPoints[0] =    new ArrayList();  // RED
+  g_hCachedSpawnPoints[1] =    new ArrayList();  // BLU
   g_hMirrorSpawnPoints[0][0] = new ArrayList();  // RED left
   g_hMirrorSpawnPoints[0][1] = new ArrayList();  // RED right
   g_hMirrorSpawnPoints[1][0] = new ArrayList();  // BLU left
@@ -499,8 +499,8 @@ public void OnPluginStart() {
   cookieJACKPickupSound =  RCC("p4ssClientJACKPickupSound",   "p4sstime's client setting (1/0) for sound when picking up JACK",    CookieAccess_Public);
   cookieSummary =          RCC("p4ssClientSummary",           "p4sstime's client setting (0/1/2) for EoR summaries",               CookieAccess_Public);
   cookieFOV =              RCC("p4ssClientFOV",               "p4sstime's client FOV setting",                                     CookieAccess_Private);
-  cookieImmunity     =     RCC("p4ssClientImmunity",            "p4sstime's immunity setting",                                       CookieAccess_Private);
-  cookieInfiniteAmmo =     RCC("p4ssClientInfiniteAmmo",         "p4sstime's infinite ammo setting",                                  CookieAccess_Private);
+  cookieImmunity     =     RCC("p4ssClientImmunity",          "p4sstime's immunity setting",                                       CookieAccess_Private);
+  cookieInfiniteAmmo =     RCC("p4ssClientInfiniteAmmo",      "p4sstime's infinite ammo setting",                                  CookieAccess_Private);
 
   // Client commands
   RC("sm_pt_menu",         CMenu);
@@ -517,16 +517,16 @@ public void OnPluginStart() {
   RC("-sm_resupply",       CResupUp);
   RC("+resupply",          CResupDn);
   RC("-resupply",          CResupUp);
-  RC("sm_pt_fov",           CSetFOV);
-  RC("sm_fov",              CSetFOV);
-  RC("sm_immune",            CImmune);
-  RC("sm_i",                CImmune);
-  RC("sm_ammo",             CInfAmmo);
-  RC("sm_a",                CInfAmmo);
+  RC("sm_pt_fov",          CSetFOV);
+  RC("sm_fov",             CSetFOV);
+  RC("sm_immune",          CImmune);
+  RC("sm_i",               CImmune);
+  RC("sm_ammo",            CInfAmmo);
+  RC("sm_a",               CInfAmmo);
 
   // Admin commands
-  RA("sm_pt_snapshot",    CSnapshot,        GENERIC, "Take a snapshot of the plugin's current variable values.");
-  RA("sm_pt_spawnball",   CSpawnBall,       GENERIC, "Spawn the ball forcefully, by game starting and tournament restarting.");
+  RA("sm_pt_snapshot",    CSnapshot,         GENERIC, "Take a snapshot of the plugin's current variable values.");
+  RA("sm_pt_spawnball",   CSpawnBall,        GENERIC, "Spawn the ball forcefully, by game starting and tournament restarting.");
   RA("sm_pt_demoresist",  CToggleDemoResist, GENERIC, "Toggle demo blast vulnerability");
 
   // Colors
@@ -539,7 +539,7 @@ public void OnPluginStart() {
   AC("teamred",   0xFF3F35); // #ff3f35
   
   AC("pfblue",    0x438CD6); // #438cd6
-  AC("pfgreen",   0x3CB371); // #3CB371
+  AC("pfgreen",   0x3CB371); // #3CB371 (also used in ShowJackHud and HideJackHud as an RGBA value, it needs to be manually updated there for now when changing this)
   AC("pfteal",    0x008B8B); // #008B8B
   AC("pfred",     0xD64843); // #d64843
   AC("pfmagenta", 0xA946C7); // #a946c7
@@ -550,18 +550,18 @@ public void OnPluginStart() {
   bFixStocks =              CC("sm_pt_fix_stocks",              "1",    "Disable equipping shotgun, stickies, and needles; the allowlist can't block stock weapons.",       NOTIFY);
   bFixRespawnBypass =       CC("sm_pt_fix_respawn_bypass",      "1",    "Disable switching classes while dead to respawn immediately.",                                     NOTIFY);
   bFixJackCollision =       CC("sm_pt_fix_jack_collision",      "1",    "Disable jack collision on ammo packs and weapons.",                                                NOTIFY);
-  bFixBlur =                CC("sm_pt_fix_blur",                "1",    "Disable blurry screen overlay when intercepting or stealing.",                                      NOTIFY);
+  bFixBlur =                CC("sm_pt_fix_blur",                "1",    "Disable blurry screen overlay when intercepting or stealing.",                                     NOTIFY);
   bChatEvents =             CC("sm_pt_chat_events",             "1",    "Enable printing of passtime events to chat both during and after games. Does not affect logging.", NOTIFY);
   bChatEventsFun =          CC("sm_pt_chat_events_fun",         "0",    "If sm_pt_print_events is 1, enable printing additional fun stats.",                                NOTIFY);
   bWinstratKills =          CC("sm_pt_kill_winstrats",          "0",    "Enable killing winstratters and printing \"tried to winstrat\" in chat.",                          NOTIFY);
   bVerboseLogs =            CC("sm_pt_logs_verbose",            "0",    "Enable printing additional information to logs.");
   bMedicSplash =            CC("sm_pt_medic_splash",            "1",    "Enable medic arrows neutralizing the jack.",                                                       NOTIFY);
   bMedicSplashPush =        CC("sm_pt_medic_splash_push",       "1",    "If sm_pt_medic_splash is 1, enable crossbow push on the jack.",                                    NOTIFY);
-  bResupply =               CC("sm_pt_resupply",                "1",    "Enable instant resupply.",                                                                      NOTIFY);
-  flResupplyCooldown =      CC("sm_pt_resupply_cooldown",       "0.5",  "Set the resupply cooldown duration in seconds (also used as max decay cap).",                   NOTIFY);
-  flResupplyDecayRate =     CC("sm_pt_resupply_decay_rate",     "0.15", "Set the resupply decay rate (seconds of decay recovered per second).",                        NOTIFY);
-  flResupplyDecayAddition = CC("sm_pt_resupply_decay_addition", "0.2",  "Set the resupply decay addition per successful resupply.",                                    NOTIFY);
-  flGoalRegeneration =      CC("sm_pt_goal_regeneration",       "0",    "Set the amount of health regeneration every 500ms while in the goal zone.",                    NOTIFY);
+  bResupply =               CC("sm_pt_resupply",                "1",    "Enable instant resupply.",                                                                         NOTIFY);
+  flResupplyCooldown =      CC("sm_pt_resupply_cooldown",       "0.5",  "Set the resupply cooldown duration in seconds (also used as max decay cap).",                      NOTIFY);
+  flResupplyDecayRate =     CC("sm_pt_resupply_decay_rate",     "0.15", "Set the resupply decay rate (seconds of decay recovered per second).",                             NOTIFY);
+  flResupplyDecayAddition = CC("sm_pt_resupply_decay_addition", "0.2",  "Set the resupply decay addition per successful resupply.",                                         NOTIFY);
+  flGoalRegeneration =      CC("sm_pt_goal_regeneration",       "0",    "Set the amount of health regeneration every 500ms while in the goal zone.",                        NOTIFY);
   bPractice =               CC("sm_pt_practice",                "0",    "Enable practice mode. When the round timer reaches 5 minutes, add 5 minutes to the timer.",        NOTIFY, true, 0.0, true, 1.0);
 
   // Demoman boots attribute ConVars
@@ -573,6 +573,7 @@ public void OnPluginStart() {
   // FOV ConVars
   cvFOVMin = CC("sm_pt_fov_min", "70",  "Minimum client field of view", _, true, 1.0, true, 175.0);
   cvFOVMax = CC("sm_pt_fov_max", "120", "Maximum client field of view", _, true, 1.0, true, 175.0);
+
   // trikzEnable =      CC("sm_pt_trikz",                 "0", "Set 'trikz' mode. 1 adds friendly knockback for airshots, 2 adds friendly knockback for splash damage, 3 adds friendly knockback for everywhere", NOTIFY, true, 0.0, true, 3.0);
   // trikzProjCollide = CC("sm_pt_trikz_projcollide",     "2", "Manually set team projectile collision behavior when trikz is on. 2 always collides, 1 will cause your projectiles to phase through if you are too close (default game behavior), 0 will cause them to never collide.", 0, true, 0.0, true, 2.0);
   // trikzProjDev =     CC("sm_pt_trikz_projcollide_dev", "0", "DONOTUSE; This command is used solely by the plugin to change values. Changing this manually may cause issues.", FCVAR_HIDDEN, true, 0.0, true, 2.0);
@@ -730,7 +731,7 @@ public void OnMapStart() { // get goal locations
     GetEntPropVector(goal1, Prop_Send, "m_vecOrigin", fRedGoalPos);
   }
 
-  // Build entity cache for mirror spawnpoint system
+  // for mirror spawnpoints
   BuildEntityCache();
 }
 
@@ -840,7 +841,7 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
         GetClientName(attacker, playerName, sizeof(playerName));
         FormatPlayerNameWithTeam(attacker, playerNameTeam);
         FormatPlayerNameWithTeam(iPlyWhoGotJack, throwerNameTeam);
-        ChatEvent("%s {pfyellow}blocked %s {chat}from scoring with a splash!", playerNameTeam, throwerNameTeam);
+        ChatEvent("%s {pfyellow}blocked %s {chat}from scoring with a {pfteal}splash{chat}!", playerNameTeam, throwerNameTeam);
         TagChatSTV("%s blocked %N from scoring with a splash. t%d", playerName, iPlyWhoGotJack, STVTickCount());
         arriClientRoundStats[attacker].iSplashes++;
       }
@@ -855,7 +856,7 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
         GetClientName(attacker, playerName, sizeof(playerName));
         FormatPlayerNameWithTeam(attacker, playerNameTeam);
         FormatPlayerNameWithTeam(iPlyWhoGotJack, throwerNameTeam);
-        ChatEvent("%s {pfyellow}blocked %s {chat}from scoring with a splash!", playerNameTeam, throwerNameTeam);
+        ChatEvent("%s {pfyellow}blocked %s {chat}from scoring with a {pfteal}splash{chat}!", playerNameTeam, throwerNameTeam);
         TagChatSTV("%s blocked %N from scoring with a splash. t%d", playerName, iPlyWhoGotJack, STVTickCount());
         arriClientRoundStats[attacker].iSplashes++;
       }
@@ -898,8 +899,7 @@ void MedicArrowTouchedSomething(int arrow, int other) {
 
     char medicAttackerNameTeamFmt[MAX_TEAMFORMAT_NAME_LENGTH];
     FormatPlayerNameWithTeam(eiMedicAttacker, medicAttackerNameTeamFmt);
-    ChatEvent("%s%s directed the ball with an arrow!", medicAttackerNameTeamFmt, COLOR_MEDIC_SPLASH);
-    // TagChatAllPlayers("%s directed the ball with an arrow!", MedicAttackerName);
+    TagChatAllPlayers("%s {pfyellow}directed {chat}the ball with an {pfteal}arrow{chat}!", medicAttackerNameTeamFmt);
   }
   VerboseLog("medic arrow from %d touched %s i %d", eiMedicAttacker, classname, other);
 }
@@ -1158,7 +1158,7 @@ Action EPassGet(Event event, const char[] name, bool dontBroadcast) {
 
   ShowJackHud(iPlyWhoGotJack);
   if (arrbClientSettings[iPlyWhoGotJack].iSummary)
-    ShowJackChat(iPlyWhoGotJack, "YOU HAVE THE JACK!!!");
+    ShowJackChat(iPlyWhoGotJack, "YOU HAVE THE JACK!");
   PlayJackSound(iPlyWhoGotJack);
 
   PH;

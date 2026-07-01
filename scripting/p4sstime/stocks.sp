@@ -1,13 +1,5 @@
 // Color config
 
-#define COLOR_GOAL "{green}"
-#define COLOR_ASSIST "{mintcream}"
-#define COLOR_SAVE "{lightyellow}"
-#define COLOR_INTERCEPT "{fuchsia}"
-#define COLOR_STEAL "{orange}"
-#define COLOR_SPLASH "{turquoise}"
-#define COLOR_MEDIC_SPLASH "{mintcream}"
-
 char gsTag[32]    = "{plugintag}[PASS]{chat}";
 char gsTagSTV[32] = "{plugintag}[PASS-TV]{chat}";
 
