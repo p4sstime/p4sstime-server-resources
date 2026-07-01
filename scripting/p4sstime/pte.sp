@@ -1,3 +1,6 @@
+// passtime_extras plugin by xCape
+// used here as reference to carry over diff features over to the main plugin.
+
 // Imports
 #include <clientprefs>
 #include <clients>
