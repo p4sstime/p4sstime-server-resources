@@ -214,6 +214,40 @@ void RemoveStocks(int client) {
   }
 }
 
+// Validate entity cache and rebuild if any cached entity has become invalid
+void ValidateEntityCache() {
+  bool needsRebuild = false;
+
+  if (g_iCachedTimerEntity != -1 && !IsValidEntity(g_iCachedTimerEntity))
+    needsRebuild = true;
+
+  if (!needsRebuild) {
+    for (int idx = 0; idx < g_hCachedSpawnRooms.Length; idx++) {
+      if (!IsValidEntity(g_hCachedSpawnRooms.Get(idx))) {
+        needsRebuild = true;
+        break;
+      }
+    }
+  }
+
+  if (!needsRebuild) {
+    for (int team = 0; team < 2; team++) {
+      for (int idx = 0; idx < g_hCachedSpawnPoints[team].Length; idx++) {
+        if (!IsValidEntity(g_hCachedSpawnPoints[team].Get(idx))) {
+          needsRebuild = true;
+          break;
+        }
+      }
+      if (needsRebuild) break;
+    }
+  }
+
+  if (needsRebuild) {
+    PrintToServer("[p4sstime] Entity cache invalidated, rebuilding...");
+    BuildEntityCache();
+  }
+}
+
 // Build entity cache for mirror spawnpoint system
 void BuildEntityCache() {
   g_hCachedSpawnRooms.Clear();

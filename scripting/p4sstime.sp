@@ -129,7 +129,6 @@ int iBluBallTime;
 // i trikzProjCollideSave = 2;
 Menu   mPassMenu;
 bool   bWaitingForBallSpawnToRestart;
-bool   bRoundActive;
 bool   bHalloweenMode;
 bool   bBallLoose;         // Is the ball currently loose (is the passtime_ball entity on the map)?
 bool   bBallSplashed;      // check if ball splashed for panacea checks
@@ -161,6 +160,13 @@ bool   g_bBootsAttributesApplied[MAXPLAYERS + 1];
 // Buffered resupply
 bool g_bResupplyDn[MAXPLAYERS + 1];
 bool g_bResupplyUp[MAXPLAYERS + 1];
+
+// Immunity & infinite ammo
+Handle cookieImmunity;
+Handle cookieInfiniteAmmo;
+bool g_bImmunity[MAXPLAYERS + 1];
+bool g_bInfiniteAmmo[MAXPLAYERS + 1];
+bool g_bPendingHP[MAXPLAYERS + 1];
 
 // Mirror spawnpoint system for side-aware resupply
 ArrayList g_hCachedSpawnRooms;
@@ -460,6 +466,7 @@ stock void LogPassBallStolen(int thief, int victim, bool steal2save) {
 #include "p4sstime/attributes.sp"
 #include "p4sstime/demoman.sp"
 #include "p4sstime/fov.sp"
+#include "p4sstime/immunity.sp"
 #include "p4sstime/convars.sp"
 #include "p4sstime/stats_print.sp"
 #include "p4sstime/f2stocks.sp"
@@ -492,6 +499,8 @@ public void OnPluginStart() {
   cookieJACKPickupSound =  RCC("p4ssClientJACKPickupSound",   "p4sstime's client setting (1/0) for sound when picking up JACK",    CookieAccess_Public);
   cookieSummary =          RCC("p4ssClientSummary",           "p4sstime's client setting (0/1/2) for EoR summaries",               CookieAccess_Public);
   cookieFOV =              RCC("p4ssClientFOV",               "p4sstime's client FOV setting",                                     CookieAccess_Private);
+  cookieImmunity     =     RCC("p4ssClientImmunity",            "p4sstime's immunity setting",                                       CookieAccess_Private);
+  cookieInfiniteAmmo =     RCC("p4ssClientInfiniteAmmo",         "p4sstime's infinite ammo setting",                                  CookieAccess_Private);
 
   // Client commands
   RC("sm_pt_menu",         CMenu);
@@ -510,6 +519,10 @@ public void OnPluginStart() {
   RC("-resupply",          CResupUp);
   RC("sm_pt_fov",           CSetFOV);
   RC("sm_fov",              CSetFOV);
+  RC("sm_immune",            CImmune);
+  RC("sm_i",                CImmune);
+  RC("sm_ammo",             CInfAmmo);
+  RC("sm_a",                CInfAmmo);
 
   // Admin commands
   RA("sm_pt_snapshot",    CSnapshot,        GENERIC, "Take a snapshot of the plugin's current variable values.");
@@ -563,6 +576,14 @@ public void OnPluginStart() {
   // trikzEnable =      CC("sm_pt_trikz",                 "0", "Set 'trikz' mode. 1 adds friendly knockback for airshots, 2 adds friendly knockback for splash damage, 3 adds friendly knockback for everywhere", NOTIFY, true, 0.0, true, 3.0);
   // trikzProjCollide = CC("sm_pt_trikz_projcollide",     "2", "Manually set team projectile collision behavior when trikz is on. 2 always collides, 1 will cause your projectiles to phase through if you are too close (default game behavior), 0 will cause them to never collide.", 0, true, 0.0, true, 2.0);
   // trikzProjDev =     CC("sm_pt_trikz_projcollide_dev", "0", "DONOTUSE; This command is used solely by the plugin to change values. Changing this manually may cause issues.", FCVAR_HIDDEN, true, 0.0, true, 2.0);
+
+  // Hook SDKHooks for already-connected clients on plugin load/reload
+  for (int i = 1; i <= MaxClients; i++) {
+    if (IsClientInGame(i)) {
+      SDKHook(i, SDKHook_OnTakeDamage,     Hook_ImmunityOnTakeDamage);
+      SDKHook(i, SDKHook_OnTakeDamagePost, Hook_ImmunityOnTakeDamagePost);
+    }
+  }
 
   // Hooks
   HE("player_spawn",                 EPlayerSpawn);
@@ -740,6 +761,12 @@ public void OnGameFrame() {
     eLastTickBallTeam = ballTeam;
   }
 
+  static int iEntityCacheFrame = 0;
+  if (++iEntityCacheFrame >= 30) {
+    iEntityCacheFrame = 0;
+    ValidateEntityCache();
+  }
+
   // Buffered resupply: while key is held and player enters spawn, auto-resupply
   if (bResupply.BoolValue) {
     for (int i = 1; i <= MaxClients; i++) {
@@ -755,6 +782,14 @@ public void OnGameFrame() {
 
       if (g_bResupplyDn[i] && !g_bResupplyUp[i])
         BufferedResupply(i);
+
+      if (!IsMatch() && g_bInfiniteAmmo[i] && TF2_GetPlayerClass(i) != TFClass_Medic) {
+        int wep = GetEntPropEnt(i, Prop_Send, "m_hActiveWeapon");
+        if (wep != -1 && IsValidEntity(wep)) {
+          SetEntProp(wep, Prop_Send, "m_iClip1", 19);
+          SetAmmo(i, wep, 84);
+        }
+      }
     }
   }
 }
@@ -875,7 +910,6 @@ Action ERoundReset(Event event, const char[] name, bool dontBroadcast) {
   iRedBallTime = 0;
   iBluBallTime = 0;
   bBallLoose = false;
-  bRoundActive = false;
   if (GetConVarInt(bPractice) == 1) {
     SetConVarInt(bPractice, 0);
     TagChatGlobal("Game started; practice mode disabled.");
@@ -913,7 +947,6 @@ Action EPlayersCanMove(Event event, const char[] name, bool dontBroadcast) {
     StoreToAddress(view_as<Address>(view_as<int>(entity_address) + offset), 0, NumberType_Int8, false);
   }
 
-  bRoundActive = true;
   PH;
 }
 

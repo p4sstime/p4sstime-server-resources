@@ -24,6 +24,8 @@ public OnClientCookiesCached(int client) {
   arrbClientSettings[client].bJackChat = GetCookieBool(client, cookieJACKPickupChat);
   arrbClientSettings[client].bJackSound = GetCookieBool(client, cookieJACKPickupSound);
   arrbClientSettings[client].iSummary = GetCookieBool(client, cookieSummary);
+  GetAmmoCookie(client);
+  GetImmunityCookie(client);
 }
 
 Action CMenu(int client, int args) {
