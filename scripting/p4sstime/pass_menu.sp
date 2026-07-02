@@ -23,9 +23,23 @@ public OnClientCookiesCached(int client) {
   arr_iClientSettings[client].bJackHud =   GetCookieBool(client, ck_bJackHud);
   arr_iClientSettings[client].bJackChat =  GetCookieBool(client, ck_bJackChat);
   arr_iClientSettings[client].bJackSound = GetCookieBool(client, ck_bJackSound);
-  arr_iClientSettings[client].iSummary =   GetCookieBool(client, ck_iSummary);
+  GetSummaryCookie(client);
   GetAmmoCookie(client);
   GetImmunityCookie(client);
+}
+
+void GetSummaryCookie(int client) {
+  char value[2];
+  GetClientCookie(client, ck_iSummary, value, sizeof(value));
+  if (strlen(value) == 0) return;
+  arr_iClientSettings[client].iSummary = StringToInt(value);
+}
+
+void SetSummaryCookie(int client) {
+  if (!AreClientCookiesCached(client)) return;
+  char value[2];
+  IntToString(arr_iClientSettings[client].iSummary, value, sizeof(value));
+  SetClientCookie(client, ck_iSummary, value);
 }
 
 Action CMenu(int client, int args) {
@@ -92,13 +106,6 @@ int PassMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
 
 static const char g_sSummaryNames[][] = { "OFF", "LONG", "SHORT", "MINIMAL" };
 
-static const char g_sSummaryStatuses[][] = {
-  "Round summary: {cRed}Off {chat}· Long · Short · Minimal",
-  "Round summary: Off · {cBlue}Long {chat}· Short · Minimal",
-  "Round summary: Off · Long · {cBlue}Short {chat}· Minimal",
-  "Round summary: Off · Long · Short · {cBlue}Minimal"
-};
-
 void ShowSummaryPreview(int client) {
   char preview[256];
   BuildStatsString(preview, sizeof(preview), 3, 1, 2, 4, 0, 1, arr_iClientSettings[client].iSummary - 1);
@@ -138,7 +145,7 @@ int SummaryMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
     else {
       int value = StringToInt(info);
       arr_iClientSettings[param1].iSummary = value;
-      SetCookieBool(param1, ck_iSummary, arr_iClientSettings[param1].iSummary);
+      SetSummaryCookie(param1);
       ShowSummaryMenu(param1);
     }
   }

@@ -67,7 +67,7 @@ Action CChatSummary(int client, int args) {
     PH;
   }
   
-  SetCookieBool(client, ck_iSummary, arr_iClientSettings[client].iSummary);
+  SetSummaryCookie(client);
   PH;
 }
 
