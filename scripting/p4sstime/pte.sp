@@ -809,7 +809,7 @@ NEW_CMD( CReady ) {
         if ( g_iCachedTimerEntity != -1 && IsValidEntity( g_iCachedTimerEntity ) ) {
             bool  timerPaused   = as<bool>( GetEntProp( g_iCachedTimerEntity, Prop_Send, "m_bTimerPaused" ) );
             bool  isDisabled    = as<bool>( GetEntProp( g_iCachedTimerEntity, Prop_Send, "m_bIsDisabled" ) );
-            float timeRemaining = GetEntPropFloat( g_iCachedTimerEntity, Prop_Send, "m_flTimeRemaining" );
+            float timeRemaining = GetEntPropFloat( g_iCachedTimerEntity, Prop_Send, "m_fTimeRemaining" );
 
             // If timer is running and has time remaining, pause it to cancel countdown
             if ( !timerPaused && !isDisabled && timeRemaining > 0.0 ) {
@@ -818,7 +818,7 @@ NEW_CMD( CReady ) {
                 SetEntProp( g_iCachedTimerEntity, Prop_Send, "m_bAutoCountdown", 0 );
                 
                 // Also reset timer to ensure it doesn't auto-resume
-                SetEntPropFloat( g_iCachedTimerEntity, Prop_Send, "m_flTimeRemaining", 0.0 );
+                SetEntPropFloat( g_iCachedTimerEntity, Prop_Send, "m_fTimeRemaining", 0.0 );
                 SetEntProp( g_iCachedTimerEntity, Prop_Send, "m_bIsDisabled", 1 );
 
                 // Announce countdown cancellation
@@ -895,8 +895,8 @@ NEW_CMD( CDebugRoundTime ) {
 
     while ( ( ent = FindEntityByClassname( ent, "team_round_timer" ) ) != -1 ) {
         bool  timerPaused          = as<bool>( GetEntProp( ent, Prop_Send, "m_bTimerPaused" ) );
-        float timeRemaining        = GetEntPropFloat( ent, Prop_Send, "m_flTimeRemaining" );
-        float timerEndTime         = GetEntPropFloat( ent, Prop_Send, "m_flTimerEndTime" );
+        float timeRemaining        = GetEntPropFloat( ent, Prop_Send, "m_fTimeRemaining" );
+        float timerEndTime         = GetEntPropFloat( ent, Prop_Send, "m_fTimerEndTime" );
         bool  isDisabled           = as<bool>( GetEntProp( ent, Prop_Send, "m_bIsDisabled" ) );
         bool  showInHUD            = as<bool>( GetEntProp( ent, Prop_Send, "m_bShowInHUD" ) );
         int   timerLength          = GetEntProp( ent, Prop_Send, "m_nTimerLength" );
@@ -908,17 +908,17 @@ NEW_CMD( CDebugRoundTime ) {
         bool  startPaused          = as<bool>( GetEntProp( ent, Prop_Send, "m_bStartPaused" ) );
         bool  showTimeRemaining    = as<bool>( GetEntProp( ent, Prop_Send, "m_bShowTimeRemaining" ) );
         bool  inCaptureWatchState  = as<bool>( GetEntProp( ent, Prop_Send, "m_bInCaptureWatchState" ) );
-        float totalTime            = GetEntPropFloat( ent, Prop_Send, "m_flTotalTime" );
+        float totalTime            = GetEntPropFloat( ent, Prop_Send, "m_fTotalTime" );
         bool  stopWatchTimer       = as<bool>( GetEntProp( ent, Prop_Send, "m_bStopWatchTimer" ) );
 
         // Check if game is ongoing using m_bAwaitingReadyRestart and timer pause state
         bool  awaitingReadyRestart = as<bool>( GameRules_GetProp( "m_bAwaitingReadyRestart" ) );
         bool  gameOngoing          = !awaitingReadyRestart && !timerPaused && !isDisabled;
 
-        Reply( client, "[timer %d] m_bTimerPaused=%d m_flTimeRemaining=%.2f m_flTimerEndTime=%.2f m_bIsDisabled=%d m_bShowInHUD=%d", ent, timerPaused, timeRemaining, timerEndTime, isDisabled, showInHUD );
+        Reply( client, "[timer %d] m_bTimerPaused=%d m_fTimeRemaining=%.2f m_fTimerEndTime=%.2f m_bIsDisabled=%d m_bShowInHUD=%d", ent, timerPaused, timeRemaining, timerEndTime, isDisabled, showInHUD );
         Reply( client, "[timer %d] m_nTimerLength=%d m_nTimerInitialLength=%d m_nTimerMaxLength=%d m_bAutoCountdown=%d", ent, timerLength, timerInitialLength, timerMaxLength, autoCountdown );
         Reply( client, "[timer %d] m_nSetupTimeLength=%d m_nState=%d m_bStartPaused=%d m_bShowTimeRemaining=%d", ent, setupTimeLength, state, startPaused, showTimeRemaining );
-        Reply( client, "[timer %d] m_bInCaptureWatchState=%d m_flTotalTime=%.2f m_bStopWatchTimer=%d", ent, inCaptureWatchState, totalTime, stopWatchTimer );
+        Reply( client, "[timer %d] m_bInCaptureWatchState=%d m_fTotalTime=%.2f m_bStopWatchTimer=%d", ent, inCaptureWatchState, totalTime, stopWatchTimer );
         Reply( client, "[timer %d] Game Ongoing: %d (m_bAwaitingReadyRestart=%d)", ent, gameOngoing, awaitingReadyRestart );
 
         found++;

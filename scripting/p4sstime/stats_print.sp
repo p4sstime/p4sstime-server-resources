@@ -3,6 +3,26 @@
   #define RED false
 #endif
 
+static int s_iPrintSeq[MAXPLAYERS + 1];
+
+Action Timer_DelayedCPrint(Handle timer, DataPack dp) {
+  dp.Reset();
+  int client = dp.ReadCell();
+  char line[MAX_MESSAGE_LENGTH];
+  dp.ReadString(line, sizeof(line));
+  if (IsValidClient(client)) CPrintToChat(client, line);
+  PS;
+}
+
+Action Timer_DelayedConsolePrint(Handle timer, DataPack dp) {
+  dp.Reset();
+  int client = dp.ReadCell();
+  char line[MAX_MESSAGE_LENGTH];
+  dp.ReadString(line, sizeof(line));
+  if (IsValidClient(client)) PrintToConsole(client, line);
+  PS;
+}
+
 static const char sGoals[]      = "{pfgreen} goals %d";
 static const char sAssists[]    = "{pfgreen} assists %d";
 static const char sSaves[]      = "{pfyellow} saves %d";
@@ -22,19 +42,19 @@ Action CChatSummary(int client, int args) {
   if (GetCmdArgIntEx(1, value)) {
     switch (value) {
       case 0: {
-        arrbClientSettings[client].iSummary = 0;
-        CTagReply(client, "Round summary: {pfblue}Off{chat}|{darkgray}Long{chat}|{darkgray}Short{chat}");
+        arr_iClientSettings[client].iSummary = 0;
+        CTagReply(client, "Round summary: {pfred}Off{chat} I Short I Long");
       }
       case 1: {
-        arrbClientSettings[client].iSummary = 1;
-        CTagReply(client, "Round summary: {darkgray}Off{chat}|{pfblue}Long{chat}|{darkgray}Short{chat}");
+        arr_iClientSettings[client].iSummary = 1;
+        CTagReply(client, "Round summary: Off I {pfblue}Short{chat} I Long");
       }
       case 2: {
-        arrbClientSettings[client].iSummary = 2;
-        CTagReply(client, "Round summary: {darkgray}Off{chat}|{darkgray}Long{chat}|{pfblue}Short{chat}");
+        arr_iClientSettings[client].iSummary = 2;
+        CTagReply(client, "Round summary: Off I Short I {pfblue}Long{chat}");
       }
     }
-    SetCookieBool(client, cookieSummary, arrbClientSettings[client].iSummary);
+    SetCookieBool(client, cookieSummary, arr_iClientSettings[client].iSummary);
   }
   else
     CTagReply(client, "Invalid argument, use 0, 1, or 2");
@@ -60,25 +80,25 @@ Action Timer_ShowMoreTF(Handle timer, any client) {
 
 // Clear all plugin stats for the specified client.
 void ClearLocalStats(int client) {
-  arrbPlyIsDead[client]       = false;
-  arrbBlastJumpStatus[client] = false;
-  arrbPanaceaCheck[client]    = false;
-  arrbWinStratCheck[client]   = false;
+  arr_bPlyIsDead[client]       = false;
+  arr_bBlastJumpStatus[client] = false;
+  arr_bPanaceaCheck[client]    = false;
+  arr_bWinStratCheck[client]   = false;
 
-  arriClientRoundStats[client].iScores = 0;
-  arriClientRoundStats[client].iAssists = 0;
-  arriClientRoundStats[client].iSaves = 0;
-  arriClientRoundStats[client].iSplashes = 0;
-  arriClientRoundStats[client].iIntercepts = 0;
-  arriClientRoundStats[client].iSteals = 0;
-  arriClientRoundStats[client].iPanaceas = 0;
-  arriClientRoundStats[client].iWinstrats = 0;
-  arriClientRoundStats[client].iDeathbombs = 0;
-  arriClientRoundStats[client].iHandoffs = 0;
-  arriClientRoundStats[client].iFirstGrabs = 0;
-  arriClientRoundStats[client].iCatapults = 0;
-  arriClientRoundStats[client].iBlocks = 0;
-  arriClientRoundStats[client].iSteal2Saves = 0;
+  arr_iClientRoundStats[client].iScores =      0;
+  arr_iClientRoundStats[client].iAssists =     0;
+  arr_iClientRoundStats[client].iSaves =       0;
+  arr_iClientRoundStats[client].iSplashes =    0;
+  arr_iClientRoundStats[client].iIntercepts =  0;
+  arr_iClientRoundStats[client].iSteals =      0;
+  arr_iClientRoundStats[client].iPanaceas =    0;
+  arr_iClientRoundStats[client].iWinstrats =   0;
+  arr_iClientRoundStats[client].iDeathbombs =  0;
+  arr_iClientRoundStats[client].iHandoffs =    0;
+  arr_iClientRoundStats[client].iFirstGrabs =  0;
+  arr_iClientRoundStats[client].iCatapults =   0;
+  arr_iClientRoundStats[client].iBlocks =      0;
+  arr_iClientRoundStats[client].iSteal2Saves = 0;
 }
 
 // this is really fucking sloppy but shrug
@@ -150,15 +170,17 @@ Action Timer_DisplayStats(Handle timer) {
 
   for (int x = 1; x < MaxClients + 1; x++) {
     if (!IsValidClient(x)) continue;
-    if (arrbClientSettings[x].iSummary) continue;
+    if (!arr_iClientSettings[x].iSummary) continue;
 
     LogToGame("Printing for client: %d", x);
+
+    s_iPrintSeq[x] = 0;
 
     bool isStv = IsClientSourceTV(x);
     bool shouldPrintBluFirst = (TF2_GetClientTeam(x) == TFTeam_Red);
 
     // smelly!
-    if (arrbClientSettings[x].iSummary == 2) {
+    if (arr_iClientSettings[x].iSummary == 1) {
       if (shouldPrintBluFirst) {
         CPrintMultiline(x, arrStrBluSimpleStats, sizeof(arrStrBluSimpleStats));
         CPrintMultiline(x, arrStrRedSimpleStats, sizeof(arrStrRedSimpleStats));
@@ -228,7 +250,7 @@ void GetConsoleStatsArrStr(char buf[MAXPLAYERS + 1][7][MAX_MESSAGE_LENGTH], int[
     char playerName[MAX_NAME_LENGTH];
     int player = teamMembers[i];
     enuClientStats stats;
-    stats = arriClientRoundStats[player];
+    stats = arr_iClientRoundStats[player];
     GetClientName(player, playerName, sizeof(playerName));
     Format(buf[i][0], MAX_MESSAGE_LENGTH, consoleFormatBlank);
     if (isBlu) {
@@ -248,17 +270,22 @@ void GetConsoleStatsArrStr(char buf[MAXPLAYERS + 1][7][MAX_MESSAGE_LENGTH], int[
 void CPrintMultiline(int client, char[][] lines, int len) {
   for (int i = 0; i < len; i++) {
     if (!StrEqual(lines[i], "")) {
-      CPrintToChat(client, lines[i]);
+      DataPack dp = new DataPack();
+      dp.WriteCell(client);
+      dp.WriteString(lines[i]);
+      CreateTimer(s_iPrintSeq[client]++ * 0.05, Timer_DelayedCPrint, dp, TIMER_FLAG_NO_MAPCHANGE | TIMER_DATA_HNDL_CLOSE);
     }
   }
-  return;
 }
 
 void Print3DMultilineToConsole(int client, char[][][] lines, int length, int height) {
   for (int i = 0; i < length; i++) {
     for (int j = 0; j < height; j++) {
       if (!StrEqual(lines[i][j], "")) {
-        PrintToConsole(client, lines[i][j]);
+        DataPack dp = new DataPack();
+        dp.WriteCell(client);
+        dp.WriteString(lines[i][j]);
+        CreateTimer(s_iPrintSeq[client]++ * 0.05, Timer_DelayedConsolePrint, dp, TIMER_FLAG_NO_MAPCHANGE | TIMER_DATA_HNDL_CLOSE);
       }
     }
   }
@@ -276,20 +303,20 @@ static void AssembleColoredStatsString(char[] buf, int maxLength, int client, bo
   char buffer_sSteals[48];
   char buffer_sSplashes[48];
   if (simplified) {
-    Format(buffer_sGoals,      sizeof(buffer_sGoals),      sGoalsShort,      arriClientRoundStats[client].iScores);
-    Format(buffer_sAssists,    sizeof(buffer_sAssists),    sAssistsShort,    arriClientRoundStats[client].iAssists);
-    Format(buffer_sSaves,      sizeof(buffer_sSaves),      sSavesShort,      arriClientRoundStats[client].iSaves);
-    Format(buffer_sIntercepts, sizeof(buffer_sIntercepts), sInterceptsShort, arriClientRoundStats[client].iIntercepts);
-    Format(buffer_sSteals,     sizeof(buffer_sSteals),     sStealsShort,     arriClientRoundStats[client].iSteals);
-    Format(buffer_sSplashes,   sizeof(buffer_sSplashes),   sSplashesShort,   arriClientRoundStats[client].iSplashes);
+    Format(buffer_sGoals,      sizeof(buffer_sGoals),      sGoalsShort,      arr_iClientRoundStats[client].iScores);
+    Format(buffer_sAssists,    sizeof(buffer_sAssists),    sAssistsShort,    arr_iClientRoundStats[client].iAssists);
+    Format(buffer_sSaves,      sizeof(buffer_sSaves),      sSavesShort,      arr_iClientRoundStats[client].iSaves);
+    Format(buffer_sIntercepts, sizeof(buffer_sIntercepts), sInterceptsShort, arr_iClientRoundStats[client].iIntercepts);
+    Format(buffer_sSteals,     sizeof(buffer_sSteals),     sStealsShort,     arr_iClientRoundStats[client].iSteals);
+    Format(buffer_sSplashes,   sizeof(buffer_sSplashes),   sSplashesShort,   arr_iClientRoundStats[client].iSplashes);
   }
   else {
-    Format(buffer_sGoals,      sizeof(buffer_sGoals),      sGoals,           arriClientRoundStats[client].iScores);
-    Format(buffer_sAssists,    sizeof(buffer_sAssists),    sAssists,         arriClientRoundStats[client].iAssists);
-    Format(buffer_sSaves,      sizeof(buffer_sSaves),      sSaves,           arriClientRoundStats[client].iSaves);
-    Format(buffer_sIntercepts, sizeof(buffer_sIntercepts), sIntercepts,      arriClientRoundStats[client].iIntercepts);
-    Format(buffer_sSteals,     sizeof(buffer_sSteals),     sSteals,          arriClientRoundStats[client].iSteals);
-    Format(buffer_sSplashes,   sizeof(buffer_sSplashes),   sSplashes,        arriClientRoundStats[client].iSplashes);
+    Format(buffer_sGoals,      sizeof(buffer_sGoals),      sGoals,           arr_iClientRoundStats[client].iScores);
+    Format(buffer_sAssists,    sizeof(buffer_sAssists),    sAssists,         arr_iClientRoundStats[client].iAssists);
+    Format(buffer_sSaves,      sizeof(buffer_sSaves),      sSaves,           arr_iClientRoundStats[client].iSaves);
+    Format(buffer_sIntercepts, sizeof(buffer_sIntercepts), sIntercepts,      arr_iClientRoundStats[client].iIntercepts);
+    Format(buffer_sSteals,     sizeof(buffer_sSteals),     sSteals,          arr_iClientRoundStats[client].iSteals);
+    Format(buffer_sSplashes,   sizeof(buffer_sSplashes),   sSplashes,        arr_iClientRoundStats[client].iSplashes);
   }
 
   Format(buf, maxLength, "%s,%s,%s,%s,%s,%s", sGoals, sAssists, sSaves, sIntercepts, sSteals, sSplashes);

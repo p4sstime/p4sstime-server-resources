@@ -5,16 +5,16 @@
 Action %1(int client, int args) {\
   bool value;\
   if (GetCmdArgIntEx(1, value)) {\
-    arrbClientSettings[client].%2 = value;\
-    SetCookieBool(client, %3, arrbClientSettings[client].%2);\
-    CTagReply(client, "%4: %%s", arrbClientSettings[client].%2 ? "ON" : "OFF");\
+    arr_iClientSettings[client].%2 = value;\
+    SetCookieBool(client, %3, arr_iClientSettings[client].%2);\
+    CTagReply(client, "%4: %%s", arr_iClientSettings[client].%2 ? "ON" : "OFF");\
   } else CTagReply(client, "Invalid argument, use either 1 or 0");\
   PH;\
 }
 
 Action EPlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
   int client = GetClientOfUserId(event.GetInt("userid"));
-  arrbPlyIsDead[client] = false;
+  arr_bPlyIsDead[client] = false;
   RemoveStocks(client);
   ApplyDemoResistance(client);
   ApplyBootsAttributes(client);
@@ -43,7 +43,7 @@ Action OnChangeClass(int client, const char[] strCommand, int args) {
       elif (classcheck == TFClass_Medic) med = true;
     }
   }
-  if (arrbPlyIsDead[client] == true && bFixRespawnBypass.BoolValue) {
+  if (arr_bPlyIsDead[client] == true && bFixRespawnBypass.BoolValue) {
     if (class == TFClass_Medic && med) PH;
     elif (class == TFClass_DemoMan && demo) PH;
     elif (class == TFClass_Soldier && solly > 2) PH;
@@ -134,8 +134,8 @@ void BufferedResupply(int client) {
   if (!PointInRespawnRoom(client, origin, false)) return;
 
   // SUCCESSFUL input: apply decay-based cooldown
-  float maxDecay = flResupplyCooldown.FloatValue;
-  float decayAddition = flResupplyDecayAddition.FloatValue;
+  float maxDecay = fResupplyCooldown.FloatValue;
+  float decayAddition = fResupplyDecayAddition.FloatValue;
 
   // 1. Current decay determines the cooldown applied to this click
   nextInstantResupplyTime[client] = resupplyDecay[client] < maxDecay ? resupplyDecay[client] : maxDecay;

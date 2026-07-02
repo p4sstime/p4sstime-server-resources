@@ -19,11 +19,11 @@ void SetCookieBool(int client, Cookie cookie, bool state) {
 }
 
 public OnClientCookiesCached(int client) {
-  arrbClientSettings[client].bCountdown = GetCookieBool(client, cookieCountdownCaption);
-  arrbClientSettings[client].bJackHud = GetCookieBool(client, cookieJACKPickupHud);
-  arrbClientSettings[client].bJackChat = GetCookieBool(client, cookieJACKPickupChat);
-  arrbClientSettings[client].bJackSound = GetCookieBool(client, cookieJACKPickupSound);
-  arrbClientSettings[client].iSummary = GetCookieBool(client, cookieSummary);
+  arr_iClientSettings[client].bCountdown = GetCookieBool(client, cookieCountdownCaption);
+  arr_iClientSettings[client].bJackHud = GetCookieBool(client, cookieJACKPickupHud);
+  arr_iClientSettings[client].bJackChat = GetCookieBool(client, cookieJACKPickupChat);
+  arr_iClientSettings[client].bJackSound = GetCookieBool(client, cookieJACKPickupSound);
+  arr_iClientSettings[client].iSummary = GetCookieBool(client, cookieSummary);
   GetAmmoCookie(client);
   GetImmunityCookie(client);
 }
@@ -40,15 +40,15 @@ void ShowPassMenu(int client) {
 
   char buffer[2048];
 
-  FormatEx(buffer, sizeof(buffer), "%s: %s", "JACK spawn timer captions", arrbClientSettings[client].bCountdown ? "ON" : "OFF");
+  FormatEx(buffer, sizeof(buffer), "%s: %s", "JACK spawn timer captions", arr_iClientSettings[client].bCountdown ? "ON" : "OFF");
   mPassMenu.AddItem("countdowncaption", buffer);
-  FormatEx(buffer, sizeof(buffer), "%s: %s", "JACK pickup HUD text", arrbClientSettings[client].bJackHud ? "ON" : "OFF");
+  FormatEx(buffer, sizeof(buffer), "%s: %s", "JACK pickup HUD text", arr_iClientSettings[client].bJackHud ? "ON" : "OFF");
   mPassMenu.AddItem("jackpickuphud", buffer);
-  FormatEx(buffer, sizeof(buffer), "%s: %s", "JACK pickup chat text", arrbClientSettings[client].bJackChat ? "ON" : "OFF");
+  FormatEx(buffer, sizeof(buffer), "%s: %s", "JACK pickup chat text", arr_iClientSettings[client].bJackChat ? "ON" : "OFF");
   mPassMenu.AddItem("jackpickupchat", buffer);
-  FormatEx(buffer, sizeof(buffer), "%s: %s", "JACK pickup sound", arrbClientSettings[client].bJackSound ? "ON" : "OFF");
+  FormatEx(buffer, sizeof(buffer), "%s: %s", "JACK pickup sound", arr_iClientSettings[client].bJackSound ? "ON" : "OFF");
   mPassMenu.AddItem("jackpickupsound", buffer);
-  switch (arrbClientSettings[client].iSummary) {
+  switch (arr_iClientSettings[client].iSummary) {
     case 0: FormatEx(buffer, sizeof(buffer), "%s: %s", "Toggle chat round summary", "OFF");
     case 1: FormatEx(buffer, sizeof(buffer), "%s: %s", "Toggle chat round summary", "LONG");
     case 2: FormatEx(buffer, sizeof(buffer), "%s: %s", "Toggle chat round summary", "SHORT");
@@ -63,32 +63,32 @@ int PassMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
     char info[32], display[255];
     mPassMenu.GetItem(param2, info, sizeof(info), _, display, sizeof(display));
     if (StrEqual(info, "countdowncaption")) {
-      arrbClientSettings[param1].bCountdown = !arrbClientSettings[param1].bCountdown;
-      SetCookieBool(param1, cookieCountdownCaption, arrbClientSettings[param1].bCountdown);
+      arr_iClientSettings[param1].bCountdown = !arr_iClientSettings[param1].bCountdown;
+      SetCookieBool(param1, cookieCountdownCaption, arr_iClientSettings[param1].bCountdown);
       ShowPassMenu(param1);
     }
     if (StrEqual(info, "jackpickuphud")) {
-      arrbClientSettings[param1].bJackHud = !arrbClientSettings[param1].bJackHud;
-      SetCookieBool(param1, cookieJACKPickupHud, arrbClientSettings[param1].bJackHud);
+      arr_iClientSettings[param1].bJackHud = !arr_iClientSettings[param1].bJackHud;
+      SetCookieBool(param1, cookieJACKPickupHud, arr_iClientSettings[param1].bJackHud);
       ShowPassMenu(param1);
     }
     elif (StrEqual(info, "jackpickupchat")) {
-      arrbClientSettings[param1].bJackChat = !arrbClientSettings[param1].bJackChat;
-      SetCookieBool(param1, cookieJACKPickupChat, arrbClientSettings[param1].bJackChat);
+      arr_iClientSettings[param1].bJackChat = !arr_iClientSettings[param1].bJackChat;
+      SetCookieBool(param1, cookieJACKPickupChat, arr_iClientSettings[param1].bJackChat);
       ShowPassMenu(param1);
     }
     elif (StrEqual(info, "jackpickupsound")) {
-      arrbClientSettings[param1].bJackSound = !arrbClientSettings[param1].bJackSound;
-      SetCookieBool(param1, cookieJACKPickupSound, arrbClientSettings[param1].bJackSound);
+      arr_iClientSettings[param1].bJackSound = !arr_iClientSettings[param1].bJackSound;
+      SetCookieBool(param1, cookieJACKPickupSound, arr_iClientSettings[param1].bJackSound);
       ShowPassMenu(param1);
     }
     elif (StrEqual(info, "summary")) {
-      switch (arrbClientSettings[param1].iSummary) {
-        case 0: arrbClientSettings[param1].iSummary = 1;
-        case 1: arrbClientSettings[param1].iSummary = 2;
-        case 2: arrbClientSettings[param1].iSummary = 0;
+      switch (arr_iClientSettings[param1].iSummary) {
+        case 0: arr_iClientSettings[param1].iSummary = 1;
+        case 1: arr_iClientSettings[param1].iSummary = 2;
+        case 2: arr_iClientSettings[param1].iSummary = 0;
       }
-      SetCookieBool(param1, cookieSummary, arrbClientSettings[param1].iSummary);
+      SetCookieBool(param1, cookieSummary, arr_iClientSettings[param1].iSummary);
       ShowPassMenu(param1);
     }
   }

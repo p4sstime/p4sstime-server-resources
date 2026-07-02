@@ -92,8 +92,8 @@ enum struct enuClientStats {
   int iSteal2Saves;
 }
 
-enuClientSettings arrbClientSettings[MAXPLAYERS + 1];
-enuClientStats arriClientRoundStats[MAXPLAYERS + 1];
+enuClientSettings arr_iClientSettings[MAXPLAYERS + 1];
+enuClientStats arr_iClientRoundStats[MAXPLAYERS + 1];
 
 float fBluGoalPos[3], fRedGoalPos[3], fTopSpawnPos[3], fFreeBallPos[3];
 
@@ -110,10 +110,10 @@ ConVar bVerboseLogs;
 ConVar bMedicSplash;
 ConVar bMedicSplashPush;
 ConVar bResupply;
-ConVar flResupplyCooldown;
-ConVar flResupplyDecayRate;
-ConVar flResupplyDecayAddition;
-ConVar flGoalRegeneration;
+ConVar fResupplyCooldown;
+ConVar fResupplyDecayRate;
+ConVar fResupplyDecayAddition;
+ConVar fGoalRegeneration;
 
 int iPlyWhoGotJack;
 // int plyDirecter;
@@ -135,11 +135,11 @@ bool   bHalloweenMode;
 bool   bBallLoose;         // Is the ball currently loose (is the passtime_ball entity on the map)?
 bool   bBallSplashed;      // check if ball splashed for panacea checks
 TFTeam eLastTickBallTeam;  // in effect, this is "last thrown ball team"
-bool   arrbPlyIsDead [MAXPLAYERS + 1];
-bool   arrbBlastJumpStatus [MAXPLAYERS + 1];  // true if blast jumping, false if has landed
-bool   arrbPanaceaCheck [MAXPLAYERS + 1];
-bool   arrbWinStratCheck [MAXPLAYERS + 1];
-bool   arrbDeathbombCheck [MAXPLAYERS + 1];
+bool   arr_bPlyIsDead [MAXPLAYERS + 1];
+bool   arr_bBlastJumpStatus [MAXPLAYERS + 1];  // true if blast jumping, false if has landed
+bool   arr_bPanaceaCheck [MAXPLAYERS + 1];
+bool   arr_bWinStratCheck [MAXPLAYERS + 1];
+bool   arr_bDeathbombCheck [MAXPLAYERS + 1];
 float  nextInstantResupplyTime[MAXPLAYERS + 1];
 float  resupplyDecay[MAXPLAYERS + 1];
 
@@ -232,7 +232,7 @@ stock void ChatEventToClients(const char[] format, any ...) {
 
 stock void SendCountdownToClients(int time) {
   for (int x = 1; x < MaxClients + 1; x++) {
-    if (!IsValidClient(x) || !arrbClientSettings[x].bCountdown) continue;
+    if (!IsValidClient(x) || !arr_iClientSettings[x].bCountdown) continue;
     
     switch (time) {
       case 10: TagChatClient(x, "{pfred}10 seconds...");
@@ -247,7 +247,7 @@ stock void SendCountdownToClients(int time) {
 
 stock void SendSoundCountdownToClients(const char[] sound) {
   for (int x = 1; x < MaxClients + 1; x++) {
-    if (!IsValidClient(x) || !arrbClientSettings[x].bCountdown) continue;
+    if (!IsValidClient(x) || !arr_iClientSettings[x].bCountdown) continue;
     
     if (StrEqual(sound, "Announcer.RoundBegins10seconds"))
       TagChatClient(x, "{pfred}10 seconds...");
@@ -281,27 +281,27 @@ stock void SendSoundCountdownToClients(const char[] sound) {
 }
 
 stock void ShowJackHud(int client) {
-  if (arrbClientSettings[client].bJackHud) {
+  if (arr_iClientSettings[client].bJackHud) {
     SetHudTextParams(-1.0, 0.22, 3.0, 60, 179, 113, 255);
     ShowHudText(client, 1, "YOU HAVE THE JACK");
   }
 }
 
 stock void HideJackHud(int client) {
-  if (arrbClientSettings[client].bJackHud) {
+  if (arr_iClientSettings[client].bJackHud) {
     SetHudTextParams(-1.0, 0.22, 3.0, 60, 179, 113, 255);
     ShowHudText(client, 1, "");
   }
 }
 
 stock void PlayJackSound(int client) {
-  if (arrbClientSettings[client].bJackSound) {
+  if (arr_iClientSettings[client].bJackSound) {
     ClientCommand(client, "playgamesound Passtime.BallSmack");
   }
 }
 
 stock void ShowJackChat(int client, const char[] message) {
-  if (arrbClientSettings[client].bJackChat) {
+  if (arr_iClientSettings[client].bJackChat) {
     TagChatClient(client, "%s%s", "{pfgreen}", message);
   }
 }
@@ -330,20 +330,20 @@ stock void LogAssistEvent(int assistant) {
   SetLogInfo(assistant);
   LogGameEvent("pass_score_assist", "(position \"%.0f %.0f %.0f\")",
               user1position[0], user1position[1], user1position[2]);
-  arriClientRoundStats[assistant].iAssists++;
+  arr_iClientRoundStats[assistant].iAssists++;
 }
 
 stock void HandleDeathbombScoring(int scorer, int points, float dist) {
-  arrbPanaceaCheck[scorer] = false;
-  LogScoreEvent(entDeathBomber, points, arrbPanaceaCheck[scorer], arrbWinStratCheck[scorer], true, dist);
-  arriClientRoundStats[entDeathBomber].iScores++;
-  arriClientRoundStats[entDeathBomber].iDeathbombs++;
+  arr_bPanaceaCheck[scorer] = false;
+  LogScoreEvent(entDeathBomber, points, arr_bPanaceaCheck[scorer], arr_bWinStratCheck[scorer], true, dist);
+  arr_iClientRoundStats[entDeathBomber].iScores++;
+  arr_iClientRoundStats[entDeathBomber].iDeathbombs++;
   LogAssistEvent(scorer);
 }
 
 stock void HandleNormalScoring(int scorer, int points, bool panacea, bool winstrat, bool deathbomb, float dist, int assistant) {
   LogScoreEvent(scorer, points, panacea, winstrat, deathbomb, dist);
-  arriClientRoundStats[scorer].iScores++;
+  arr_iClientRoundStats[scorer].iScores++;
   
   if (assistant > 0) {
     LogAssistEvent(assistant);
@@ -418,7 +418,7 @@ stock void LogCatapultEvent(const char[] catapultName) {
   SetLogInfo(iPlyWhoGotJack);
   LogGameEvent("%s with the jack", catapultName, "(position \"%.0f %.0f %.0f\")",
               user1position[0], user1position[1], user1position[2]);
-  arriClientRoundStats[iPlyWhoGotJack].iCatapults++;
+  arr_iClientRoundStats[iPlyWhoGotJack].iCatapults++;
 }
 
 stock void LogBallDamage(int victim, int attacker, int inflictor, float damage, int damagetype, const char[] classname) {
@@ -570,10 +570,10 @@ public void OnPluginStart() {
   bMedicSplash =            CC("sm_pt_medic_splash",            "1",    "Enable medic arrows neutralizing the jack.",                                                       NOTIFY);
   bMedicSplashPush =        CC("sm_pt_medic_splash_push",       "1",    "If sm_pt_medic_splash is 1, enable crossbow push on the jack.",                                    NOTIFY);
   bResupply =               CC("sm_pt_resupply_enabled",        "1",    "Enable instant resupply.",                                                                         NOTIFY);
-  flResupplyCooldown =      CC("sm_pt_resupply_cooldown",       "0.5",  "Set the resupply cooldown duration in seconds (also used as max decay cap).",                      NOTIFY);
-  flResupplyDecayRate =     CC("sm_pt_resupply_decay_rate",     "0.15", "Set the resupply decay rate (seconds of decay recovered per second).",                             NOTIFY);
-  flResupplyDecayAddition = CC("sm_pt_resupply_decay_addition", "0.2",  "Set the resupply decay addition per successful resupply.",                                         NOTIFY);
-  flGoalRegeneration =      CC("sm_pt_goal_regeneration",       "0",    "Set the amount of health regeneration every 500ms while in the goal zone.",                        NOTIFY);
+  fResupplyCooldown =      CC("sm_pt_resupply_cooldown",       "0.5",  "Set the resupply cooldown duration in seconds (also used as max decay cap).",                      NOTIFY);
+  fResupplyDecayRate =     CC("sm_pt_resupply_decay_rate",     "0.15", "Set the resupply decay rate (seconds of decay recovered per second).",                             NOTIFY);
+  fResupplyDecayAddition = CC("sm_pt_resupply_decay_addition", "0.2",  "Set the resupply decay addition per successful resupply.",                                         NOTIFY);
+  fGoalRegeneration =      CC("sm_pt_goal_regeneration",       "0",    "Set the amount of health regeneration every 500ms while in the goal zone.",                        NOTIFY);
   bPractice =               CC("sm_pt_practice",                "0",    "Enable practice mode. When the round timer reaches 5 minutes, add 5 minutes to the timer.",        NOTIFY, true, 0.0, true, 1.0);
 
   // Demoman boots attribute ConVars
@@ -690,7 +690,7 @@ public void OnLibraryAdded(const char[] name) {
 
 public Action GoalHealTimer(Handle timer) {
   // LogMessage("GoalHealTimer popped");
-  if (flGoalRegeneration.FloatValue == 0.0) PC;
+  if (fGoalRegeneration.FloatValue == 0.0) PC;
   for (int client_idx = 1; client_idx < MaxClients + 1; client_idx++) {
     if (!IsValidClient(client_idx) || IsClientSourceTV(client_idx)) continue;
     float position[3];
@@ -717,7 +717,7 @@ public Action GoalHealTimer(Handle timer) {
     if (distance_sqr < GOAL_HEAL_RADIUS_SQR && vertical_difference < GOAL_HEAL_HEIGHT) {
       VerboseLog("player \"%d\": distance '%f' (max distance '%f'), vertical_difference '%f'", client_idx, distance_sqr, GOAL_HEAL_RADIUS_SQR, vertical_difference);
 
-      SetEntityHealth(client_idx, min(health + flGoalRegeneration.IntValue, max_health));
+      SetEntityHealth(client_idx, min(health + fGoalRegeneration.IntValue, max_health));
     }
   }
   PC;
@@ -786,7 +786,7 @@ public void OnGameFrame() {
       if (!IsClientInGame(i) || !IsPlayerAlive(i)) continue;
 
       // Update decay timers
-      float decayRate = flResupplyDecayRate.FloatValue;
+      float decayRate = fResupplyDecayRate.FloatValue;
       float frameTime = GetTickInterval();
       float newCooldown = nextInstantResupplyTime[i] - frameTime;
       nextInstantResupplyTime[i] = newCooldown > 0.0 ? newCooldown : 0.0;
@@ -855,7 +855,7 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
         FormatPlayerNameWithTeam(iPlyWhoGotJack, throwerNameTeam);
         ChatEvent("%s {pfyellow}blocked %s {chat}from scoring with a {pfteal}splash{chat}!", playerNameTeam, throwerNameTeam);
         TagChatSTV("%s blocked %N from scoring with a splash. t%d", playerName, iPlyWhoGotJack, STVTickCount());
-        arriClientRoundStats[attacker].iSplashes++;
+        arr_iClientRoundStats[attacker].iSplashes++;
       }
     }
     case TFTeam_Red: {
@@ -870,7 +870,7 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
         FormatPlayerNameWithTeam(iPlyWhoGotJack, throwerNameTeam);
         ChatEvent("%s {pfyellow}blocked %s {chat}from scoring with a {pfteal}splash{chat}!", playerNameTeam, throwerNameTeam);
         TagChatSTV("%s blocked %N from scoring with a splash. t%d", playerName, iPlyWhoGotJack, STVTickCount());
-        arriClientRoundStats[attacker].iSplashes++;
+        arr_iClientRoundStats[attacker].iSplashes++;
       }
     }
   }
@@ -1021,25 +1021,25 @@ float DistanceAboveGround(int victim) { // taken from mgemod
 
 Action ERocketJump(Event event, const char[] name, bool dontBroadcast) {
   int client = GetClientOfUserId(event.GetInt("userid"));
-  arrbBlastJumpStatus[client] = true;
+  arr_bBlastJumpStatus[client] = true;
   PH;
 }
 
 Action ERocketJumpLand(Event event, const char[] name, bool dontBroadcast) {
   int client = GetClientOfUserId(event.GetInt("userid"));
-  arrbBlastJumpStatus[client] = false;
+  arr_bBlastJumpStatus[client] = false;
   PH;
 }
 
 Action EPipeJump(Event event, const char[] name, bool dontBroadcast) {
   int client = GetClientOfUserId(event.GetInt("userid"));
-  arrbBlastJumpStatus[client] = true;
+  arr_bBlastJumpStatus[client] = true;
   PH;
 }
 
 Action EPipeJumpLand(Event event, const char[] name, bool dontBroadcast) {
   int client = GetClientOfUserId(event.GetInt("userid"));
-  arrbBlastJumpStatus[client] = false;
+  arr_bBlastJumpStatus[client] = false;
   PH;
 }
 
@@ -1051,10 +1051,10 @@ public void TF2_OnConditionRemoved(int client, TFCond condition) {
 
 Action EPlayerDeath(Event event, const char[] name, bool dontBroadcast) {
   int client = GetClientOfUserId(event.GetInt("userid"));
-  arrbPlyIsDead[client] = true;
+  arr_bPlyIsDead[client] = true;
   if (client == entPassTarget) {
     entDeathBomber = client;
-    arrbDeathbombCheck[entDeathBomber] = true;
+    arr_bDeathbombCheck[entDeathBomber] = true;
   }
   PH;
 }
@@ -1102,18 +1102,18 @@ Action EPassFree(Event event, const char[] name, bool dontBroadcast) {
     }
   }
 
-  if (!arrbPlyIsDead[owner]) {
+  if (!arr_bPlyIsDead[owner]) {
     eLastTickBallTeam = ownerTeam;
   }
 
-  arrbDeathbombCheck[entDeathBomber] = false;  // if anyone at all throws the ball, the deathbomb is automatically false
+  arr_bDeathbombCheck[entDeathBomber] = false;  // if anyone at all throws the ball, the deathbomb is automatically false
 
   HideJackHud(owner);
   GetEntPropVector(entJack, Prop_Data, "m_vecAbsOrigin", fFreeBallPos);
   entPassTarget = EntRefToEntIndex(GetEntPropEnt(owner, Prop_Send, "m_hPasstimePassTarget"));
-  if (!(arrbBlastJumpStatus[owner])) {
-    arrbPanaceaCheck[owner]  = false;
-    arrbWinStratCheck[owner] = false;
+  if (!(arr_bBlastJumpStatus[owner])) {
+    arr_bPanaceaCheck[owner]  = false;
+    arr_bWinStratCheck[owner] = false;
   }
   LogPassFree(owner);
   PH;
@@ -1123,7 +1123,7 @@ Action EPassFree(Event event, const char[] name, bool dontBroadcast) {
 Action EPassBallBlocked(Event event, const char[] name, bool dontBroadcast) {
   int blocker = event.GetInt("blocker");
   int thrower = event.GetInt("owner");
-  arriClientRoundStats[blocker].iBlocks++;
+  arr_iClientRoundStats[blocker].iBlocks++;
   LogPassBallBlocked(blocker, thrower);
   user2 = 0;
   PH;
@@ -1141,19 +1141,19 @@ Action EPassGet(Event event, const char[] name, bool dontBroadcast) {
   LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_get\" (firstcontact \"%i\") (position \"%.0f %.0f %.0f\")",
             user1, GetClientUserId(user1), user1steamid, user1team, ibFirstGrabCheck,
             user1position[0], user1position[1], user1position[2]);
-  if (ibFirstGrabCheck && arrbBlastJumpStatus[iPlyWhoGotJack]) {
-    arriClientRoundStats[iPlyWhoGotJack].iFirstGrabs++;
-    arrbPanaceaCheck[iPlyWhoGotJack] = true;
+  if (ibFirstGrabCheck && arr_bBlastJumpStatus[iPlyWhoGotJack]) {
+    arr_iClientRoundStats[iPlyWhoGotJack].iFirstGrabs++;
+    arr_bPanaceaCheck[iPlyWhoGotJack] = true;
     GetClientAbsOrigin(iPlyWhoGotJack, position);
     float distanceFromTopSpawner = GetVectorDistance(position, fTopSpawnPos, false);
     VerboseLog("Panacea check - Distance from top spawner: %.0f, Cutoff distance for winstrat: %i", distanceFromTopSpawner, iWinStratDistance);
     // may need to be changed 
     if (distanceFromTopSpawner < iWinStratDistance)  { 
-      arrbPanaceaCheck[iPlyWhoGotJack]  = false;
-      arrbWinStratCheck[iPlyWhoGotJack] = true;
+      arr_bPanaceaCheck[iPlyWhoGotJack]  = false;
+      arr_bWinStratCheck[iPlyWhoGotJack] = true;
 
       if (bWinstratKills.BoolValue) {
-        arrbWinStratCheck[iPlyWhoGotJack] = false;
+        arr_bWinStratCheck[iPlyWhoGotJack] = false;
         // KILL winstratter
         SDKHooks_TakeDamage(iPlyWhoGotJack, iPlyWhoGotJack, iPlyWhoGotJack, 500.0);
         char winstratterName[MAX_NAME_LENGTH];
@@ -1163,13 +1163,13 @@ Action EPassGet(Event event, const char[] name, bool dontBroadcast) {
     }
   }
   else {
-    arrbPanaceaCheck[iPlyWhoGotJack]  = false;
-    arrbWinStratCheck[iPlyWhoGotJack] = false;
+    arr_bPanaceaCheck[iPlyWhoGotJack]  = false;
+    arr_bWinStratCheck[iPlyWhoGotJack] = false;
   }
   ibFirstGrabCheck = false;
 
   ShowJackHud(iPlyWhoGotJack);
-  if (arrbClientSettings[iPlyWhoGotJack].iSummary)
+  if (arr_iClientSettings[iPlyWhoGotJack].iSummary)
     ShowJackChat(iPlyWhoGotJack, "YOU HAVE THE JACK!");
   PlayJackSound(iPlyWhoGotJack);
 
@@ -1214,12 +1214,12 @@ Action EPassCaught(Handle event, const char[] name, bool dontBroadcast) {
     intercept = true;
     if (PlayerInTeamGoalieZone(catcher)) {
       bSave = true;
-      arriClientRoundStats[catcher].iSaves++;
+      arr_iClientRoundStats[catcher].iSaves++;
       ChatEventToClients("%s {pfyellow}blocked %s {chat}from scoring!", catcherNameTeamFormat, throwerNameTeamFormat);
       TagChatSTV("%s blocked %s from scoring. t%d", catcherName, throwerName, STVTickCount());
     }
     else {
-      arriClientRoundStats[catcher].iIntercepts++;
+      arr_iClientRoundStats[catcher].iIntercepts++;
       ChatEventToClients("%s {pfmagenta}intercepted %s!", catcherNameTeamFormat, throwerNameTeamFormat);
       TagChatSTV("%s intercepted %s. t%d", catcherName, throwerName, STVTickCount());
     }
@@ -1229,15 +1229,15 @@ Action EPassCaught(Handle event, const char[] name, bool dontBroadcast) {
     ChatEventToClients("%s {pfyellow}handoff to %s!", throwerNameTeamFormat, catcherNameTeamFormat);
     TagChatSTV("%s handoff to %s. t%d", throwerName, catcherName, STVTickCount());
     ibHandoffCheck = true;
-    arriClientRoundStats[thrower].iHandoffs++;
+    arr_iClientRoundStats[thrower].iHandoffs++;
     entPassTarget = 0;
   }
   LogPassCaught(catcher, thrower, intercept, bSave, ibHandoffCheck, dist, duration);
   user2 = 0;
-  arrbPanaceaCheck[thrower]  = false;
-  arrbPanaceaCheck[catcher]  = false;
-  arrbWinStratCheck[thrower] = false;
-  arrbWinStratCheck[catcher] = false;
+  arr_bPanaceaCheck[thrower]  = false;
+  arr_bPanaceaCheck[catcher]  = false;
+  arr_bWinStratCheck[thrower] = false;
+  arr_bWinStratCheck[catcher] = false;
 
   PH;
 }
@@ -1252,16 +1252,16 @@ Action EPassStolen(Event event, const char[] name, bool dontBroadcast) {
   iBallPickedUpTick = GetGameTickCount();
   VerboseLog("Ball picked up - t%d", iBallPickedUpTick);
   if (PlayerInTeamGoalieZone(thief)) {
-    arriClientRoundStats[thief].iSteal2Saves++;
+    arr_iClientRoundStats[thief].iSteal2Saves++;
     steal2save = true;
   }
 
   LogPassBallStolen(thief, victim, steal2save);
   user2 = 0;
-  arrbPanaceaCheck[thief]   = false;
-  arrbPanaceaCheck[victim]  = false;
-  arrbWinStratCheck[thief]  = false;
-  arrbWinStratCheck[victim] = false;
+  arr_bPanaceaCheck[thief]   = false;
+  arr_bPanaceaCheck[victim]  = false;
+  arr_bWinStratCheck[thief]  = false;
+  arr_bWinStratCheck[victim] = false;
 
   HideJackHud(victim);
   char thiefName[MAX_NAME_LENGTH], victimName[MAX_NAME_LENGTH];
@@ -1280,7 +1280,7 @@ Action EPassStolen(Event event, const char[] name, bool dontBroadcast) {
     ChatEvent("%s{pforange} stole from{chat} %s!", thiefNameTeamFormat, victimNameTeamFormat);
     TagChatSTV("%s stole from %s. t%d", thiefName, victimName, STVTickCount());
   }
-  arriClientRoundStats[thief].iSteals++;
+  arr_iClientRoundStats[thief].iSteals++;
   PH;
 }
 
@@ -1296,27 +1296,27 @@ Action EPassScore(Event event, const char[] name, bool dontBroadcast) {
   GetClientName(scorer, playerName, sizeof(playerName));
 
   if (ibBallSpawnedLower || bBallSplashed)
-    arrbPanaceaCheck[scorer] = false;
+    arr_bPanaceaCheck[scorer] = false;
 
   float fScoredBallPos[3];
   GetEntPropVector(entJack, Prop_Send, "m_vecOrigin", fScoredBallPos);
   float dist = GetVectorDistance(fFreeBallPos, fScoredBallPos, false);
 
-  if (arrbDeathbombCheck[entDeathBomber]) {
+  if (arr_bDeathbombCheck[entDeathBomber]) {
     HandleDeathbombScoring(scorer, points, dist);
   }
   else {
-    HandleNormalScoring(scorer, points, arrbPanaceaCheck[scorer], arrbWinStratCheck[scorer], arrbDeathbombCheck[entDeathBomber], dist, assistant);
+    HandleNormalScoring(scorer, points, arr_bPanaceaCheck[scorer], arr_bWinStratCheck[scorer], arr_bDeathbombCheck[entDeathBomber], dist, assistant);
   }
 
-  if (arrbPanaceaCheck[scorer] && TF2_GetPlayerClass(scorer) != TFClass_Medic)
-    arriClientRoundStats[scorer].iPanaceas++;
-  elif (arrbWinStratCheck[scorer])
-    arriClientRoundStats[scorer].iWinstrats++;
+  if (arr_bPanaceaCheck[scorer] && TF2_GetPlayerClass(scorer) != TFClass_Medic)
+    arr_iClientRoundStats[scorer].iPanaceas++;
+  elif (arr_bWinStratCheck[scorer])
+    arr_iClientRoundStats[scorer].iWinstrats++;
 
-  ShowScoreMessage(scorer, assistant, arrbPanaceaCheck[scorer], arrbWinStratCheck[scorer], arrbDeathbombCheck[entDeathBomber], dist);
-  arrbPanaceaCheck[scorer]  = false;
-  arrbWinStratCheck[scorer] = false;  // reset these cuz its good idea
+  ShowScoreMessage(scorer, assistant, arr_bPanaceaCheck[scorer], arr_bWinStratCheck[scorer], arr_bDeathbombCheck[entDeathBomber], dist);
+  arr_bPanaceaCheck[scorer]  = false;
+  arr_bWinStratCheck[scorer] = false;  // reset these cuz its good idea
 
   PH;
 }

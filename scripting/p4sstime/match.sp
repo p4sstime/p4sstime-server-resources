@@ -1,7 +1,7 @@
 // Match utility commands: force ready, team/class control, dice roll, ready, team name
 
 bool  g_bIsTeamReady[2]     = { false, false };
-float g_flUnreadyCooldown[2] = { -1.0, -1.0 };
+float g_fUnreadyCooldown[2] = { -1.0, -1.0 };
 
 // ====================================================================================================
 // HELPERS
@@ -260,13 +260,15 @@ Action CReady(int client, int args) {
   bool currentReadyState  = view_as<bool>(GameRules_GetProp("m_bTeamReady", _, gameRulesOffset));
   bool newReadyState      = !currentReadyState;
 
-  if (!newReadyState) {
-    float elapsed = GetGameTime() - g_flUnreadyCooldown[teamIndex];
+  if (newReadyState) {
+    g_fUnreadyCooldown[teamIndex] = -1.0;
+  } else {
+    float elapsed = GetGameTime() - g_fUnreadyCooldown[teamIndex];
     if (elapsed < 5.0) {
       TagChatClient(client, "Wait %.0f more second%s before unreadying.", 5.0 - elapsed, (5.0 - elapsed < 2.0) ? "" : "s");
       PH;
     }
-    g_flUnreadyCooldown[teamIndex] = GetGameTime();
+    g_fUnreadyCooldown[teamIndex] = GetGameTime();
   }
 
   GameRules_SetProp("m_bTeamReady", newReadyState ? 1 : 0, 1, gameRulesOffset);
@@ -282,9 +284,9 @@ Action CReady(int client, int args) {
       if (cvRestart != null) cvRestart.SetInt(5);
     }
   } else {
-    float restartTime = GameRules_GetPropFloat("m_flRestartRoundTime");
+    float restartTime = GameRules_GetPropFloat("m_fRestartRoundTime");
     if (restartTime > GetGameTime()) {
-      GameRules_SetPropFloat("m_flRestartRoundTime", -1.0);
+      GameRules_SetPropFloat("m_fRestartRoundTime", -1.0);
       GameRules_SetProp("m_bAwaitingReadyRestart", 1);
       if (cvRestart != null) cvRestart.SetInt(0);
 
