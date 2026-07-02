@@ -45,6 +45,12 @@ public void TagChatSTV(const char[] format, any ...) {
   CPrintToSTV("%s %s", gsTagSTV, buffer);
 }
 
+void TagFormat(char[] buffer, int maxlen, const char[] format, any ...) {
+  char msg[254];
+  VFormat(msg, sizeof(msg), format, 4);
+  Format(buffer, maxlen, "%s %s", gsTag, msg);
+}
+
 stock char[] TFTeamToString(TFTeam input) {
   char string[4];
   switch (input) {

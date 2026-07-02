@@ -19,11 +19,11 @@ void SetCookieBool(int client, Cookie cookie, bool state) {
 }
 
 public OnClientCookiesCached(int client) {
-  arr_iClientSettings[client].bCountdown = GetCookieBool(client, cookieCountdownCaption);
-  arr_iClientSettings[client].bJackHud = GetCookieBool(client, cookieJACKPickupHud);
-  arr_iClientSettings[client].bJackChat = GetCookieBool(client, cookieJACKPickupChat);
-  arr_iClientSettings[client].bJackSound = GetCookieBool(client, cookieJACKPickupSound);
-  arr_iClientSettings[client].iSummary = GetCookieBool(client, cookieSummary);
+  arr_iClientSettings[client].bCountdown = GetCookieBool(client, ck_iCountdown);
+  arr_iClientSettings[client].bJackHud =   GetCookieBool(client, ck_bJackHud);
+  arr_iClientSettings[client].bJackChat =  GetCookieBool(client, ck_bJackChat);
+  arr_iClientSettings[client].bJackSound = GetCookieBool(client, ck_bJackSound);
+  arr_iClientSettings[client].iSummary =   GetCookieBool(client, ck_iSummary);
   GetAmmoCookie(client);
   GetImmunityCookie(client);
 }
@@ -52,6 +52,7 @@ void ShowPassMenu(int client) {
     case 0: FormatEx(buffer, sizeof(buffer), "%s: %s", "Toggle chat round summary", "OFF");
     case 1: FormatEx(buffer, sizeof(buffer), "%s: %s", "Toggle chat round summary", "LONG");
     case 2: FormatEx(buffer, sizeof(buffer), "%s: %s", "Toggle chat round summary", "SHORT");
+    case 3: FormatEx(buffer, sizeof(buffer), "%s: %s", "Toggle chat round summary", "MINIMAL");
   }
   mPassMenu.AddItem("summary", buffer);
 
@@ -64,33 +65,86 @@ int PassMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
     mPassMenu.GetItem(param2, info, sizeof(info), _, display, sizeof(display));
     if (StrEqual(info, "countdowncaption")) {
       arr_iClientSettings[param1].bCountdown = !arr_iClientSettings[param1].bCountdown;
-      SetCookieBool(param1, cookieCountdownCaption, arr_iClientSettings[param1].bCountdown);
+      SetCookieBool(param1, ck_iCountdown, arr_iClientSettings[param1].bCountdown);
       ShowPassMenu(param1);
     }
     if (StrEqual(info, "jackpickuphud")) {
       arr_iClientSettings[param1].bJackHud = !arr_iClientSettings[param1].bJackHud;
-      SetCookieBool(param1, cookieJACKPickupHud, arr_iClientSettings[param1].bJackHud);
+      SetCookieBool(param1, ck_bJackHud, arr_iClientSettings[param1].bJackHud);
       ShowPassMenu(param1);
     }
     elif (StrEqual(info, "jackpickupchat")) {
       arr_iClientSettings[param1].bJackChat = !arr_iClientSettings[param1].bJackChat;
-      SetCookieBool(param1, cookieJACKPickupChat, arr_iClientSettings[param1].bJackChat);
+      SetCookieBool(param1, ck_bJackChat, arr_iClientSettings[param1].bJackChat);
       ShowPassMenu(param1);
     }
     elif (StrEqual(info, "jackpickupsound")) {
       arr_iClientSettings[param1].bJackSound = !arr_iClientSettings[param1].bJackSound;
-      SetCookieBool(param1, cookieJACKPickupSound, arr_iClientSettings[param1].bJackSound);
+      SetCookieBool(param1, ck_bJackSound, arr_iClientSettings[param1].bJackSound);
       ShowPassMenu(param1);
     }
     elif (StrEqual(info, "summary")) {
-      switch (arr_iClientSettings[param1].iSummary) {
-        case 0: arr_iClientSettings[param1].iSummary = 1;
-        case 1: arr_iClientSettings[param1].iSummary = 2;
-        case 2: arr_iClientSettings[param1].iSummary = 0;
-      }
-      SetCookieBool(param1, cookieSummary, arr_iClientSettings[param1].iSummary);
-      ShowPassMenu(param1);
+      ShowSummaryMenu(param1);
     }
   }
   return 0;  // just do this to get rid of warning
+}
+
+static const char g_sSummaryNames[][] = { "OFF", "LONG", "SHORT", "MINIMAL" };
+
+static const char g_sSummaryStatuses[][] = {
+  "Round summary: {cRed}Off {chat}· Long · Short · Minimal",
+  "Round summary: Off · {cBlue}Long {chat}· Short · Minimal",
+  "Round summary: Off · Long · {cBlue}Short {chat}· Minimal",
+  "Round summary: Off · Long · Short · {cBlue}Minimal"
+};
+
+void ShowSummaryPreview(int client) {
+  char preview[256];
+  BuildStatsString(preview, sizeof(preview), 3, 1, 2, 4, 0, 1, arr_iClientSettings[client].iSummary - 1);
+  CTagReply(client, "Preview: %s", preview);
+}
+
+void ShowSummaryMenu(int client) {
+  Menu summaryMenu = new Menu(SummaryMenuHandler);
+  summaryMenu.SetTitle("Round Summary Settings");
+
+  int current = arr_iClientSettings[client].iSummary;
+  char key[4];
+  char display[32];
+  for (int i = 0; i < sizeof(g_sSummaryNames); i++) {
+    IntToString(i, key, sizeof(key));
+    FormatEx(display, sizeof(display), i == current ? "%s <" : "%s", g_sSummaryNames[i]);
+    summaryMenu.AddItem(key, display);
+  }
+
+  summaryMenu.AddItem("", "", ITEMDRAW_SPACER);
+  if (current != 0) {
+    summaryMenu.AddItem("preview", "Preview Current Format");
+  }
+
+  summaryMenu.Display(client, MENU_TIME_FOREVER);
+}
+
+int SummaryMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
+  if (action == MenuAction_Select) {
+    char info[32];
+    menu.GetItem(param2, info, sizeof(info));
+
+    if (StrEqual(info, "preview")) {
+      ShowSummaryPreview(param1);
+      ShowSummaryMenu(param1);
+    }
+    else {
+      int value = StringToInt(info);
+      arr_iClientSettings[param1].iSummary = value;
+      CTagReply(param1, g_sSummaryStatuses[value]);
+      SetCookieBool(param1, ck_iSummary, arr_iClientSettings[param1].iSummary);
+      ShowSummaryMenu(param1);
+    }
+  }
+  else if (action == MenuAction_End) {
+    delete menu;
+  }
+  return 0;
 }

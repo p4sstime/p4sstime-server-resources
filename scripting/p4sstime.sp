@@ -189,7 +189,7 @@ bool g_bBackupFOVDB;
 bool g_bPlayerTracked[MAXPLAYERS + 1];
 int  g_iPlayerFOV[MAXPLAYERS + 1];
 // b plyTakenDirectHit[MAXPLAYERS + 1];
-Cookie cookieCountdownCaption, cookieJACKPickupHud, cookieJACKPickupChat, cookieJACKPickupSound, cookieSummary;
+Cookie ck_iCountdown, ck_bJackHud, ck_bJackChat, ck_bJackSound, ck_iSummary;
 
 // log variables
 int   user1;
@@ -360,11 +360,11 @@ stock void ShowScoreMessage(int scorer, int assistant, bool panacea, bool winstr
   FormatPlayerNameWithTeam(scorer, playerNameTeamFormatted);
   
   if (panacea && TF2_GetPlayerClass(scorer) != TFClass_Medic) {
-    ChatEvent("%s{cScore} scored a {cScore}Panacea!", playerNameTeamFormatted);
+    ChatEvent("%s {cScore}scored a {cScore}Panacea{chat}!", playerNameTeamFormatted);
     TagChatSTV("%s scored a Panacea. t%d", playerName, STVTickCount());
   }
   elif (winstrat) {
-    ChatEvent("%s{cScore} scored a {cScore}win strat!", playerNameTeamFormatted);
+    ChatEvent("%s {cScore}scored a {cScore}win strat{chat}!", playerNameTeamFormatted);
     TagChatSTV("%s scored a win strat. t%d", playerName, STVTickCount());
   }
   elif (deathbomb) {
@@ -372,7 +372,7 @@ stock void ShowScoreMessage(int scorer, int assistant, bool panacea, bool winstr
     char deathBomberName[MAX_NAME_LENGTH];
     GetClientName(deathBomber, deathBomberName, sizeof(deathBomberName));
     FormatPlayerNameWithTeam(deathBomber, playerNameTeamFormatted);
-    ChatEvent("%s{cScore} scored a {cScore}deathbomb!", playerNameTeamFormatted);
+    ChatEvent("%s {cScore}scored a {cScore}deathbomb{chat}!", playerNameTeamFormatted);
     TagChatSTV("%s scored a deathbomb. t%d", deathBomberName, STVTickCount());
   }
   elif (dist > 1600) {
@@ -381,11 +381,11 @@ stock void ShowScoreMessage(int scorer, int assistant, bool panacea, bool winstr
   }
   elif (assistant > 0) {
     FormatPlayerNameWithTeam(assistant, assistantNameTeamFormatted);
-    ChatEvent("%s {cScore}scored {chat}assisted by %s!", playerNameTeamFormatted, assistantNameTeamFormatted);
-    TagChatSTV("%s scored assisted by %s. t%d", playerName, assistantName, STVTickCount());
+    ChatEvent("%s {cScore}scored {chat}with %s{chat}!", playerNameTeamFormatted, assistantNameTeamFormatted);
+    TagChatSTV("%s scored with %s. t%d", playerName, assistantName, STVTickCount());
   }
   else {
-    ChatEvent("%s {cScore}scored!", playerNameTeamFormatted);
+    ChatEvent("%s {cScore}scored{chat}!", playerNameTeamFormatted);
     TagChatSTV("%s scored. t%d", playerName, STVTickCount());
   }
 }
@@ -496,11 +496,11 @@ public void OnPluginStart() {
   g_hMirrorSpawnPoints[1][1] = new ArrayList();  // BLU right
 
   // Cookies
-  cookieCountdownCaption = RCC("p4ssClientCountdownCaption",  "p4sstime's client setting (1/0) for captions for JACK spawn timer", CookieAccess_Public);
-  cookieJACKPickupHud =    RCC("p4ssClientJACKPickupHudText", "p4sstime's client setting (1/0) for HUD text when picking up JACK", CookieAccess_Public);
-  cookieJACKPickupChat =   RCC("p4ssClientJACKPickupChatMsg", "p4sstime's client setting (1/0) for chat msg when picking up JACK", CookieAccess_Public);
-  cookieJACKPickupSound =  RCC("p4ssClientJACKPickupSound",   "p4sstime's client setting (1/0) for sound when picking up JACK",    CookieAccess_Public);
-  cookieSummary =          RCC("p4ssClientSummary",           "p4sstime's client setting (0/1/2) for EoR summaries",               CookieAccess_Public);
+  ck_iCountdown = RCC("p4ssClientCountdownCaption",  "p4sstime's client setting (1/0) for captions for JACK spawn timer", CookieAccess_Public);
+  ck_bJackHud =    RCC("p4ssClientJACKPickupHudText", "p4sstime's client setting (1/0) for HUD text when picking up JACK", CookieAccess_Public);
+  ck_bJackChat =   RCC("p4ssClientJACKPickupChatMsg", "p4sstime's client setting (1/0) for chat msg when picking up JACK", CookieAccess_Public);
+  ck_bJackSound =  RCC("p4ssClientJACKPickupSound",   "p4sstime's client setting (1/0) for sound when picking up JACK",    CookieAccess_Public);
+  ck_iSummary =          RCC("p4ssClientSummary",           "p4sstime's client setting (0/1/2) for EoR summaries",               CookieAccess_Public);
   cookieFOV =              RCC("p4ssClientFOV",               "p4sstime's client FOV setting",                                     CookieAccess_Private);
   cookieImmunity     =     RCC("p4ssClientImmunity",          "p4sstime's immunity setting",                                       CookieAccess_Private);
   cookieInfiniteAmmo =     RCC("p4ssClientInfiniteAmmo",      "p4sstime's infinite ammo setting",                                  CookieAccess_Private);
@@ -508,7 +508,6 @@ public void OnPluginStart() {
   // Client commands
   RC("sm_pt_menu",         CMenu,            "Open the PASS Time menu");
   RC("sm_pt_countdown",    CChatCountdown,   "Toggle JACK spawn timer captions");
-  RC("sm_pt_summary",      CChatSummary,     "Toggle end-of-round summaries");
   RC("sm_pt_pickup_hud",   CJackPickupHud,   "Toggle JACK pickup HUD text");
   RC("sm_pt_pickup_chat",  CJackPickupChat,  "Toggle JACK pickup chat message");
   RC("sm_pt_pickup_sound", CJackPickupSound, "Toggle JACK pickup sound");
@@ -523,11 +522,12 @@ public void OnPluginStart() {
   RC("sm_fov",             CSetFOV,          "Set your field of view");
 
   // Client commands with short aliases
-  CCS("sm_immune",    "sm_i",    CImmune,   "Toggle immunity");
-  CCS("sm_ammo",      "sm_a",    CInfAmmo,  "Toggle infinite ammo");
-  CCS("sm_diceroll",  "sm_dice", CDice,     "Select a random player from targets");
-  CCS("sm_ready",     "sm_r",    CReady,    "Toggle your team's ready state");
-  CCS("sm_team_name", "sm_tn",   CTeamName, "Rename your team");
+  CCS("sm_pt_summary", "sm_pt_sum", CChatSummary, "Toggle end-of-round summaries");
+  CCS("sm_immune",     "sm_i",      CImmune,      "Toggle immunity");
+  CCS("sm_ammo",       "sm_a",      CInfAmmo,     "Toggle infinite ammo");
+  CCS("sm_diceroll",   "sm_dice",   CDice,        "Select a random player from targets");
+  CCS("sm_ready",      "sm_r",      CReady,       "Toggle your team's ready state");
+  CCS("sm_team_name",  "sm_tn",     CTeamName,    "Rename your team");
 
   // Admin commands
   RA("sm_pt_snapshot",    CSnapshot,         GENERIC, "Take a snapshot of the plugin's current variable values.");
@@ -861,8 +861,8 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
         GetClientName(attacker, playerName, sizeof(playerName));
         FormatPlayerNameWithTeam(attacker, playerNameTeam);
         FormatPlayerNameWithTeam(iPlyWhoGotJack, throwerNameTeam);
-        ChatEvent("%s {cBlock}blocked %s {chat}from scoring with a {cNeutral}splash{chat}!", playerNameTeam, throwerNameTeam);
-        TagChatSTV("%s blocked %N from scoring with a splash. t%d", playerName, iPlyWhoGotJack, STVTickCount());
+        ChatEvent("%s {cBlock}blocked %s {chat}with {cNeutral}a splash{chat}!", playerNameTeam, throwerNameTeam);
+        TagChatSTV("%s blocked %N with a splash. t%d", playerName, iPlyWhoGotJack, STVTickCount());
         arr_iClientRoundStats[attacker].iSplashes++;
       }
     }
@@ -876,8 +876,8 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
         GetClientName(attacker, playerName, sizeof(playerName));
         FormatPlayerNameWithTeam(attacker, playerNameTeam);
         FormatPlayerNameWithTeam(iPlyWhoGotJack, throwerNameTeam);
-        ChatEvent("%s {cBlock}blocked %s {chat}from scoring with a {cNeutral}splash{chat}!", playerNameTeam, throwerNameTeam);
-        TagChatSTV("%s blocked %N from scoring with a splash. t%d", playerName, iPlyWhoGotJack, STVTickCount());
+        ChatEvent("%s {cBlock}blocked %s {chat}with a {cNeutral}splash{chat}!", playerNameTeam, throwerNameTeam);
+        TagChatSTV("%s blocked %N with a splash. t%d", playerName, iPlyWhoGotJack, STVTickCount());
         arr_iClientRoundStats[attacker].iSplashes++;
       }
     }
@@ -1176,8 +1176,7 @@ Action EPassGet(Event event, const char[] name, bool dontBroadcast) {
   ibFirstGrabCheck = false;
 
   ShowJackHud(iPlyWhoGotJack);
-  if (arr_iClientSettings[iPlyWhoGotJack].iSummary)
-    ShowJackChat(iPlyWhoGotJack, "YOU HAVE THE JACK!");
+  ShowJackChat(iPlyWhoGotJack, "YOU HAVE THE JACK!");
   PlayJackSound(iPlyWhoGotJack);
 
   PH;
@@ -1188,8 +1187,8 @@ Action EPassCaught(Handle event, const char[] name, bool dontBroadcast) {
   int thrower        = EvI(event, "passer");
   int catcher        = EvI(event, "catcher");
   if (!IsValidClient(thrower) || !IsValidClient(catcher)) PH;
-  float dist             = EvF(event, "dist");
-  float duration         = EvF(event, "duration");
+  float dist         = EvF(event, "dist");
+  float duration     = EvF(event, "duration");
   int intercept      = false;
   int bSave          = false;
   int ibHandoffCheck = false;
@@ -1212,7 +1211,7 @@ Action EPassCaught(Handle event, const char[] name, bool dontBroadcast) {
   if (bChatEventsFun.BoolValue && bChatEvents.BoolValue) {
     if (GetClientTeam(thrower) == GetClientTeam(catcher)) {
       if (PlayerInEnemyGoalieZone(catcher)) {
-        ChatEvent("%s {cBlock}blocked *their teammate* %s %sfrom scoring!", catcherNameTeamFormat, throwerNameTeamFormat, "{chat}");
+        ChatEvent("%s {cBlock}blocked *their teammate* %s %s{chat}!", catcherNameTeamFormat, throwerNameTeamFormat, "{chat}");
       }
     }
   }
@@ -1222,18 +1221,18 @@ Action EPassCaught(Handle event, const char[] name, bool dontBroadcast) {
     if (PlayerInTeamGoalieZone(catcher)) {
       bSave = true;
       arr_iClientRoundStats[catcher].iSaves++;
-      ChatEventToClients("%s {cBlock}blocked %s {chat}from scoring!", catcherNameTeamFormat, throwerNameTeamFormat);
-      TagChatSTV("%s blocked %s from scoring. t%d", catcherName, throwerName, STVTickCount());
+      ChatEventToClients("%s {cBlock}blocked %s {chat}!", catcherNameTeamFormat, throwerNameTeamFormat);
+      TagChatSTV("%s blocked %s . t%d", catcherName, throwerName, STVTickCount());
     }
     else {
       arr_iClientRoundStats[catcher].iIntercepts++;
-      ChatEventToClients("%s {cIntercept}intercepted %s!", catcherNameTeamFormat, throwerNameTeamFormat);
+      ChatEventToClients("%s {cIntercept}intercepted %s{chat}!", catcherNameTeamFormat, throwerNameTeamFormat);
       TagChatSTV("%s intercepted %s. t%d", catcherName, throwerName, STVTickCount());
     }
   }
   // if on same team and catcher is not locked onto for a pass, also 200 units above ground at least (to ignore just normal non-lock passes)
   if (TF2_GetClientTeam(thrower) == TF2_GetClientTeam(catcher) && entPassTarget != catcher && !(GetEntityFlags(catcher) & FL_ONGROUND) && DistanceAboveGround(catcher) > 200) { 
-    ChatEventToClients("%s {cAssist}handoff to %s!", throwerNameTeamFormat, catcherNameTeamFormat);
+    ChatEventToClients("%s {cAssist}handoff {chat}to %s{chat}!", throwerNameTeamFormat, catcherNameTeamFormat);
     TagChatSTV("%s handoff to %s. t%d", throwerName, catcherName, STVTickCount());
     ibHandoffCheck = true;
     arr_iClientRoundStats[thrower].iHandoffs++;
@@ -1280,11 +1279,11 @@ Action EPassStolen(Event event, const char[] name, bool dontBroadcast) {
   FormatPlayerNameWithTeam(victim, victimNameTeamFormat);
 
   if (PlayerInTeamGoalieZone(thief)) {
-    ChatEvent("%s{cSteal} defensively stole from{chat} %s!", thiefNameTeamFormat, victimNameTeamFormat);
+    ChatEvent("%s {cSteal}defensively stole {chat}from %s{chat}!", thiefNameTeamFormat, victimNameTeamFormat);
     TagChatSTV("%s defensively stole from %s. t%d", thiefName, victimName, STVTickCount());
   }
   else {
-    ChatEvent("%s{cSteal} stole from{chat} %s!", thiefNameTeamFormat, victimNameTeamFormat);
+    ChatEvent("%s {cSteal}stole {chat}from %s{chat}!", thiefNameTeamFormat, victimNameTeamFormat);
     TagChatSTV("%s stole from %s. t%d", thiefName, victimName, STVTickCount());
   }
   arr_iClientRoundStats[thief].iSteals++;

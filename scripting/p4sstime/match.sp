@@ -284,9 +284,9 @@ Action CReady(int client, int args) {
       if (cvRestart != null) cvRestart.SetInt(5);
     }
   } else {
-    float restartTime = GameRules_GetPropFloat("m_fRestartRoundTime");
+    float restartTime = GameRules_GetPropFloat("m_flRestartRoundTime");
     if (restartTime > GetGameTime()) {
-      GameRules_SetPropFloat("m_fRestartRoundTime", -1.0);
+      GameRules_SetPropFloat("m_flRestartRoundTime", -1.0);
       GameRules_SetProp("m_bAwaitingReadyRestart", 1);
       if (cvRestart != null) cvRestart.SetInt(0);
 
@@ -297,9 +297,9 @@ Action CReady(int client, int args) {
 
   char playerName[MAX_NAME_LENGTH];
   GetClientName(client, playerName, sizeof(playerName));
-  switch (clientTeam) {
-    case TFTeam_Red:  CPrintToChatAll("{teamred}%s {default}changed team state to {steamlightgreen}%s",  playerName, newReadyState ? "Ready" : "Not Ready");
-    case TFTeam_Blue: CPrintToChatAll("{teamblu}%s {default}changed team state to {steamlightgreen}%s", playerName, newReadyState ? "Ready" : "Not Ready");
+  switch ( clientTeam ) {
+    case TFTeam_Red:  CPrintToChatAll("{teamred}%s {default}changed team state to {steamlightgreen}%s", playerName, newReadyState ? "Ready" : "Not Ready" );
+    case TFTeam_Blue: CPrintToChatAll("{teamblu}%s {default}changed team state to {steamlightgreen}%s", playerName, newReadyState ? "Ready" : "Not Ready" );
   }
 
   PH;
