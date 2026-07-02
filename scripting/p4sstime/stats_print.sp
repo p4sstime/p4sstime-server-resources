@@ -23,19 +23,19 @@ Action Timer_DelayedConsolePrint(Handle timer, DataPack dp) {
   PS;
 }
 
-static const char sGoals[]      = "{pfgreen} goals %d";
-static const char sAssists[]    = "{pfgreen} assists %d";
-static const char sSaves[]      = "{pfyellow} saves %d";
-static const char sIntercepts[] = "{pfred} intercepts %d";
-static const char sSteals[]     = "{pforange} steals %d";
-static const char sSplashes[]   = "{pfblue} splashes %d";
+static const char sGoals[]      = "{cScore} goals %d";
+static const char sAssists[]    = "{cAssist} assists %d";
+static const char sSaves[]      = "{cBlock} saves %d";
+static const char sIntercepts[] = "{cIntercept} intercepts %d";
+static const char sSteals[]     = "{cSteal} steals %d";
+static const char sSplashes[]   = "{cNeutral} splashes %d";
 
-static const char sGoalsShort[]      = "{pfgreen} GLS %d";
-static const char sAssistsShort[]    = "{pfgreen} AST %d";
-static const char sSavesShort[]      = "{pfyellow} SAV %d";
-static const char sInterceptsShort[] = "{pfred} INT %d";
-static const char sStealsShort[]     = "{pforange} STL %d";
-static const char sSplashesShort[]   = "{pfblue} SPL %d";
+static const char sGoalsShort[]      = "{cScore} GLS %d";
+static const char sAssistsShort[]    = "{cAssist} AST %d";
+static const char sSavesShort[]      = "{cBlock} SAV %d";
+static const char sInterceptsShort[] = "{cIntercept} INT %d";
+static const char sStealsShort[]     = "{cSteal} STL %d";
+static const char sSplashesShort[]   = "{cNeutral} SPL %d";
 
 Action CChatSummary(int client, int args) {
   int value = 0;
@@ -43,15 +43,15 @@ Action CChatSummary(int client, int args) {
     switch (value) {
       case 0: {
         arr_iClientSettings[client].iSummary = 0;
-        CTagReply(client, "Round summary: {pfred}Off{chat} I Short I Long");
+        CTagReply(client, "Round summary: {cRed}Off{chat} I Long I Short");
       }
       case 1: {
         arr_iClientSettings[client].iSummary = 1;
-        CTagReply(client, "Round summary: Off I {pfblue}Short{chat} I Long");
+        CTagReply(client, "Round summary: Off I {cBlue}Short{chat} I Long");
       }
       case 2: {
         arr_iClientSettings[client].iSummary = 2;
-        CTagReply(client, "Round summary: Off I Short I {pfblue}Long");
+        CTagReply(client, "Round summary: Off I Long I {cBlue}Short");
       }
     }
     SetCookieBool(client, cookieSummary, arr_iClientSettings[client].iSummary);

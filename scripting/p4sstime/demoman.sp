@@ -116,6 +116,6 @@ Action CToggleDemoResist(int client, int args) {
       ApplyDemoResistance(i);
   }
 
-  CTagReply(client, "Demo blast resistance %s", g_bDemoResistEnabled ? "{pfgreen}enabled" : "{pfred}disabled");
+  CTagReply(client, "Demo blast resistance %s", g_bDemoResistEnabled ? "{cGreen}enabled" : "{cRed}disabled");
   PH;
 }

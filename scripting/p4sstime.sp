@@ -235,12 +235,12 @@ stock void SendCountdownToClients(int time) {
     if (!IsValidClient(x) || !arr_iClientSettings[x].bCountdown) continue;
     
     switch (time) {
-      case 10: TagChatClient(x, "{pfred}10 seconds...");
-      case 5:  TagChatClient(x, "{pfyellow}5 seconds...");
-      case 4:  TagChatClient(x, "{pfyellow}4 seconds...");
-      case 3:  TagChatClient(x, "{pfyellow}3 seconds...");
-      case 2:  TagChatClient(x, "{pfgreen}2 seconds...");
-      case 1:  TagChatClient(x, "{pfgreen}1 second...");
+      case 10: TagChatClient(x, "{cGreen}10 seconds...");
+      case 5:  TagChatClient(x, "{cYellow}5 seconds...");
+      case 4:  TagChatClient(x, "{cYellow}4 seconds...");
+      case 3:  TagChatClient(x, "{cYellow}3 seconds...");
+      case 2:  TagChatClient(x, "{cRed}2 seconds...");
+      case 1:  TagChatClient(x, "{cRed}1 second...");
     }
   }
 }
@@ -250,32 +250,32 @@ stock void SendSoundCountdownToClients(const char[] sound) {
     if (!IsValidClient(x) || !arr_iClientSettings[x].bCountdown) continue;
     
     if (StrEqual(sound, "Announcer.RoundBegins10seconds"))
-      TagChatClient(x, "{pfred}10 seconds...");
+      TagChatClient(x, "{cGreen}10 seconds...");
     elif (StrEqual(sound, "Passtime.BallSpawn"))
-      TagChatClient(x, "{pfgreen}Ball has spawned!");
+      TagChatClient(x, "{cGreen}Ball has spawned!");
     if (bHalloweenMode) {
       if (StrEqual(sound, "Merasmus.RoundBegins5seconds"))
-        TagChatClient(x, "{pfyellow}5 seconds...");
+        TagChatClient(x, "{cYellow}5 seconds...");
       elif (StrEqual(sound, "Merasmus.RoundBegins4seconds"))
-        TagChatClient(x, "{pfyellow}4 seconds...");
+        TagChatClient(x, "{cYellow}4 seconds...");
       elif (StrEqual(sound, "Merasmus.RoundBegins3seconds"))
-        TagChatClient(x, "{pfyellow}3 seconds...");
+        TagChatClient(x, "{cYellow}3 seconds...");
       elif (StrEqual(sound, "Merasmus.RoundBegins2seconds"))
-        TagChatClient(x, "{pfgreen}2 seconds...");
+        TagChatClient(x, "{cRed}2 seconds...");
       elif (StrEqual(sound, "Merasmus.RoundBegins1seconds"))
-        TagChatClient(x, "{pfgreen}1 second...");
+        TagChatClient(x, "{cRed}1 second...");
     }
     else {
       if (StrEqual(sound, "Announcer.RoundBegins5seconds"))
-        TagChatClient(x, "{pfyellow}5 seconds...");
+        TagChatClient(x, "{cYellow}5 seconds...");
       elif (StrEqual(sound, "Announcer.RoundBegins4seconds"))
-        TagChatClient(x, "{pfyellow}4 seconds...");
+        TagChatClient(x, "{cYellow}4 seconds...");
       elif (StrEqual(sound, "Announcer.RoundBegins3seconds"))
-        TagChatClient(x, "{pfyellow}3 seconds...");
+        TagChatClient(x, "{cYellow}3 seconds...");
       elif (StrEqual(sound, "Announcer.RoundBegins2seconds"))
-        TagChatClient(x, "{pfgreen}2 seconds...");
+        TagChatClient(x, "{cRed}2 seconds...");
       elif (StrEqual(sound, "Announcer.RoundBegins1seconds"))
-        TagChatClient(x, "{pfgreen}1 second...");
+        TagChatClient(x, "{cRed}1 second...");
     }
   }
 }
@@ -283,7 +283,7 @@ stock void SendSoundCountdownToClients(const char[] sound) {
 stock void ShowJackHud(int client) {
   if (arr_iClientSettings[client].bJackHud) {
     SetHudTextParams(-1.0, 0.22, 3.0, 60, 179, 113, 255);
-    ShowHudText(client, 1, "YOU HAVE THE JACK");
+    ShowHudText(client, 1, "YOU HAVE THE JACK!");
   }
 }
 
@@ -302,7 +302,7 @@ stock void PlayJackSound(int client) {
 
 stock void ShowJackChat(int client, const char[] message) {
   if (arr_iClientSettings[client].bJackChat) {
-    TagChatClient(client, "%s%s", "{pfgreen}", message);
+    TagChatClient(client, "%s%s", "{cGreen}", message);
   }
 }
 
@@ -360,11 +360,11 @@ stock void ShowScoreMessage(int scorer, int assistant, bool panacea, bool winstr
   FormatPlayerNameWithTeam(scorer, playerNameTeamFormatted);
   
   if (panacea && TF2_GetPlayerClass(scorer) != TFClass_Medic) {
-    ChatEvent("%s{pfgreen} scored a {pfgreen}Panacea!", playerNameTeamFormatted);
+    ChatEvent("%s{cScore} scored a {cScore}Panacea!", playerNameTeamFormatted);
     TagChatSTV("%s scored a Panacea. t%d", playerName, STVTickCount());
   }
   elif (winstrat) {
-    ChatEvent("%s{pfgreen} scored a {pfgreen}win strat!", playerNameTeamFormatted);
+    ChatEvent("%s{cScore} scored a {cScore}win strat!", playerNameTeamFormatted);
     TagChatSTV("%s scored a win strat. t%d", playerName, STVTickCount());
   }
   elif (deathbomb) {
@@ -372,20 +372,20 @@ stock void ShowScoreMessage(int scorer, int assistant, bool panacea, bool winstr
     char deathBomberName[MAX_NAME_LENGTH];
     GetClientName(deathBomber, deathBomberName, sizeof(deathBomberName));
     FormatPlayerNameWithTeam(deathBomber, playerNameTeamFormatted);
-    ChatEvent("%s{pfgreen} scored a {pfgreen}deathbomb!", playerNameTeamFormatted);
+    ChatEvent("%s{cScore} scored a {cScore}deathbomb!", playerNameTeamFormatted);
     TagChatSTV("%s scored a deathbomb. t%d", deathBomberName, STVTickCount());
   }
   elif (dist > 1600) {
-    ChatEvent("%s{pfgreen} scored from a distance of %.0fhu!", playerNameTeamFormatted, dist);
+    ChatEvent("%s {cScore}scored {chat}from a distance of %.0fhu!", playerNameTeamFormatted, dist);
     TagChatSTV("%s scored from distance of %.0fhu. t%d", playerName, dist, STVTickCount());
   }
   elif (assistant > 0) {
     FormatPlayerNameWithTeam(assistant, assistantNameTeamFormatted);
-    ChatEvent("%s{pfgreen} scored {chat}assisted by %s!", playerNameTeamFormatted, assistantNameTeamFormatted);
+    ChatEvent("%s {cScore}scored {chat}assisted by %s!", playerNameTeamFormatted, assistantNameTeamFormatted);
     TagChatSTV("%s scored assisted by %s. t%d", playerName, assistantName, STVTickCount());
   }
   else {
-    ChatEvent("%s{pfgreen} scored!", playerNameTeamFormatted);
+    ChatEvent("%s {cScore}scored!", playerNameTeamFormatted);
     TagChatSTV("%s scored. t%d", playerName, STVTickCount());
   }
 }
@@ -543,20 +543,28 @@ public void OnPluginStart() {
   AC("steamlightgreen", 0x9DC250); // #9DC250
 
   AC("plugintag",       0x96BD63); // #96BD63
-  AC("warning",         0xECCD19); // #eccd19
-  AC("error",           0xd64843); // #d64843
+  AC("warning",         0xECCD19); // #ECCD19
+  AC("error",           0xd64843); // #D64843
 
-  AC("chat",            0xBBBBBB); // #bbbbbb
-  AC("teamblu",         0x99CCFF); // #99ccff
-  AC("teamred",         0xFF3F35); // #ff3f35
+  AC("chat",            0xBBBBBB); // #BBBBBB
+  AC("teamblu",         0x99CCFF); // #99CCFF
+  AC("teamred",         0xFF3F35); // #FF3F35
   
-  AC("pfblue",          0x438CD6); // #438cd6
-  AC("pfgreen",         0x3CB371); // #3CB371 (also used in ShowJackHud and HideJackHud as an RGBA value, it needs to be manually updated there for now when changing this)
-  AC("pfteal",          0x008B8B); // #008B8B
-  AC("pfred",           0xD64843); // #d64843
-  AC("pfmagenta",       0xA946C7); // #a946c7
-  AC("pforange",        0xDD8125); // #dd8125
-  AC("pfyellow",        0xECCD19); // #eccd19
+  AC("cRed",           0xD64843); // #D64843
+  AC("cGreen",         0x3CB371); // #3CB371 (also used in ShowJackHud and HideJackHud as an RGBA value, it needs to be manually updated there for now when changing this)
+  AC("cBlue",          0x438CD6); // #438CD6
+  AC("cTeal",          0x008B8B); // #008B8B
+  AC("cMagenta",       0xA946C7); // #A946C7
+  AC("cOrange",        0xDD8125); // #DD8125
+  AC("cYellow",        0xECCD19); // #ECCD19
+  
+  // Game event specific colors
+  AC("cScore",         0x3CB371); // #3CB371
+  AC("cAssist",        0x008B8B); // #008B8B
+  AC("cBlock",         0xECCD19); // #ECCD19
+  AC("cNeutral",       0xDD8125); // #DD8125
+  AC("cIntercept",     0xA946C7); // #A946C7
+  AC("cSteal",         0xD64843); // #D64843
 
   // ConVars
   bFixStocks =             CC("sm_pt_fix_stocks",              "1",    "Disable equipping shotgun, stickies, and needles; the allowlist can't block stock weapons.",       NOTIFY);
@@ -853,7 +861,7 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
         GetClientName(attacker, playerName, sizeof(playerName));
         FormatPlayerNameWithTeam(attacker, playerNameTeam);
         FormatPlayerNameWithTeam(iPlyWhoGotJack, throwerNameTeam);
-        ChatEvent("%s {pfyellow}blocked %s {chat}from scoring with a {pfteal}splash{chat}!", playerNameTeam, throwerNameTeam);
+        ChatEvent("%s {cBlock}blocked %s {chat}from scoring with a {cNeutral}splash{chat}!", playerNameTeam, throwerNameTeam);
         TagChatSTV("%s blocked %N from scoring with a splash. t%d", playerName, iPlyWhoGotJack, STVTickCount());
         arr_iClientRoundStats[attacker].iSplashes++;
       }
@@ -868,7 +876,7 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
         GetClientName(attacker, playerName, sizeof(playerName));
         FormatPlayerNameWithTeam(attacker, playerNameTeam);
         FormatPlayerNameWithTeam(iPlyWhoGotJack, throwerNameTeam);
-        ChatEvent("%s {pfyellow}blocked %s {chat}from scoring with a {pfteal}splash{chat}!", playerNameTeam, throwerNameTeam);
+        ChatEvent("%s {cBlock}blocked %s {chat}from scoring with a {cNeutral}splash{chat}!", playerNameTeam, throwerNameTeam);
         TagChatSTV("%s blocked %N from scoring with a splash. t%d", playerName, iPlyWhoGotJack, STVTickCount());
         arr_iClientRoundStats[attacker].iSplashes++;
       }
@@ -911,7 +919,7 @@ void MedicArrowTouchedSomething(int arrow, int other) {
 
     char medicAttackerNameTeamFmt[MAX_TEAMFORMAT_NAME_LENGTH];
     FormatPlayerNameWithTeam(eiMedicAttacker, medicAttackerNameTeamFmt);
-    TagChatAllPlayers("%s {pfyellow}directed {chat}the ball with an {pfteal}arrow{chat}!", medicAttackerNameTeamFmt);
+    TagChatAllPlayers("%s {cBlock}directed {chat}the ball with an {cNeutral}arrow{chat}!", medicAttackerNameTeamFmt);
   }
   VerboseLog("medic arrow from %d touched %s i %d", eiMedicAttacker, classname, other);
 }
@@ -1157,7 +1165,7 @@ Action EPassGet(Event event, const char[] name, bool dontBroadcast) {
         SDKHooks_TakeDamage(iPlyWhoGotJack, iPlyWhoGotJack, iPlyWhoGotJack, 500.0);
         char winstratterName[MAX_NAME_LENGTH];
         GetClientName(iPlyWhoGotJack, winstratterName, sizeof(winstratterName));
-        TagChatAllPlayers("{chat}%s %stried to {pfgreen}win strat.", winstratterName, "{pfgreen}");
+        TagChatAllPlayers("{chat}%s {cScore}tried to {cScore}win strat.", winstratterName);
       }
     }
   }
@@ -1204,7 +1212,7 @@ Action EPassCaught(Handle event, const char[] name, bool dontBroadcast) {
   if (bChatEventsFun.BoolValue && bChatEvents.BoolValue) {
     if (GetClientTeam(thrower) == GetClientTeam(catcher)) {
       if (PlayerInEnemyGoalieZone(catcher)) {
-        ChatEvent("%s {pfyellow}blocked *their teammate* %s %sfrom scoring!", catcherNameTeamFormat, throwerNameTeamFormat, "{chat}");
+        ChatEvent("%s {cBlock}blocked *their teammate* %s %sfrom scoring!", catcherNameTeamFormat, throwerNameTeamFormat, "{chat}");
       }
     }
   }
@@ -1214,18 +1222,18 @@ Action EPassCaught(Handle event, const char[] name, bool dontBroadcast) {
     if (PlayerInTeamGoalieZone(catcher)) {
       bSave = true;
       arr_iClientRoundStats[catcher].iSaves++;
-      ChatEventToClients("%s {pfyellow}blocked %s {chat}from scoring!", catcherNameTeamFormat, throwerNameTeamFormat);
+      ChatEventToClients("%s {cBlock}blocked %s {chat}from scoring!", catcherNameTeamFormat, throwerNameTeamFormat);
       TagChatSTV("%s blocked %s from scoring. t%d", catcherName, throwerName, STVTickCount());
     }
     else {
       arr_iClientRoundStats[catcher].iIntercepts++;
-      ChatEventToClients("%s {pfmagenta}intercepted %s!", catcherNameTeamFormat, throwerNameTeamFormat);
+      ChatEventToClients("%s {cIntercept}intercepted %s!", catcherNameTeamFormat, throwerNameTeamFormat);
       TagChatSTV("%s intercepted %s. t%d", catcherName, throwerName, STVTickCount());
     }
   }
   // if on same team and catcher is not locked onto for a pass, also 200 units above ground at least (to ignore just normal non-lock passes)
   if (TF2_GetClientTeam(thrower) == TF2_GetClientTeam(catcher) && entPassTarget != catcher && !(GetEntityFlags(catcher) & FL_ONGROUND) && DistanceAboveGround(catcher) > 200) { 
-    ChatEventToClients("%s {pfyellow}handoff to %s!", throwerNameTeamFormat, catcherNameTeamFormat);
+    ChatEventToClients("%s {cAssist}handoff to %s!", throwerNameTeamFormat, catcherNameTeamFormat);
     TagChatSTV("%s handoff to %s. t%d", throwerName, catcherName, STVTickCount());
     ibHandoffCheck = true;
     arr_iClientRoundStats[thrower].iHandoffs++;
@@ -1272,11 +1280,11 @@ Action EPassStolen(Event event, const char[] name, bool dontBroadcast) {
   FormatPlayerNameWithTeam(victim, victimNameTeamFormat);
 
   if (PlayerInTeamGoalieZone(thief)) {
-    ChatEvent("%s{pforange} defensively stole from{chat} %s!", thiefNameTeamFormat, victimNameTeamFormat);
+    ChatEvent("%s{cSteal} defensively stole from{chat} %s!", thiefNameTeamFormat, victimNameTeamFormat);
     TagChatSTV("%s defensively stole from %s. t%d", thiefName, victimName, STVTickCount());
   }
   else {
-    ChatEvent("%s{pforange} stole from{chat} %s!", thiefNameTeamFormat, victimNameTeamFormat);
+    ChatEvent("%s{cSteal} stole from{chat} %s!", thiefNameTeamFormat, victimNameTeamFormat);
     TagChatSTV("%s stole from %s. t%d", thiefName, victimName, STVTickCount());
   }
   arr_iClientRoundStats[thief].iSteals++;
