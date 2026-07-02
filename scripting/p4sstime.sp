@@ -559,22 +559,22 @@ public void OnPluginStart() {
   AC("pfyellow",        0xECCD19); // #eccd19
 
   // ConVars
-  bFixStocks =              CC("sm_pt_fix_stocks",              "1",    "Disable equipping shotgun, stickies, and needles; the allowlist can't block stock weapons.",       NOTIFY);
-  bFixRespawnBypass =       CC("sm_pt_fix_respawn_bypass",      "1",    "Disable switching classes while dead to respawn immediately.",                                     NOTIFY);
-  bFixJackCollision =       CC("sm_pt_fix_jack_collision",      "1",    "Disable jack collision on ammo packs and weapons.",                                                NOTIFY);
-  bFixBlur =                CC("sm_pt_fix_blur",                "1",    "Disable blurry screen overlay when intercepting or stealing.",                                     NOTIFY);
-  bChatEvents =             CC("sm_pt_chat_events",             "1",    "Enable printing of passtime events to chat both during and after games. Does not affect logging.", NOTIFY);
-  bChatEventsFun =          CC("sm_pt_chat_events_fun",         "0",    "If sm_pt_print_events is 1, enable printing additional fun stats.",                                NOTIFY);
-  bWinstratKills =          CC("sm_pt_kill_winstrats",          "0",    "Enable killing winstratters and printing \"tried to winstrat\" in chat.",                          NOTIFY);
-  bVerboseLogs =            CC("sm_pt_logs_verbose",            "0",    "Enable printing additional information to logs.");
-  bMedicSplash =            CC("sm_pt_medic_splash",            "1",    "Enable medic arrows neutralizing the jack.",                                                       NOTIFY);
-  bMedicSplashPush =        CC("sm_pt_medic_splash_push",       "1",    "If sm_pt_medic_splash is 1, enable crossbow push on the jack.",                                    NOTIFY);
-  bResupply =               CC("sm_pt_resupply_enabled",        "1",    "Enable instant resupply.",                                                                         NOTIFY);
+  bFixStocks =             CC("sm_pt_fix_stocks",              "1",    "Disable equipping shotgun, stickies, and needles; the allowlist can't block stock weapons.",       NOTIFY);
+  bFixRespawnBypass =      CC("sm_pt_fix_respawn_bypass",      "1",    "Disable switching classes while dead to respawn immediately.",                                     NOTIFY);
+  bFixJackCollision =      CC("sm_pt_fix_jack_collision",      "1",    "Disable jack collision on ammo packs and weapons.",                                                NOTIFY);
+  bFixBlur =               CC("sm_pt_fix_blur",                "1",    "Disable blurry screen overlay when intercepting or stealing.",                                     NOTIFY);
+  bChatEvents =            CC("sm_pt_chat_events",             "1",    "Enable printing of passtime events to chat both during and after games. Does not affect logging.", NOTIFY);
+  bChatEventsFun =         CC("sm_pt_chat_events_fun",         "0",    "If sm_pt_print_events is 1, enable printing additional fun stats.",                                NOTIFY);
+  bWinstratKills =         CC("sm_pt_kill_winstrats",          "0",    "Enable killing winstratters and printing \"tried to winstrat\" in chat.",                          NOTIFY);
+  bVerboseLogs =           CC("sm_pt_logs_verbose",            "0",    "Enable printing additional information to logs.");
+  bMedicSplash =           CC("sm_pt_medic_splash",            "1",    "Enable medic arrows neutralizing the jack.",                                                       NOTIFY);
+  bMedicSplashPush =       CC("sm_pt_medic_splash_push",       "1",    "If sm_pt_medic_splash is 1, enable crossbow push on the jack.",                                    NOTIFY);
+  bResupply =              CC("sm_pt_resupply_enabled",        "1",    "Enable instant resupply.",                                                                         NOTIFY);
   fResupplyCooldown =      CC("sm_pt_resupply_cooldown",       "0.5",  "Set the resupply cooldown duration in seconds (also used as max decay cap).",                      NOTIFY);
   fResupplyDecayRate =     CC("sm_pt_resupply_decay_rate",     "0.15", "Set the resupply decay rate (seconds of decay recovered per second).",                             NOTIFY);
   fResupplyDecayAddition = CC("sm_pt_resupply_decay_addition", "0.2",  "Set the resupply decay addition per successful resupply.",                                         NOTIFY);
   fGoalRegeneration =      CC("sm_pt_goal_regeneration",       "0",    "Set the amount of health regeneration every 500ms while in the goal zone.",                        NOTIFY);
-  bPractice =               CC("sm_pt_practice",                "0",    "Enable practice mode. When the round timer reaches 5 minutes, add 5 minutes to the timer.",        NOTIFY, true, 0.0, true, 1.0);
+  bPractice =              CC("sm_pt_practice",                "0",    "Enable practice mode. When the round timer reaches 5 minutes, add 5 minutes to the timer.",        NOTIFY, true, 0.0, true, 1.0);
 
   // Demoman boots attribute ConVars
   cvBootsChargeTurn = CC("sm_pt_boots_charge_turn", "3.0",  "Charge turn control multiplier for Demoman boots",     NOTIFY);
@@ -963,7 +963,6 @@ Action EPlayersCanMove(Event event, const char[] name, bool dontBroadcast) {
 }
 
 Action ETeamWin(Event event, const char[] name, bool dontBroadcast) {
-  if (!bChatEvents.BoolValue) PH;
   CreateTimer(0.5, Timer_DisplayStats);
   iPlyWhoGotJack = 0;  // reset this because it's a good idea. doesn't actually fix anything but this shouldn't carry over between rounds
   PH;

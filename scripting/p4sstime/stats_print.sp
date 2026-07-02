@@ -51,7 +51,7 @@ Action CChatSummary(int client, int args) {
       }
       case 2: {
         arr_iClientSettings[client].iSummary = 2;
-        CTagReply(client, "Round summary: Off I Short I {pfblue}Long{chat}");
+        CTagReply(client, "Round summary: Off I Short I {pfblue}Long");
       }
     }
     SetCookieBool(client, cookieSummary, arr_iClientSettings[client].iSummary);
@@ -201,7 +201,7 @@ Action Timer_DisplayStats(Handle timer) {
       }
     }
   
-    TagChatClient(x, "{red_team}RED {pfgreen}possession: %.1f%%, {blu_team}BLU {pfgreen}possession: %.1f%%", redBallPossessionPercent, bluBallPossessionPercent);
+    TagChatClient(x, "Possession: {teamred}RED %.1f%%{chat}, {teamblu}BLU %.1f%%", redBallPossessionPercent, bluBallPossessionPercent);
     if (isStv) {
       TagChatSTV("BLU possession time in ticks: %d", iRedBallTime);
       TagChatSTV("RED possession time in ticks: %d", iBluBallTime);
@@ -319,5 +319,5 @@ static void AssembleColoredStatsString(char[] buf, int maxLength, int client, bo
     Format(buffer_sSplashes,   sizeof(buffer_sSplashes),   sSplashes,        arr_iClientRoundStats[client].iSplashes);
   }
 
-  Format(buf, maxLength, "%s,%s,%s,%s,%s,%s", sGoals, sAssists, sSaves, sIntercepts, sSteals, sSplashes);
+  Format(buf, maxLength, "%s,%s,%s,%s,%s,%s", buffer_sGoals, buffer_sAssists, buffer_sSaves, buffer_sIntercepts, buffer_sSteals, buffer_sSplashes);
 }
