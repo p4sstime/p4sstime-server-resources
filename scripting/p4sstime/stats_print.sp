@@ -346,12 +346,26 @@ void BuildStatsString(char[] buf, int maxLength, int goals, int assists, int def
   }
 
   if (format == 2) {
-    Format(buf, maxLength, "%s{chat}·%s %s{chat}·%s %s{chat}·%s",
-      buffer_sGoals, buffer_sAssists, buffer_sDefenses, buffer_sSplashes, buffer_sIntercepts, buffer_sSteals);
+    Format(buf, maxLength,
+      "%s{chat}·%s %s{chat}·%s %s{chat}·%s",
+      buffer_sGoals,
+      buffer_sAssists,
+      buffer_sDefenses,
+      buffer_sSplashes,
+      buffer_sIntercepts,
+      buffer_sSteals
+    );
   }
   else {
-    Format(buf, maxLength, "%s {chat}· %s {chat}· %s {chat}· %s {chat}· %s {chat}· %s",
-      buffer_sGoals, buffer_sAssists, buffer_sDefenses, buffer_sIntercepts, buffer_sSteals, buffer_sSplashes);
+    Format(buf, maxLength,
+      "%s {chat}· %s {chat}· %s {chat}· %s {chat}· %s {chat}· %s",
+      buffer_sGoals,
+      buffer_sAssists,
+      buffer_sDefenses,
+      buffer_sSplashes,
+      buffer_sIntercepts,
+      buffer_sSteals
+    );
   }
 }
 

@@ -138,7 +138,6 @@ int SummaryMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
     else {
       int value = StringToInt(info);
       arr_iClientSettings[param1].iSummary = value;
-      CTagReply(param1, g_sSummaryStatuses[value]);
       SetCookieBool(param1, ck_iSummary, arr_iClientSettings[param1].iSummary);
       ShowSummaryMenu(param1);
     }
