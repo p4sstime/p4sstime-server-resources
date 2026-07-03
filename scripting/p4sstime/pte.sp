@@ -72,8 +72,8 @@ Handle    g_hCookieInfiniteAmmo;
 Handle    g_hCookieImmunity;
 
 // ConVars
-ConVar    g_cvFOVMin;
-ConVar    g_cvFOVMax;
+ConVar    g_cvFovMin;
+ConVar    g_cvFovMax;
 
 // Demoman boots attribute ConVars
 ConVar    g_cvBootsChargeTurn;
@@ -206,8 +206,8 @@ public OnPluginStart() {
     g_hCookieImmunity     = RegClientCookie( "sm_immunity_cookie", "Immunity setting", CookieAccess_Private );
 
     // Console variables
-    g_cvFOVMin            = CreateConVar( "sm_fov_min",      "70",  "Minimum client field of view", _, 1, 1.0, 1, 175.0 );
-    g_cvFOVMax            = CreateConVar( "sm_fov_max",      "120", "Maximum client field of view", _, 1, 1.0, 1, 175.0 );
+    g_cvFovMin            = CreateConVar( "sm_fov_min",      "70",  "Minimum client field of view", _, 1, 1.0, 1, 175.0 );
+    g_cvFovMax            = CreateConVar( "sm_fov_max",      "120", "Maximum client field of view", _, 1, 1.0, 1, 175.0 );
     g_cvRespawnTime       = CreateConVar( "sm_respawn_time", "0.0", "Player respawn delay in seconds", NOTIFY );
 
     // Demoman boots attribute ConVars
@@ -457,8 +457,8 @@ NEW_CMD( CSetFOV ) {
     if ( args != 1 ) END_CMD( "Usage: sm_fov <fov>" );
 
     int fov = GetCmdArgInt( 1 ),
-        min = GetConVarInt( g_cvFOVMin ),
-        max = GetConVarInt( g_cvFOVMax );
+        min = GetConVarInt( g_cvFovMin ),
+        max = GetConVarInt( g_cvFovMax );
 
     if ( fov == 0 ) {
         QueryClientConVar( client, "fov_desired", OnFOVQueried );
@@ -1354,8 +1354,8 @@ bool GetFOVCookie( int client ) {
     char cookie[ 4 ];
     GetClientCookie( client, g_hCookieFOV, cookie, len( cookie ) );
     int fov = StringToInt( cookie ),
-        min = GetConVarInt( g_cvFOVMin ),
-        max = GetConVarInt( g_cvFOVMax );
+        min = GetConVarInt( g_cvFovMin ),
+        max = GetConVarInt( g_cvFovMax );
 
     if ( fov < min || fov > max ) return false;
 

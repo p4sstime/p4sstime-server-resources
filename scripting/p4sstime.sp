@@ -29,7 +29,7 @@
 #define HEO     HookEntityOutput
 #define RC      RegConsoleCmd
 #define RA      RegAdminCmd
-#define RCC     RegClientCookie
+#define                    RCC     RegClientCookie
 #define AC      CAddColor
 #define CC      CreateConVar
 #define EvI     GetEventInt
@@ -181,8 +181,8 @@ bool g_bMirrorSystemInitialized = false;
 int g_iCachedTimerEntity = -1;
 
 // FOV
-ConVar cvFOVMin;
-ConVar cvFOVMax;
+ConVar cvFovMin;
+ConVar cvFovMax;
 Cookie cookieFOV;
 bool g_bSteamOnline = true;
 bool g_bBackupFOVDB;
@@ -458,7 +458,7 @@ stock void LogPassBallStolen(int thief, int victim, bool steal2save) {
               user2position[0], user2position[1], user2position[2]);
 }
 
-// Modules
+// Modules (loaded here cause the methods above are dependent on them)
 #include "p4sstime/stocks.sp"
 #include "p4sstime/snapshot.sp"
 #include "p4sstime/logs.sp"
@@ -496,14 +496,14 @@ public void OnPluginStart() {
   g_hMirrorSpawnPoints[1][1] = new ArrayList();  // BLU right
 
   // Cookies
-  ck_iCountdown = RCC("p4ssClientCountdownCaption",  "p4sstime's client setting (1/0) for captions for JACK spawn timer", CookieAccess_Public);
-  ck_bJackHud =    RCC("p4ssClientJACKPickupHudText", "p4sstime's client setting (1/0) for HUD text when picking up JACK", CookieAccess_Public);
-  ck_bJackChat =   RCC("p4ssClientJACKPickupChatMsg", "p4sstime's client setting (1/0) for chat msg when picking up JACK", CookieAccess_Public);
-  ck_bJackSound =  RCC("p4ssClientJACKPickupSound",   "p4sstime's client setting (1/0) for sound when picking up JACK",    CookieAccess_Public);
-  ck_iSummary =          RCC("p4ssClientSummary",           "p4sstime's client setting (0/1/2) for EoR summaries",               CookieAccess_Public);
-  cookieFOV =              RCC("p4ssClientFOV",               "p4sstime's client FOV setting",                                     CookieAccess_Private);
-  cookieImmunity     =     RCC("p4ssClientImmunity",          "p4sstime's immunity setting",                                       CookieAccess_Private);
-  cookieInfiniteAmmo =     RCC("p4ssClientInfiniteAmmo",      "p4sstime's infinite ammo setting",                                  CookieAccess_Private);
+  ck_iCountdown =      RCC("p4ssClientCountdownCaption",  "p4sstime's client setting (1/0) for captions for JACK spawn timer", CookieAccess_Public);
+  ck_bJackHud =        RCC("p4ssClientJACKPickupHudText", "p4sstime's client setting (1/0) for HUD text when picking up JACK", CookieAccess_Public);
+  ck_bJackChat =       RCC("p4ssClientJACKPickupChatMsg", "p4sstime's client setting (1/0) for chat msg when picking up JACK", CookieAccess_Public);
+  ck_bJackSound =      RCC("p4ssClientJACKPickupSound",   "p4sstime's client setting (1/0) for sound when picking up JACK",    CookieAccess_Public);
+  ck_iSummary =        RCC("p4ssClientSummary",           "p4sstime's client setting (0/1/2) for EoR summaries",               CookieAccess_Public);
+  cookieFOV =          RCC("p4ssClientFOV",               "p4sstime's client FOV setting",                                     CookieAccess_Private);
+  cookieImmunity =     RCC("p4ssClientImmunity",          "p4sstime's immunity setting",                                       CookieAccess_Private);
+  cookieInfiniteAmmo = RCC("p4ssClientInfiniteAmmo",      "p4sstime's infinite ammo setting",                                  CookieAccess_Private);
 
   // Client commands
   RC("sm_pt_menu",         CMenu,            "Open the PASS Time menu");
@@ -550,21 +550,21 @@ public void OnPluginStart() {
   AC("teamblu",         0x99CCFF); // #99CCFF
   AC("teamred",         0xFF3F35); // #FF3F35
   
-  AC("cRed",           0xD64843); // #D64843
-  AC("cGreen",         0x3CB371); // #3CB371 (also used in ShowJackHud and HideJackHud as an RGBA value, it needs to be manually updated there for now when changing this)
-  AC("cBlue",          0x438CD6); // #438CD6
-  AC("cTeal",          0x008B8B); // #008B8B
-  AC("cMagenta",       0xA946C7); // #A946C7
-  AC("cOrange",        0xDD8125); // #DD8125
-  AC("cYellow",        0xECCD19); // #ECCD19
+  AC("cRed",            0xD64843); // #D64843
+  AC("cGreen",          0x3CB371); // #3CB371 (also used in ShowJackHud and HideJackHud, manually updated)
+  AC("cBlue",           0x438CD6); // #438CD6
+  AC("cTeal",           0x008B8B); // #008B8B
+  AC("cMagenta",        0xA946C7); // #A946C7
+  AC("cOrange",         0xDD8125); // #DD8125
+  AC("cYellow",         0xECCD19); // #ECCD19
   
   // Game event specific colors
-  AC("cScore",         0x3CB371); // #3CB371
-  AC("cAssist",        0x008B8B); // #008B8B
-  AC("cBlock",         0xECCD19); // #ECCD19
-  AC("cNeutral",       0xDD8125); // #DD8125
-  AC("cIntercept",     0xA946C7); // #A946C7
-  AC("cSteal",         0xD64843); // #D64843
+  AC("cScore",          0x3CB371); // #3CB371
+  AC("cAssist",         0x008B8B); // #008B8B
+  AC("cBlock",          0xECCD19); // #ECCD19
+  AC("cNeutral",        0xDD8125); // #DD8125
+  AC("cIntercept",      0xA946C7); // #A946C7
+  AC("cSteal",          0xD64843); // #D64843
 
   // ConVars
   bFixStocks =             CC("sm_pt_fix_stocks",              "1",    "Disable equipping shotgun, stickies, and needles; the allowlist can't block stock weapons.",       NOTIFY);
@@ -586,13 +586,13 @@ public void OnPluginStart() {
 
   // Demoman boots attribute ConVars
   cvBootsChargeTurn = CC("sm_pt_boots_charge_turn", "3.0",  "Charge turn control multiplier for Demoman boots",     NOTIFY);
-  cvBootsMaxHealth  = CC("sm_pt_boots_max_health",  "25.0", "Max health additive bonus for Demoman boots",          NOTIFY);
+  cvBootsMaxHealth =  CC("sm_pt_boots_max_health",  "25.0", "Max health additive bonus for Demoman boots",          NOTIFY);
   cvBootsKillRefill = CC("sm_pt_boots_kill_refill", "0.25", "Kill refills meter value for Demoman boots",           NOTIFY);
-  cvBootsMoveSpeed  = CC("sm_pt_boots_move_speed",  "1.10", "Move speed bonus (shield required) for Demoman boots", NOTIFY);
+  cvBootsMoveSpeed =  CC("sm_pt_boots_move_speed",  "1.10", "Move speed bonus (shield required) for Demoman boots", NOTIFY);
 
   // FOV ConVars
-  cvFOVMin = CC("sm_pt_fov_min", "70",  "Minimum client field of view", _, true, 1.0, true, 175.0);
-  cvFOVMax = CC("sm_pt_fov_max", "120", "Maximum client field of view", _, true, 1.0, true, 175.0);
+  cvFovMin = CC("sm_pt_fov_min", "70",  "Minimum client field of view", _, true, 1.0, true, 175.0);
+  cvFovMax = CC("sm_pt_fov_max", "120", "Maximum client field of view", _, true, 1.0, true, 175.0);
 
   // trikzEnable =      CC("sm_pt_trikz",                 "0", "Set 'trikz' mode. 1 adds friendly knockback for airshots, 2 adds friendly knockback for splash damage, 3 adds friendly knockback for everywhere", NOTIFY, true, 0.0, true, 3.0);
   // trikzProjCollide = CC("sm_pt_trikz_projcollide",     "2", "Manually set team projectile collision behavior when trikz is on. 2 always collides, 1 will cause your projectiles to phase through if you are too close (default game behavior), 0 will cause them to never collide.", 0, true, 0.0, true, 2.0);

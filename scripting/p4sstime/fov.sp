@@ -9,8 +9,8 @@ bool GetFOVCookie(int client) {
   char cookie[4];
   GetClientCookie(client, cookieFOV, cookie, sizeof(cookie));
   int fov = StringToInt(cookie);
-  int minFov = cvFOVMin.IntValue;
-  int maxFov = cvFOVMax.IntValue;
+  int minFov = cvFovMin.IntValue;
+  int maxFov = cvFovMax.IntValue;
 
   if (fov < minFov || fov > maxFov) return false;
 
@@ -75,8 +75,8 @@ Action CSetFOV(int client, int args) {
   }
 
   int fov = GetCmdArgInt(1);
-  int minFov = cvFOVMin.IntValue;
-  int maxFov = cvFOVMax.IntValue;
+  int minFov = cvFovMin.IntValue;
+  int maxFov = cvFovMax.IntValue;
 
   if (fov == 0) {
     QueryClientConVar(client, "fov_desired", OnFOVQueried);
