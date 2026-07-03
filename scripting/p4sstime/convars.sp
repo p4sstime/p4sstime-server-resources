@@ -6,7 +6,7 @@ Action %1(int client, int args) {\
   bool value;\
   if (GetCmdArgIntEx(1, value)) {\
     arr_iClientPrefs[client].%2 = value;\
-    SetCookieBool(client, %3, arr_iClientPrefs[client].%2);\
+    SetBoolCookie(client, %3, arr_iClientPrefs[client].%2);\
     CTagReply(client, "%4: %%s", arr_iClientPrefs[client].%2 ? "ON" : "OFF");\
   } else CTagReply(client, "Invalid argument, use either 1 or 0");\
   PH;\

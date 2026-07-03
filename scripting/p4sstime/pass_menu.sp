@@ -1,45 +1,13 @@
 // This file relates to all menu features for player-specific settings and will contain the functions for them
-bool GetCookieBool(int client, Cookie cookie) {
-  char value[11];
-  cookie.Get(client, value, sizeof(value));
-
-  if (!value[0])
-    return false;
-
-  // if it's not empty, it's true unless explicitly "0"
-  return !StrEqual(value, "0");
-}
-
-void SetCookieBool(int client, Cookie cookie, bool state) {
-  if (AreClientCookiesCached(client)) {
-    char value[11];
-    FormatEx(value, sizeof(value), "%d", state);
-    cookie.Set(client, value);
-  }
-}
 
 public OnClientCookiesCached(int client) {
-  arr_iClientPrefs[client].bCountdown = GetCookieBool(client, ck_iCountdown);
-  arr_iClientPrefs[client].bJackHud =   GetCookieBool(client, ck_bJackHud);
-  arr_iClientPrefs[client].bJackChat =  GetCookieBool(client, ck_bJackChat);
-  arr_iClientPrefs[client].bJackSound = GetCookieBool(client, ck_bJackSound);
-  GetStatsCookie(client);
-  GetAmmoCookie(client);
-  GetImmunityCookie(client);
-}
-
-void GetStatsCookie(int client) {
-  char value[2];
-  GetClientCookie(client, ck_iStats, value, sizeof(value));
-  if (strlen(value) == 0) return;
-  arr_iClientPrefs[client].iStats = StringToInt(value);
-}
-
-void SetStatsCookie(int client) {
-  if (!AreClientCookiesCached(client)) return;
-  char value[2];
-  IntToString(arr_iClientPrefs[client].iStats, value, sizeof(value));
-  SetClientCookie(client, ck_iStats, value);
+  GetBoolCookie(client, ck_iCountdown, arr_iClientPrefs[client].bCountdown);
+  GetBoolCookie(client, ck_bJackHud, arr_iClientPrefs[client].bJackHud);
+  GetBoolCookie(client, ck_bJackChat, arr_iClientPrefs[client].bJackChat);
+  GetBoolCookie(client, ck_bJackSound, arr_iClientPrefs[client].bJackSound);
+  GetIntCookie(client, ck_iStats, arr_iClientPrefs[client].iStats);
+  GetBoolCookie(client, cookieInfiniteAmmo, g_bInfiniteAmmo[client]);
+  GetBoolCookie(client, cookieImmunity, g_bImmunity[client]);
 }
 
 Action CMenu(int client, int args) {
@@ -73,7 +41,7 @@ void ShowPassMenu(int client) {
 #define TOGGLE_SETTING(%1,%2,%3) \
   if (StrEqual(info, %1)) { \
     arr_iClientPrefs[param1].%2 = !arr_iClientPrefs[param1].%2; \
-    SetCookieBool(param1, %3, arr_iClientPrefs[param1].%2); \
+    SetBoolCookie(param1, %3, arr_iClientPrefs[param1].%2); \
     ShowPassMenu(param1); \
   }
 
@@ -131,7 +99,7 @@ int StatsMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
     else {
       int value = StringToInt(info);
       arr_iClientPrefs[param1].iStats = value;
-      SetStatsCookie(param1);
+      SetIntCookie(param1, ck_iStats, arr_iClientPrefs[param1].iStats);
       ShowStatsMenu(param1);
     }
   }

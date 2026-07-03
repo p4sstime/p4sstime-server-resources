@@ -67,7 +67,7 @@ Action CChatStats(int client, int args) {
     PH;
   }
   
-  SetStatsCookie(client);
+  SetIntCookie(client, ck_iStats, arr_iClientPrefs[client].iStats);
   PH;
 }
 

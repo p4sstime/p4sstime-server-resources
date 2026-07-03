@@ -170,7 +170,7 @@ public OnPluginStart() {
     ACS( "sm_debug_roundtime",   "sm_drt",  CDebugRoundTime,   GENERIC, "Debug: print team_round_timer info" );
     ACS( "sm_enable_resupply",   "sm_res",  CToggleResupply,   GENERIC, "Toggle resupply functionality" );
     ACS( "sm_enable_respawn",    "sm_resp", CToggleRespawn,    GENERIC, "Toggle instant respawn" );
-    ACS( "sm_enable_immunity",   "sm_imm",  CToggleImmunity,   GENERIC, "Toggle immunity and infinite ammo" );
+    ACS( "sm_enable_extras",     "sm_ex",   CToggleExtras,     GENERIC, "Toggle extra features (immunity, infinite ammo, etc.)" );
     ACS( "sm_enable_saveload",   "sm_sl",   CToggleSave,       GENERIC, "Toggle save/load spawn functionality" );
     ACS( "sm_enable_demoresist", "sm_dr",   CToggleDemoResist, GENERIC, "Toggle demo blast vulnerability" );
     ACS( "sm_list_blast_attrib", "sm_lba",  CListBlastAttrib,  GENERIC, "Debug: list entities with blast attributes" );
@@ -981,13 +981,13 @@ NEW_CMD( CToggleRespawn ) {
 }
 
 // Backup toggle for immunity and infinite ammo
-NEW_CMD( CToggleImmunity ) {
-    if ( args != 1 ) END_CMD2( client, "Usage: sm_enable_immunity <0|1>" );
+NEW_CMD( CToggleExtras ) {
+    if ( args != 1 ) END_CMD2( client, "Usage: sm_enable_extras <0|1>" );
 
     GET_ARG( 1, arg, 4 );
     int value = StringToInt( arg );
 
-    if ( value != 0 && value != 1 ) END_CMD2( client, "Usage: sm_enable_immunity <0|1> (0=disable, 1=enable)" );
+    if ( value != 0 && value != 1 ) END_CMD2( client, "Usage: sm_enable_extras <0|1> (0=disable, 1=enable)" );
 
     g_bImmunityAmmoEnabled = ( value != 0 );
 

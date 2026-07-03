@@ -3,6 +3,37 @@
 char gsTag[32]    = "{plugintag}[PASS]{chat}";
 char gsTagSTV[32] = "{plugintag}[PASS-TV]{chat}";
 
+// Cookie helpers
+void SetBoolCookie(int client, Cookie cookie, bool value) {
+  if (!AreClientCookiesCached(client)) return;
+  char sValue[2];
+  IntToString(value ? 1 : 0, sValue, sizeof(sValue));
+  SetClientCookie(client, cookie, sValue);
+}
+
+bool GetBoolCookie(int client, Cookie cookie, bool& value) {
+  char sValue[2];
+  GetClientCookie(client, cookie, sValue, sizeof(sValue));
+  if (strlen(sValue) == 0) return false;
+  value = (StringToInt(sValue) != 0);
+  return true;
+}
+
+void SetIntCookie(int client, Cookie cookie, int value) {
+  if (!AreClientCookiesCached(client)) return;
+  char sValue[2];
+  IntToString(value, sValue, sizeof(sValue));
+  SetClientCookie(client, cookie, sValue);
+}
+
+bool GetIntCookie(int client, Cookie cookie, int& value) {
+  char sValue[2];
+  GetClientCookie(client, cookie, sValue, sizeof(sValue));
+  if (strlen(sValue) == 0) return false;
+  value = StringToInt(sValue);
+  return true;
+}
+
 public void CTagReply(int client, const char[] format, any ...) {
   char buffer[254];
   VFormat(buffer, sizeof(buffer), format, 3);

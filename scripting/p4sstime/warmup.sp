@@ -1,38 +1,5 @@
 // Immunity and infinite ammo feature - only active outside of rounds
 
-#define SET_BOOL_COOKIE(%1,%2) \
-  void %1(int client, bool enabled) { \
-    if (!AreClientCookiesCached(client)) return; \
-    char value[2]; \
-    IntToString(enabled ? 1 : 0, value, sizeof(value)); \
-    SetClientCookie(client, %2, value); \
-  }
-
-#define GET_BOOL_COOKIE(%1,%2,%3) \
-  bool %1(int client) { \
-    char value[2]; \
-    GetClientCookie(client, %2, value, sizeof(value)); \
-    if (strlen(value) == 0) return false; \
-    %3[client] = (StringToInt(value) != 0); \
-    return true; \
-  }
-
-#define TOGGLE_CMD(%1,%2,%3,%4,%5) \
-  Action %1(int client, int args) { \
-    if (IsMatch()) { \
-      TagChatClient(client, %2); \
-      PH; \
-    } \
-    %3[client] = !%3[client]; \
-    %4(client, %3[client]); \
-    if (IsPlayerAlive(client)) { \
-      TF2_RespawnPlayer(client); \
-      ApplyBootsAttributes(client); \
-    } \
-    TagChatClient(client, %5, %3[client] ? "enabled" : "disabled"); \
-    PH; \
-  }
-
 bool IsMatch() {
   bool awaitingReadyRestart = view_as<bool>(GameRules_GetProp("m_bAwaitingReadyRestart"));
   bool timerPaused          = false;
@@ -54,13 +21,35 @@ void SetAmmo(int client, int weapon, int ammo) {
   SetEntData(client, ammotype, ammo, 4, true);
 }
 
-SET_BOOL_COOKIE(SetAmmoCookie, cookieInfiniteAmmo)
-GET_BOOL_COOKIE(GetAmmoCookie, cookieInfiniteAmmo, g_bInfiniteAmmo)
-SET_BOOL_COOKIE(SetImmunityCookie, cookieImmunity)
-GET_BOOL_COOKIE(GetImmunityCookie, cookieImmunity, g_bImmunity)
+Action CImmune(int client, int args) {
+  if (IsMatch()) {
+    TagChatClient(client, "Immunity is disabled during a match.");
+    PH;
+  }
+  g_bImmunity[client] = !g_bImmunity[client];
+  SetBoolCookie(client, cookieImmunity, g_bImmunity[client]);
+  if (IsPlayerAlive(client)) {
+    TF2_RespawnPlayer(client);
+    ApplyBootsAttributes(client);
+  }
+  TagChatClient(client, "Immunity %s.", g_bImmunity[client] ? "enabled" : "disabled");
+  PH;
+}
 
-TOGGLE_CMD(CImmune, "Immunity is disabled during a match.", g_bImmunity, SetImmunityCookie, "Immunity %s.")
-TOGGLE_CMD(CInfAmmo, "Infinite ammo is disabled during a match.", g_bInfiniteAmmo, SetAmmoCookie, "Infinite ammo %s.")
+Action CInfAmmo(int client, int args) {
+  if (IsMatch()) {
+    TagChatClient(client, "Infinite ammo is disabled during a match.");
+    PH;
+  }
+  g_bInfiniteAmmo[client] = !g_bInfiniteAmmo[client];
+  SetBoolCookie(client, cookieInfiniteAmmo, g_bInfiniteAmmo[client]);
+  if (IsPlayerAlive(client)) {
+    TF2_RespawnPlayer(client);
+    ApplyBootsAttributes(client);
+  }
+  TagChatClient(client, "Infinite ammo %s.", g_bInfiniteAmmo[client] ? "enabled" : "disabled");
+  PH;
+}
 
 public Action Hook_ImmunityOnTakeDamage(int victim, int &attacker, int &inflictor, float &damage, int &damagetype, int &weapon, float damageForce[3], float damagePosition[3], int damagecustom) {
   if (IsMatch()) PC;
