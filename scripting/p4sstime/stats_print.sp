@@ -35,10 +35,10 @@ static const char sSplashesMinimal[]   = "{cNeutral}%d";
 static const char sInterceptsMinimal[] = "{cIntercept}%d";
 static const char sStealsMinimal[]     = "{cSteal}%d";
 
-Action CChatSummary(int client, int args) {
-  // If no arguments provided, show the summary menu
+Action CChatStats(int client, int args) {
+  // If no arguments provided, show the stats menu
   if (args == 0) {
-    ShowSummaryMenu(client);
+    ShowStatsMenu(client);
     PH;
   }
   
@@ -47,27 +47,27 @@ Action CChatSummary(int client, int args) {
   
   // Handle different argument types
   if (StrEqual(arg, "0", false) || StrEqual(arg, "off", false)) {
-    arr_iClientSettings[client].iSummary = 0;
-    CTagReply(client, "Round summary: {cRed}Off {chat}· Long · Short · Minimal");
+    arr_iClientPrefs[client].iStats = 0;
+    CTagReply(client, "Round stats: {cRed}Off {chat}· Long · Short · Minimal");
   }
   else if (StrEqual(arg, "1", false) || StrEqual(arg, "long", false)) {
-    arr_iClientSettings[client].iSummary = 1;
-    CTagReply(client, "Round summary: Off · {cBlue}Long {chat}· Short · Minimal");
+    arr_iClientPrefs[client].iStats = 1;
+    CTagReply(client, "Round stats: Off · {cBlue}Long {chat}· Short · Minimal");
   }
   else if (StrEqual(arg, "2", false) || StrEqual(arg, "short", false)) {
-    arr_iClientSettings[client].iSummary = 2;
-    CTagReply(client, "Round summary: Off · Long · {cBlue}Short · Minimal");
+    arr_iClientPrefs[client].iStats = 2;
+    CTagReply(client, "Round stats: Off · Long · {cBlue}Short · Minimal");
   }
   else if (StrEqual(arg, "3", false) || StrEqual(arg, "min", false) || StrEqual(arg, "minimal", false)) {
-    arr_iClientSettings[client].iSummary = 3;
-    CTagReply(client, "Round summary: Off · Long · Short · {cBlue}Minimal");
+    arr_iClientPrefs[client].iStats = 3;
+    CTagReply(client, "Round stats: Off · Long · Short · {cBlue}Minimal");
   }
   else {
     CTagReply(client, "Invalid argument. Use: 0/off, 1/long, 2/short, or 3/min/minimal");
     PH;
   }
   
-  SetSummaryCookie(client);
+  SetStatsCookie(client);
   PH;
 }
 
@@ -178,7 +178,7 @@ Action Timer_DisplayStats(Handle timer) {
 
   for (int x = 1; x < MaxClients + 1; x++) {
     if (!IsValidClient(x)) continue;
-    if (!arr_iClientSettings[x].iSummary) continue;
+    if (!arr_iClientPrefs[x].iStats) continue;
 
     LogToGame("Printing for client: %d", x);
 
@@ -186,7 +186,7 @@ Action Timer_DisplayStats(Handle timer) {
 
     bool isStv = IsClientSourceTV(x);
     bool shouldPrintBluFirst = (TF2_GetClientTeam(x) == TFTeam_Red);
-    int fmt = arr_iClientSettings[x].iSummary - 1; // 1=long->0, 2=short->1, 3=minimal->2
+    int fmt = arr_iClientPrefs[x].iStats - 1; // 1=long->0, 2=short->1, 3=minimal->2
 
     if (shouldPrintBluFirst) {
       CPrintMultiline(x, arrStrBluStats[fmt], bluAmount * 2);

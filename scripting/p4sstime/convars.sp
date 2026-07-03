@@ -5,9 +5,9 @@
 Action %1(int client, int args) {\
   bool value;\
   if (GetCmdArgIntEx(1, value)) {\
-    arr_iClientSettings[client].%2 = value;\
-    SetCookieBool(client, %3, arr_iClientSettings[client].%2);\
-    CTagReply(client, "%4: %%s", arr_iClientSettings[client].%2 ? "ON" : "OFF");\
+    arr_iClientPrefs[client].%2 = value;\
+    SetCookieBool(client, %3, arr_iClientPrefs[client].%2);\
+    CTagReply(client, "%4: %%s", arr_iClientPrefs[client].%2 ? "ON" : "OFF");\
   } else CTagReply(client, "Invalid argument, use either 1 or 0");\
   PH;\
 }
@@ -196,12 +196,12 @@ void RemoveStocks(int client) {
       char classname[64];
       GetEntityClassname(iWep, classname, sizeof(classname));
 
-      static char[][] blockedWeapons = {
+      static char blockedWeapons[3][32] = {
         "tf_weapon_shotgun_soldier",
         "tf_weapon_pipebomblauncher",
         "tf_weapon_syringegun_medic"
       };
-      static char[][] messages = {
+      static char messages[3][32] = {
         "Shotgun equipped",
         "Stickies equipped",
         "Syringe Gun equipped"

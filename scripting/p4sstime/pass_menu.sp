@@ -19,27 +19,27 @@ void SetCookieBool(int client, Cookie cookie, bool state) {
 }
 
 public OnClientCookiesCached(int client) {
-  arr_iClientSettings[client].bCountdown = GetCookieBool(client, ck_iCountdown);
-  arr_iClientSettings[client].bJackHud =   GetCookieBool(client, ck_bJackHud);
-  arr_iClientSettings[client].bJackChat =  GetCookieBool(client, ck_bJackChat);
-  arr_iClientSettings[client].bJackSound = GetCookieBool(client, ck_bJackSound);
-  GetSummaryCookie(client);
+  arr_iClientPrefs[client].bCountdown = GetCookieBool(client, ck_iCountdown);
+  arr_iClientPrefs[client].bJackHud =   GetCookieBool(client, ck_bJackHud);
+  arr_iClientPrefs[client].bJackChat =  GetCookieBool(client, ck_bJackChat);
+  arr_iClientPrefs[client].bJackSound = GetCookieBool(client, ck_bJackSound);
+  GetStatsCookie(client);
   GetAmmoCookie(client);
   GetImmunityCookie(client);
 }
 
-void GetSummaryCookie(int client) {
+void GetStatsCookie(int client) {
   char value[2];
-  GetClientCookie(client, ck_iSummary, value, sizeof(value));
+  GetClientCookie(client, ck_iStats, value, sizeof(value));
   if (strlen(value) == 0) return;
-  arr_iClientSettings[client].iSummary = StringToInt(value);
+  arr_iClientPrefs[client].iStats = StringToInt(value);
 }
 
-void SetSummaryCookie(int client) {
+void SetStatsCookie(int client) {
   if (!AreClientCookiesCached(client)) return;
   char value[2];
-  IntToString(arr_iClientSettings[client].iSummary, value, sizeof(value));
-  SetClientCookie(client, ck_iSummary, value);
+  IntToString(arr_iClientPrefs[client].iStats, value, sizeof(value));
+  SetClientCookie(client, ck_iStats, value);
 }
 
 Action CMenu(int client, int args) {
@@ -48,30 +48,32 @@ Action CMenu(int client, int args) {
   PH;
 }
 
+static const char g_sStatsNames[][] = { "OFF", "LONG", "SHORT", "MINIMAL" };
+
 void ShowPassMenu(int client) {
   mPassMenu = new Menu(PassMenuHandler);
   mPassMenu.SetTitle("P4SS Menu");
 
   char buffer[2048];
 
-  FormatEx(buffer, sizeof(buffer), "%s: %s", "JACK spawn timer captions", arr_iClientSettings[client].bCountdown ? "ON" : "OFF");
+  FormatEx(buffer, sizeof(buffer), "%s: %s", "JACK spawn timer captions", arr_iClientPrefs[client].bCountdown ? "ON" : "OFF");
   mPassMenu.AddItem("countdowncaption", buffer);
-  FormatEx(buffer, sizeof(buffer), "%s: %s", "JACK pickup HUD text", arr_iClientSettings[client].bJackHud ? "ON" : "OFF");
+  FormatEx(buffer, sizeof(buffer), "%s: %s", "JACK pickup HUD text",      arr_iClientPrefs[client].bJackHud ? "ON" : "OFF");
   mPassMenu.AddItem("jackpickuphud", buffer);
-  FormatEx(buffer, sizeof(buffer), "%s: %s", "JACK pickup chat text", arr_iClientSettings[client].bJackChat ? "ON" : "OFF");
+  FormatEx(buffer, sizeof(buffer), "%s: %s", "JACK pickup chat text",     arr_iClientPrefs[client].bJackChat ? "ON" : "OFF");
   mPassMenu.AddItem("jackpickupchat", buffer);
-  FormatEx(buffer, sizeof(buffer), "%s: %s", "JACK pickup sound", arr_iClientSettings[client].bJackSound ? "ON" : "OFF");
+  FormatEx(buffer, sizeof(buffer), "%s: %s", "JACK pickup sound",         arr_iClientPrefs[client].bJackSound ? "ON" : "OFF");
   mPassMenu.AddItem("jackpickupsound", buffer);
-  FormatEx(buffer, sizeof(buffer), "%s: %s", "Toggle chat round summary", g_sSummaryNames[arr_iClientSettings[client].iSummary]);
-  mPassMenu.AddItem("summary", buffer);
+  FormatEx(buffer, sizeof(buffer), "%s: %s", "Round stats format",      g_sStatsNames[arr_iClientPrefs[client].iStats]);
+  mPassMenu.AddItem("stats", buffer);
 
   mPassMenu.Display(client, MENU_TIME_FOREVER);
 }
 
 #define TOGGLE_SETTING(%1,%2,%3) \
   if (StrEqual(info, %1)) { \
-    arr_iClientSettings[param1].%2 = !arr_iClientSettings[param1].%2; \
-    SetCookieBool(param1, %3, arr_iClientSettings[param1].%2); \
+    arr_iClientPrefs[param1].%2 = !arr_iClientPrefs[param1].%2; \
+    SetCookieBool(param1, %3, arr_iClientPrefs[param1].%2); \
     ShowPassMenu(param1); \
   }
 
@@ -80,59 +82,57 @@ int PassMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
     char info[32], display[255];
     mPassMenu.GetItem(param2, info, sizeof(info), _, display, sizeof(display));
     TOGGLE_SETTING("countdowncaption", bCountdown, ck_iCountdown)
-    TOGGLE_SETTING("jackpickuphud", bJackHud, ck_bJackHud)
-    TOGGLE_SETTING("jackpickupchat", bJackChat, ck_bJackChat)
-    TOGGLE_SETTING("jackpickupsound", bJackSound, ck_bJackSound)
-    elif (StrEqual(info, "summary")) {
-      ShowSummaryMenu(param1);
+    TOGGLE_SETTING("jackpickuphud",    bJackHud,   ck_bJackHud)
+    TOGGLE_SETTING("jackpickupchat",   bJackChat,  ck_bJackChat)
+    TOGGLE_SETTING("jackpickupsound",  bJackSound, ck_bJackSound)
+    elif (StrEqual(info, "stats")) {
+      ShowStatsMenu(param1);
     }
   }
   return 0;  // just do this to get rid of warning
 }
 
-static const char g_sSummaryNames[][] = { "OFF", "LONG", "SHORT", "MINIMAL" };
-
-void ShowSummaryPreview(int client) {
+void ShowStatsPreview(int client) {
   char preview[256];
-  BuildStatsString(preview, sizeof(preview), 3, 1, 2, 4, 0, 1, arr_iClientSettings[client].iSummary - 1);
+  BuildStatsString(preview, sizeof(preview), 3, 1, 2, 4, 0, 1, arr_iClientPrefs[client].iStats - 1);
   CTagReply(client, "Preview: %s", preview);
 }
 
-void ShowSummaryMenu(int client) {
-  Menu summaryMenu = new Menu(SummaryMenuHandler);
-  summaryMenu.SetTitle("Round Summary Settings");
+void ShowStatsMenu(int client) {
+  Menu statsMenu = new Menu(StatsMenuHandler);
+  statsMenu.SetTitle("Round Stats Settings");
 
-  int current = arr_iClientSettings[client].iSummary;
+  int current = arr_iClientPrefs[client].iStats;
   char key[4];
   char display[32];
-  for (int i = 0; i < sizeof(g_sSummaryNames); i++) {
+  for (int i = 0; i < sizeof(g_sStatsNames); i++) {
     IntToString(i, key, sizeof(key));
-    FormatEx(display, sizeof(display), i == current ? "%s <" : "%s", g_sSummaryNames[i]);
-    summaryMenu.AddItem(key, display);
+    FormatEx(display, sizeof(display), i == current ? "%s <" : "%s", g_sStatsNames[i]);
+    statsMenu.AddItem(key, display);
   }
 
-  summaryMenu.AddItem("", "", ITEMDRAW_SPACER);
+  statsMenu.AddItem("", "", ITEMDRAW_SPACER);
   if (current != 0) {
-    summaryMenu.AddItem("preview", "Preview Current Format");
+    statsMenu.AddItem("preview", "Preview Current Format");
   }
 
-  summaryMenu.Display(client, MENU_TIME_FOREVER);
+  statsMenu.Display(client, MENU_TIME_FOREVER);
 }
 
-int SummaryMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
+int StatsMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
   if (action == MenuAction_Select) {
     char info[32];
     menu.GetItem(param2, info, sizeof(info));
 
     if (StrEqual(info, "preview")) {
-      ShowSummaryPreview(param1);
-      ShowSummaryMenu(param1);
+      ShowStatsPreview(param1);
+      ShowStatsMenu(param1);
     }
     else {
       int value = StringToInt(info);
-      arr_iClientSettings[param1].iSummary = value;
-      SetSummaryCookie(param1);
-      ShowSummaryMenu(param1);
+      arr_iClientPrefs[param1].iStats = value;
+      SetStatsCookie(param1);
+      ShowStatsMenu(param1);
     }
   }
   else if (action == MenuAction_End) {
