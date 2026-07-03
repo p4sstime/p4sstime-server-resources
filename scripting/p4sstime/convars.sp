@@ -196,19 +196,23 @@ void RemoveStocks(int client) {
       char classname[64];
       GetEntityClassname(iWep, classname, sizeof(classname));
 
-      if (StrEqual(classname, "tf_weapon_shotgun_soldier")) {
-        TagChatClient(client, "Shotgun equipped");
-        TF2_RemoveWeaponSlot(client, 1);
-      }
-      
-      if (StrEqual(classname, "tf_weapon_pipebomblauncher")) {
-        TagChatClient(client, "Stickies equipped");
-        TF2_RemoveWeaponSlot(client, 1);
-      }
+      static char[][] blockedWeapons = {
+        "tf_weapon_shotgun_soldier",
+        "tf_weapon_pipebomblauncher",
+        "tf_weapon_syringegun_medic"
+      };
+      static char[][] messages = {
+        "Shotgun equipped",
+        "Stickies equipped",
+        "Syringe Gun equipped"
+      };
 
-      if (StrEqual(classname, "tf_weapon_syringegun_medic")) {
-        TagChatClient(client, "Syringe Gun equipped");
-        TF2_RemoveWeaponSlot(client, 0);
+      for (int i = 0; i < sizeof(blockedWeapons); i++) {
+        if (StrEqual(classname, blockedWeapons[i])) {
+          TagChatClient(client, messages[i]);
+          TF2_RemoveWeaponSlot(client, (class == TFClass_Medic) ? 0 : 1);
+          break;
+        }
       }
     }
   }

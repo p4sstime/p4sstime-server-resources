@@ -6,6 +6,13 @@ float g_fUnreadyCooldown[2] = { -1.0, -1.0 };
 // ====================================================================================================
 // HELPERS
 // ====================================================================================================
+void TeamChatAnnounce(TFTeam team, const char[] format, any ...) {
+  char buffer[256];
+  VFormat(buffer, sizeof(buffer), format, 3);
+  char teamColor[16];
+  strcopy(teamColor, sizeof(teamColor), (team == TFTeam_Red) ? "{teamred}" : "{teamblu}");
+  CPrintToChatAll("%s%s", teamColor, buffer);
+}
 
 int ParseTeamIndex(const char[] team) {
   return StrEqual(team, "red") || StrEqual(team, "r")                            ? 0
@@ -297,10 +304,7 @@ Action CReady(int client, int args) {
 
   char playerName[MAX_NAME_LENGTH];
   GetClientName(client, playerName, sizeof(playerName));
-  switch ( clientTeam ) {
-    case TFTeam_Red:  CPrintToChatAll("{teamred}%s {default}changed team state to {steamlightgreen}%s", playerName, newReadyState ? "Ready" : "Not Ready" );
-    case TFTeam_Blue: CPrintToChatAll("{teamblu}%s {default}changed team state to {steamlightgreen}%s", playerName, newReadyState ? "Ready" : "Not Ready" );
-  }
+  TeamChatAnnounce(clientTeam, "%s {default}changed team state to {steamlightgreen}%s", playerName, newReadyState ? "Ready" : "Not Ready");
 
   PH;
 }
@@ -328,10 +332,7 @@ Action CTeamName(int client, int args) {
 
   char playerName[MAX_NAME_LENGTH];
   GetClientName(client, playerName, sizeof(playerName));
-  switch (clientTeam) {
-    case TFTeam_Red:  CPrintToChatAll("{teamred}%s {default}changed team name to {steamlightgreen}%s",  playerName, newName);
-    case TFTeam_Blue: CPrintToChatAll("{teamblu}%s {default}changed team name to {steamlightgreen}%s", playerName, newName);
-  }
+  TeamChatAnnounce(clientTeam, "%s {default}changed team name to {steamlightgreen}%s", playerName, newName);
 
   PH;
 }

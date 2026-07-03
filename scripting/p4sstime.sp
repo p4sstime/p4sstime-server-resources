@@ -851,36 +851,28 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
   // so incredibly ugly
   VerboseLog("passtime_ball damage debug: playerWhoSplashed: %d, playerTeam: %s, ballTeam: %s", attacker, TFTeamToString(playerTeam), TFTeamToString(ballTeam));
   bBallSplashed = true;
-  switch (playerTeam) {
-    case TFTeam_Blue: {
-      VerboseLog("passtime_ball damage debug: player team is BLU, checking if in blu goal and if ball is red.");
-      if (EntInBluGoalZone(entJack) && ballTeam == TFTeam_Red) {
-        VerboseLog("passtime_ball damage debug: successful splash");
-        char playerNameTeam[MAX_TEAMFORMAT_NAME_LENGTH];
-        char throwerNameTeam[MAX_TEAMFORMAT_NAME_LENGTH];
-        GetClientName(attacker, playerName, sizeof(playerName));
-        FormatPlayerNameWithTeam(attacker, playerNameTeam);
-        FormatPlayerNameWithTeam(iPlyWhoGotJack, throwerNameTeam);
-        ChatEvent("%s {cBlock}blocked %s {chat}with {cNeutral}a splash{chat}!", playerNameTeam, throwerNameTeam);
-        TagChatSTV("%s blocked %N with a splash. t%d", playerName, iPlyWhoGotJack, STVTickCount());
-        arr_iClientRoundStats[attacker].iSplashes++;
-      }
-    }
-    case TFTeam_Red: {
-      VerboseLog("passtime_ball damage debug: player team is RED, checking if in red goal and if ball is blu.");
+  bool inGoalZone, expectedBallTeam;
+  if (playerTeam == TFTeam_Blue) {
+    VerboseLog("passtime_ball damage debug: player team is BLU, checking if in blu goal and if ball is red.");
+    inGoalZone = EntInGoalZone(entJack, TFTeam_Blue);
+    expectedBallTeam = (ballTeam == TFTeam_Red);
+  }
+  else {
+    VerboseLog("passtime_ball damage debug: player team is RED, checking if in red goal and if ball is blu.");
+    inGoalZone = EntInGoalZone(entJack, TFTeam_Red);
+    expectedBallTeam = (ballTeam == TFTeam_Blue);
+  }
 
-      if (EntInRedGoalZone(entJack) && ballTeam == TFTeam_Blue) {
-        VerboseLog("passtime_ball damage debug: successful splash");
-        char playerNameTeam[MAX_TEAMFORMAT_NAME_LENGTH];
-        char throwerNameTeam[MAX_TEAMFORMAT_NAME_LENGTH];
-        GetClientName(attacker, playerName, sizeof(playerName));
-        FormatPlayerNameWithTeam(attacker, playerNameTeam);
-        FormatPlayerNameWithTeam(iPlyWhoGotJack, throwerNameTeam);
-        ChatEvent("%s {cBlock}blocked %s {chat}with a {cNeutral}splash{chat}!", playerNameTeam, throwerNameTeam);
-        TagChatSTV("%s blocked %N with a splash. t%d", playerName, iPlyWhoGotJack, STVTickCount());
-        arr_iClientRoundStats[attacker].iSplashes++;
-      }
-    }
+  if (inGoalZone && expectedBallTeam) {
+    VerboseLog("passtime_ball damage debug: successful splash");
+    char playerNameTeam[MAX_TEAMFORMAT_NAME_LENGTH];
+    char throwerNameTeam[MAX_TEAMFORMAT_NAME_LENGTH];
+    GetClientName(attacker, playerName, sizeof(playerName));
+    FormatPlayerNameWithTeam(attacker, playerNameTeam);
+    FormatPlayerNameWithTeam(iPlyWhoGotJack, throwerNameTeam);
+    ChatEvent("%s {cBlock}blocked %s {chat}with {cNeutral}a splash{chat}!", playerNameTeam, throwerNameTeam);
+    TagChatSTV("%s blocked %N with a splash. t%d", playerName, iPlyWhoGotJack, STVTickCount());
+    arr_iClientRoundStats[attacker].iSplashes++;
   }
 
   PC;
@@ -1026,29 +1018,17 @@ float DistanceAboveGround(int victim) { // taken from mgemod
   return distance;
 }
 
-Action ERocketJump(Event event, const char[] name, bool dontBroadcast) {
-  int client = GetClientOfUserId(event.GetInt("userid"));
-  arr_bBlastJumpStatus[client] = true;
-  PH;
-}
+#define JUMP_HANDLER(%1,%2) \
+  Action %1(Event event, const char[] name, bool dontBroadcast) { \
+    int client = GetClientOfUserId(event.GetInt("userid")); \
+    arr_bBlastJumpStatus[client] = %2; \
+    PH; \
+  }
 
-Action ERocketJumpLand(Event event, const char[] name, bool dontBroadcast) {
-  int client = GetClientOfUserId(event.GetInt("userid"));
-  arr_bBlastJumpStatus[client] = false;
-  PH;
-}
-
-Action EPipeJump(Event event, const char[] name, bool dontBroadcast) {
-  int client = GetClientOfUserId(event.GetInt("userid"));
-  arr_bBlastJumpStatus[client] = true;
-  PH;
-}
-
-Action EPipeJumpLand(Event event, const char[] name, bool dontBroadcast) {
-  int client = GetClientOfUserId(event.GetInt("userid"));
-  arr_bBlastJumpStatus[client] = false;
-  PH;
-}
+JUMP_HANDLER(ERocketJump, true)
+JUMP_HANDLER(ERocketJumpLand, false)
+JUMP_HANDLER(EPipeJump, true)
+JUMP_HANDLER(EPipeJumpLand, false)
 
 // the below function is dr underscore's fix. thanks!
 public void TF2_OnConditionRemoved(int client, TFCond condition) {
@@ -1345,28 +1325,15 @@ bool PlayerInTeamGoalieZone(int client) {
   return false;
 }
 
-bool EntInRedGoalZone(int entIndex) {
+bool EntInGoalZone(int entIndex, TFTeam team) {
   float position[3];
   GetEntPropVector(entIndex, Prop_Send, "m_vecOrigin", position);
-  return PosInRedGoalZone(position);
+  return PosInGoalZone(position, team);
 }
 
-bool EntInBluGoalZone(int entIndex) {
-  float position[3];
-  GetEntPropVector(entIndex, Prop_Send, "m_vecOrigin", position);
-  return PosInBluGoalZone(position);
-}
-
-bool PosInRedGoalZone(float position[3]) {
-  float dist = GetVectorDistance(position, fRedGoalPos);
-  if (dist < GOALIE_DISTANCE) return true;
-  return false;
-}
-
-bool PosInBluGoalZone(float position[3]) {
-  float dist = GetVectorDistance(position, fBluGoalPos);
-  if (dist < GOALIE_DISTANCE) return true;
-  return false;
+bool PosInGoalZone(float position[3], TFTeam team) {
+  float dist = GetVectorDistance(position, (team == TFTeam_Red) ? fRedGoalPos : fBluGoalPos);
+  return dist < GOALIE_DISTANCE;
 }
 
 // Checks if a player is close enough to the *enemy* team's goal to count as a blocker.

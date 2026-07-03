@@ -62,41 +62,27 @@ void ShowPassMenu(int client) {
   mPassMenu.AddItem("jackpickupchat", buffer);
   FormatEx(buffer, sizeof(buffer), "%s: %s", "JACK pickup sound", arr_iClientSettings[client].bJackSound ? "ON" : "OFF");
   mPassMenu.AddItem("jackpickupsound", buffer);
-  switch (arr_iClientSettings[client].iSummary) {
-    case 0: FormatEx(buffer, sizeof(buffer), "%s: %s", "Toggle chat round summary", "OFF");
-    case 1: FormatEx(buffer, sizeof(buffer), "%s: %s", "Toggle chat round summary", "LONG");
-    case 2: FormatEx(buffer, sizeof(buffer), "%s: %s", "Toggle chat round summary", "SHORT");
-    case 3: FormatEx(buffer, sizeof(buffer), "%s: %s", "Toggle chat round summary", "MINIMAL");
-  }
+  FormatEx(buffer, sizeof(buffer), "%s: %s", "Toggle chat round summary", g_sSummaryNames[arr_iClientSettings[client].iSummary]);
   mPassMenu.AddItem("summary", buffer);
 
   mPassMenu.Display(client, MENU_TIME_FOREVER);
 }
 
+#define TOGGLE_SETTING(%1,%2,%3) \
+  if (StrEqual(info, %1)) { \
+    arr_iClientSettings[param1].%2 = !arr_iClientSettings[param1].%2; \
+    SetCookieBool(param1, %3, arr_iClientSettings[param1].%2); \
+    ShowPassMenu(param1); \
+  }
+
 int PassMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
   if (action == MenuAction_Select) {
     char info[32], display[255];
     mPassMenu.GetItem(param2, info, sizeof(info), _, display, sizeof(display));
-    if (StrEqual(info, "countdowncaption")) {
-      arr_iClientSettings[param1].bCountdown = !arr_iClientSettings[param1].bCountdown;
-      SetCookieBool(param1, ck_iCountdown, arr_iClientSettings[param1].bCountdown);
-      ShowPassMenu(param1);
-    }
-    if (StrEqual(info, "jackpickuphud")) {
-      arr_iClientSettings[param1].bJackHud = !arr_iClientSettings[param1].bJackHud;
-      SetCookieBool(param1, ck_bJackHud, arr_iClientSettings[param1].bJackHud);
-      ShowPassMenu(param1);
-    }
-    elif (StrEqual(info, "jackpickupchat")) {
-      arr_iClientSettings[param1].bJackChat = !arr_iClientSettings[param1].bJackChat;
-      SetCookieBool(param1, ck_bJackChat, arr_iClientSettings[param1].bJackChat);
-      ShowPassMenu(param1);
-    }
-    elif (StrEqual(info, "jackpickupsound")) {
-      arr_iClientSettings[param1].bJackSound = !arr_iClientSettings[param1].bJackSound;
-      SetCookieBool(param1, ck_bJackSound, arr_iClientSettings[param1].bJackSound);
-      ShowPassMenu(param1);
-    }
+    TOGGLE_SETTING("countdowncaption", bCountdown, ck_iCountdown)
+    TOGGLE_SETTING("jackpickuphud", bJackHud, ck_bJackHud)
+    TOGGLE_SETTING("jackpickupchat", bJackChat, ck_bJackChat)
+    TOGGLE_SETTING("jackpickupsound", bJackSound, ck_bJackSound)
     elif (StrEqual(info, "summary")) {
       ShowSummaryMenu(param1);
     }
