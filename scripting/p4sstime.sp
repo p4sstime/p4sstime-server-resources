@@ -4,9 +4,8 @@
 #define REQUIRE_PLUGIN
 
 #include <tf2_stocks>
+#include <sourcemod>
 #include <sdkhooks>
-//#include <dhooks>
-#include <vector>
 #include <clientprefs>
 #include <sdktools_functions>
 //#include <p4sstime/trikz.sp>
@@ -776,7 +775,7 @@ public void OnGameFrame() {
         elif (distFromRedGoal <= 120) {
           ChatEvent("The ball went neutral %.2fhu {chat}from the goal!", distFromRedGoal - 20);
         }
-      }
+        eLastTickBallTeam = ballTeam;
     }
     eLastTickBallTeam = ballTeam;
   }
@@ -833,7 +832,6 @@ public void OnEntityCreated(int eIndex, const char[] eClassname) {
       VerboseLog("tf_projectile_healing_bolt spawned.");
       SDKHookEx(eIndex, SDKHook_StartTouchPost, MedicArrowTouchedSomething);
     }
-  }
 }
 
 Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
@@ -1193,7 +1191,6 @@ Action EPassCaught(Handle event, const char[] name, bool dontBroadcast) {
         ChatEvent("%s {cBlock}blocked *their teammate* %s %s{chat}!", catcherNameTeamFormat, throwerNameTeamFormat, "{chat}");
       }
     }
-  }
 
   if (GetClientTeam(thrower) != GetClientTeam(catcher)) {
     intercept = true;

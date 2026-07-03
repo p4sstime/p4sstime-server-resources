@@ -1,6 +1,6 @@
 #if !defined BLU
-  #define BLU true
-  #define RED false
+    #define BLU true
+    #define RED false
 #endif
 
 static int s_iPrintSeq[MAXPLAYERS + 1];
@@ -119,7 +119,7 @@ Action Timer_DisplayStats(Handle timer) {
   int totalPossessionTime = iBluBallTime + iRedBallTime;
 
 #if defined(VERBOSE)
-  LogToGame("BluBallTime: %d, RedBallTime: %d, totalPossessionTime = %d", iBluBallTime, iRedBallTime, totalPossessionTime);
+    LogToGame("BluBallTime: %d, RedBallTime: %d, totalPossessionTime = %d", iBluBallTime, iRedBallTime, totalPossessionTime);
 #endif
   float bluBallPossessionPercent;
   float redBallPossessionPercent;
@@ -165,16 +165,16 @@ Action Timer_DisplayStats(Handle timer) {
   char arrStrRedStats[3][(MAXPLAYERS + 1) * 2][MAX_MESSAGE_LENGTH];
   char arrStrBluStats[3][(MAXPLAYERS + 1) * 2][MAX_MESSAGE_LENGTH];
 
-  char arrStrConsoleStatsRed[MAXPLAYERS + 1][7][MAX_MESSAGE_LENGTH];
-  char arrStrConsoleStatsBlu[MAXPLAYERS + 1][7][MAX_MESSAGE_LENGTH];
+    char arrStrConsoleStatsRed[MAXPLAYERS + 1][7][MAX_MESSAGE_LENGTH];
+    char arrStrConsoleStatsBlu[MAXPLAYERS + 1][7][MAX_MESSAGE_LENGTH];
 
   for (int fmt = 0; fmt < 3; fmt++) {
     GetTeamStatsArrStr(arrStrRedStats[fmt], redTeam, redAmount, fmt);
     GetTeamStatsArrStr(arrStrBluStats[fmt], bluTeam, bluAmount, fmt);
   }
 
-  GetConsoleStatsArrStr(arrStrConsoleStatsRed, redTeam, redAmount, RED);
-  GetConsoleStatsArrStr(arrStrConsoleStatsBlu, bluTeam, bluAmount, BLU);
+    GetConsoleStatsArrStr(arrStrConsoleStatsRed, redTeam, redAmount, RED);
+    GetConsoleStatsArrStr(arrStrConsoleStatsBlu, bluTeam, bluAmount, BLU);
 
   for (int x = 1; x < MaxClients + 1; x++) {
     if (!IsValidClient(x)) continue;
@@ -306,7 +306,6 @@ void Print3DMultilineToConsole(int client, char[][][] lines, int length, int hei
         CreateTimer(s_iPrintSeq[client]++ * 0.05, Timer_DelayedConsolePrint, dp, TIMER_FLAG_NO_MAPCHANGE | TIMER_DATA_HNDL_CLOSE);
       }
     }
-  }
 }
 
 /**
