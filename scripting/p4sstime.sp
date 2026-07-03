@@ -164,8 +164,8 @@ bool g_bResupplyDn[MAXPLAYERS + 1];
 bool g_bResupplyUp[MAXPLAYERS + 1];
 
 // Immunity & infinite ammo
-Handle cookieImmunity;
-Handle cookieInfiniteAmmo;
+Cookie cookieImmunity;
+Cookie cookieInfiniteAmmo;
 bool g_bImmunity[MAXPLAYERS + 1];
 bool g_bInfiniteAmmo[MAXPLAYERS + 1];
 bool g_bPendingHP[MAXPLAYERS + 1];
