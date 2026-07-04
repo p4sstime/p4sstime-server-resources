@@ -162,6 +162,10 @@ bool   g_bBootsAttributesApplied[MAXPLAYERS + 1];
 bool g_bResupplyDn[MAXPLAYERS + 1];
 bool g_bResupplyUp[MAXPLAYERS + 1];
 
+// Instant respawn
+ConVar cvRespawnTime;
+bool g_bInstantRespawnEnabled = true;
+
 // Immunity & infinite ammo
 Cookie cookieImmunity;
 Cookie cookieInfiniteAmmo;
@@ -529,13 +533,14 @@ public void OnPluginStart() {
 
   // Admin commands
   AC("sm_pt_snapshot",    CSnapshot,         GENERIC, "Take a snapshot of the plugin's current variable values.");
-  AC("sm_pt_spawnball",   CSpawnBall,        GENERIC, "Spawn the ball forcefully, by game starting and tournament restarting.");
+  AC("sm_pt_spawnball",   CSpawnBall,        GENERIC, "Spawn the jack for pre-game practice.");
   AC("sm_pt_demoresist",  CToggleDemoResist, GENERIC, "Toggle demo blast vulnerability");
 
   // Admin commands with aliases
-  ACA("sm_force_ready",   "sm_fr",  CForceReady, GENERIC, "Set a team's ready status");
-  ACA("sm_setteam",       "sm_st",  CSetTeam,    GENERIC, "Set a client's team");
-  ACA("sm_setclass",      "sm_sc",  CSetClass,   GENERIC, "Set a client's class");
+  ACA("sm_force_ready",    "sm_fr",   CForceReady,    GENERIC, "Set a team's ready status");
+  ACA("sm_enable_respawn", "sm_resp", CToggleRespawn, GENERIC, "Toggle instant respawn");
+  ACA("sm_setteam",        "sm_st",   CSetTeam,       GENERIC, "Set a client's team");
+  ACA("sm_setclass",       "sm_sc",   CSetClass,      GENERIC, "Set a client's class");
 
   // Colors
   AddC("steamlightgreen", 0x9DC250); // #9DC250
@@ -581,6 +586,7 @@ public void OnPluginStart() {
   fResupplyDecayAddition = CV("sm_pt_resupply_decay_addition", "0.2",  "Set the resupply decay addition per successful resupply.",                                         NOTIFY);
   fGoalRegeneration =      CV("sm_pt_goal_regeneration",       "0",    "Set the amount of health regeneration every 500ms while in the goal zone.",                        NOTIFY);
   bPractice =              CV("sm_pt_practice",                "0",    "Enable practice mode. When the round timer reaches 5 minutes, add 5 minutes to the timer.",        NOTIFY, true, 0.0, true, 1.0);
+  cvRespawnTime =          CV("sm_pt_respawn_time",            "0.0",  "Player respawn delay in seconds",                                                                 NOTIFY);
 
   // Demoman boots attribute ConVars
   cvBootsChargeTurn = CV("sm_pt_boots_charge_turn", "3.0",  "Charge turn control multiplier for Demoman boots",     NOTIFY);
@@ -1040,7 +1046,17 @@ Action EPlayerDeath(Event event, const char[] name, bool dontBroadcast) {
     entDeathBomber = client;
     arr_bDeathbombCheck[entDeathBomber] = true;
   }
+
+  // Instant respawn
+  if (!IsMatch() && g_bInstantRespawnEnabled && cvRespawnTime.FloatValue <= 0.0) {
+    RequestFrame(RespawnFrame, client);
+  }
+
   PH;
+}
+
+void RespawnFrame(any client) {
+  if (!IsPlayerAlive(client)) TF2_RespawnPlayer(client);
 }
 
 public void OnClientDisconnect(int client) {
