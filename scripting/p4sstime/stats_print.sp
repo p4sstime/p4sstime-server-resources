@@ -189,12 +189,12 @@ Action Timer_DisplayStats(Handle timer) {
     int fmt = arr_iClientPrefs[x].iStats - 1; // 1=long->0, 2=short->1, 3=minimal->2
 
     if (shouldPrintBluFirst) {
-      CPrintMultiline(x, arrStrBluStats[fmt], bluAmount * 2);
-      CPrintMultiline(x, arrStrRedStats[fmt], redAmount * 2);
+      CPrintStats(x, arrStrBluStats[fmt], bluAmount * 2, arr_iClientPrefs[x].bStatsSeparateLines);
+      CPrintStats(x, arrStrRedStats[fmt], redAmount * 2, arr_iClientPrefs[x].bStatsSeparateLines);
     }
     else {
-      CPrintMultiline(x, arrStrRedStats[fmt], redAmount * 2);
-      CPrintMultiline(x, arrStrBluStats[fmt], bluAmount * 2);
+      CPrintStats(x, arrStrRedStats[fmt], redAmount * 2, arr_iClientPrefs[x].bStatsSeparateLines);
+      CPrintStats(x, arrStrBluStats[fmt], bluAmount * 2, arr_iClientPrefs[x].bStatsSeparateLines);
     }
 
     TagChatClient(x, "Possession: {teamred}RED %.1f%%{chat} · {teamblu}BLU %.1f%%", redBallPossessionPercent, bluBallPossessionPercent);
@@ -223,7 +223,7 @@ void GetTeamStatsArrStr(char buf[(MAXPLAYERS + 1) * 2][MAX_MESSAGE_LENGTH], int[
     
     // Create two separate lines: name and stats
     char nameLine[MAX_MESSAGE_LENGTH];
-    TagFormat(nameLine, sizeof(nameLine), "%s", playerNameTeamFormatted);
+    Format(nameLine, sizeof(nameLine), "%s:", playerNameTeamFormatted);
     
     char statsLine[MAX_MESSAGE_LENGTH];
     Format(statsLine, sizeof(statsLine), "%s", stats);
@@ -292,7 +292,23 @@ void GetConsoleStatsArrStr(char buf[MAXPLAYERS + 1][7][MAX_MESSAGE_LENGTH], int[
 void CPrintMultiline(int client, char[][] lines, int len) {
   for (int i = 0; i < len; i++) {
     if (!StrEqual(lines[i], ""))
-      CPrintToChat(client, lines[i]);
+      CReplyToCommand(client, "%s", lines[i]);
+  }
+}
+
+void CPrintStats(int client, char[][] lines, int len, bool separateLines) {
+  if (separateLines) {
+    CPrintMultiline(client, lines, len);
+  }
+  else {
+    // Combine name and stats into single line
+    for (int i = 0; i < len; i += 2) {
+      if (i + 1 < len && !StrEqual(lines[i], "") && !StrEqual(lines[i + 1], "")) {
+        char combined[MAX_MESSAGE_LENGTH * 2];
+        Format(combined, sizeof(combined), "%s %s", lines[i], lines[i + 1]);
+        CPrintToChat(client, combined);
+      }
+    }
   }
 }
 

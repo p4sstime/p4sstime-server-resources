@@ -5,7 +5,6 @@ char gsTagSTV[32] = "{plugintag}[PASS-TV]{chat}";
 
 // Cookie helpers
 void SetBoolCookie(int client, Cookie cookie, bool value) {
-  if (!AreClientCookiesCached(client)) return;
   char sValue[2];
   IntToString(value ? 1 : 0, sValue, sizeof(sValue));
   SetClientCookie(client, cookie, sValue);
@@ -20,7 +19,6 @@ bool GetBoolCookie(int client, Cookie cookie, bool& value) {
 }
 
 void SetIntCookie(int client, Cookie cookie, int value) {
-  if (!AreClientCookiesCached(client)) return;
   char sValue[2];
   IntToString(value, sValue, sizeof(sValue));
   SetClientCookie(client, cookie, sValue);
@@ -74,12 +72,6 @@ public void TagChatSTV(const char[] format, any ...) {
   char buffer[254];
   VFormat(buffer, sizeof(buffer), format, 2);
   CPrintToSTV("%s %s", gsTagSTV, buffer);
-}
-
-void TagFormat(char[] buffer, int maxlen, const char[] format, any ...) {
-  char msg[254];
-  VFormat(msg, sizeof(msg), format, 4);
-  Format(buffer, maxlen, "%s %s", gsTag, msg);
 }
 
 stock char[] TFTeamToString(TFTeam input) {

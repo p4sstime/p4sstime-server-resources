@@ -71,7 +71,10 @@ enum struct enuClientSettings {
   bool bJackHud;
   bool bJackChat;
   bool bJackSound;
-  int iStats;
+  int  iStats;
+  bool bStatsSeparateLines;
+  bool bImmunity;
+  bool bInfAmmo;
 }
 
 enum struct enuClientStats {
@@ -167,10 +170,6 @@ ConVar cvRespawnTime;
 bool g_bInstantRespawnEnabled = true;
 
 // Immunity & infinite ammo
-Cookie cookieImmunity;
-Cookie cookieInfiniteAmmo;
-bool g_bImmunity[MAXPLAYERS + 1];
-bool g_bInfiniteAmmo[MAXPLAYERS + 1];
 bool g_bPendingHP[MAXPLAYERS + 1];
 
 // Mirror spawnpoint system for side-aware resupply
@@ -186,13 +185,20 @@ int g_iCachedTimerEntity = -1;
 // FOV
 ConVar cvFovMin;
 ConVar cvFovMax;
-Cookie cookieFOV;
 bool g_bSteamOnline = true;
 bool g_bBackupFOVDB;
 bool g_bPlayerTracked[MAXPLAYERS + 1];
 int  g_iPlayerFOV[MAXPLAYERS + 1];
 // b plyTakenDirectHit[MAXPLAYERS + 1];
-Cookie ck_iCountdown, ck_bJackHud, ck_bJackChat, ck_bJackSound, ck_iStats;
+Cookie ck_iCountdown,
+       ck_bJackHud,
+       ck_bJackChat,
+       ck_bJackSound,
+       ck_iStats,
+       ck_bStatsSeparateLines,
+       ck_bImmunity,
+       ck_bInfAmmo,
+       ck_iFov;
 
 // log variables
 int   user1;
@@ -499,14 +505,15 @@ public void OnPluginStart() {
   g_hMirrorSpawnPoints[1][1] = new ArrayList();  // BLU right
 
   // Cookies
-  ck_iCountdown =      RCC("p4ssClientCountdownCaption",  "p4sstime's client setting (1/0) for captions for JACK spawn timer", CookieAccess_Public);
-  ck_bJackHud =        RCC("p4ssClientJACKPickupHudText", "p4sstime's client setting (1/0) for HUD text when picking up JACK", CookieAccess_Public);
-  ck_bJackChat =       RCC("p4ssClientJACKPickupChatMsg", "p4sstime's client setting (1/0) for chat msg when picking up JACK", CookieAccess_Public);
-  ck_bJackSound =      RCC("p4ssClientJACKPickupSound",   "p4sstime's client setting (1/0) for sound when picking up JACK",    CookieAccess_Public);
-  ck_iStats =          RCC("p4ssClientStats",             "p4sstime's client setting (0/1/2) for EoR stats",               CookieAccess_Public);
-  cookieFOV =          RCC("p4ssClientFOV",               "p4sstime's client FOV setting",                                     CookieAccess_Private);
-  cookieImmunity =     RCC("p4ssClientImmunity",          "p4sstime's immunity setting",                                       CookieAccess_Private);
-  cookieInfiniteAmmo = RCC("p4ssClientInfiniteAmmo",      "p4sstime's infinite ammo setting",                                  CookieAccess_Private);
+  ck_iCountdown = RCC("p4ssClientCountdownCaption",  "p4sstime's client setting (1/0) for captions for JACK spawn timer", CookieAccess_Public);
+  ck_bJackHud =   RCC("p4ssClientJACKPickupHudText", "p4sstime's client setting (1/0) for HUD text when picking up JACK", CookieAccess_Public);
+  ck_bJackChat =  RCC("p4ssClientJACKPickupChatMsg", "p4sstime's client setting (1/0) for chat msg when picking up JACK", CookieAccess_Public);
+  ck_bJackSound = RCC("p4ssClientJACKPickupSound",   "p4sstime's client setting (1/0) for sound when picking up JACK",    CookieAccess_Public);
+  ck_iStats =     RCC("p4ssClientStats",             "p4sstime's client setting (0/1/2) for EoR stats",                   CookieAccess_Public);
+  ck_bStatsSeparateLines = RCC("p4ssClientStatsSeparateLines", "p4sstime's client setting for separating stats into 2 lines", CookieAccess_Public);
+  ck_iFov =       RCC("p4ssClientFOV",               "p4sstime's client FOV setting",                                     CookieAccess_Public);
+  ck_bImmunity =  RCC("p4ssClientImmunity",          "p4sstime's immunity setting",                                       CookieAccess_Public);
+  ck_bInfAmmo =   RCC("p4ssClientInfiniteAmmo",      "p4sstime's infinite ammo setting",                                  CookieAccess_Public);
 
   // Client commands
   CC("sm_pt_stats",        CChatStats,       "Toggle end-of-round stats");
@@ -556,14 +563,14 @@ public void OnPluginStart() {
   AddC("cRed",            0xD64843); // #D64843
   AddC("cGreen",          0x3CB371); // #3CB371 (also used in ShowJackHud and HideJackHud, manually updated)
   AddC("cBlue",           0x438CD6); // #438CD6
-  AddC("cTeal",           0x008B8B); // #008B8B
+  AddC("cTeal",           0x008B8B); // #00BCBC
   AddC("cMagenta",        0xA946C7); // #A946C7
   AddC("cOrange",         0xDD8125); // #DD8125
   AddC("cYellow",         0xECCD19); // #ECCD19
   
   // Game event specific colors
-  AddC("cScore",          0x3CB371); // #3CB371
-  AddC("cAssist",         0x008B8B); // #008B8B
+  AddC("cScore",          0x3CB371); // #2bd501
+  AddC("cAssist",         0x008B8B); // #48c0dc
   AddC("cBlock",          0xECCD19); // #ECCD19
   AddC("cNeutral",        0xDD8125); // #DD8125
   AddC("cIntercept",      0xA946C7); // #A946C7
@@ -808,7 +815,7 @@ public void OnGameFrame() {
       if (g_bResupplyDn[i] && !g_bResupplyUp[i])
         BufferedResupply(i);
 
-      if (!IsMatch() && g_bInfiniteAmmo[i] && TF2_GetPlayerClass(i) != TFClass_Medic) {
+      if (!IsMatch() && arr_iClientPrefs[i].bInfAmmo && TF2_GetPlayerClass(i) != TFClass_Medic) {
         int wep = GetEntPropEnt(i, Prop_Send, "m_hActiveWeapon");
         if (wep != -1 && IsValidEntity(wep)) {
           SetEntProp(wep, Prop_Send, "m_iClip1", 19);
@@ -873,8 +880,8 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
     GetClientName(attacker, playerName, sizeof(playerName));
     FormatPlayerNameWithTeam(attacker, playerNameTeam);
     FormatPlayerNameWithTeam(iPlyWhoGotJack, throwerNameTeam);
-    ChatEvent("%s {cBlock}blocked %s {chat}with {cNeutral}a splash{chat}!", playerNameTeam, throwerNameTeam);
-    TagChatSTV("%s blocked %N with a splash. t%d", playerName, iPlyWhoGotJack, STVTickCount());
+    ChatEvent("%s {cNeutral}splashed %s{chat}!", playerNameTeam, throwerNameTeam);
+    TagChatSTV("%s splashed %N. t%d", playerName, iPlyWhoGotJack, STVTickCount());
     arr_iClientRoundStats[attacker].iSplashes++;
   }
 
