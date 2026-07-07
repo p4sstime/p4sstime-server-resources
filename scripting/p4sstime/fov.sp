@@ -7,7 +7,7 @@ void SetFOV(int client, int fov) {
 
 bool GetFOVCookie(int client) {
   char cookie[4];
-  GetClientCookie(client, cookieFOV, cookie, sizeof(cookie));
+  GetClientCookie(client, ck_iFov, cookie, sizeof(cookie));
   int fov = StringToInt(cookie);
   int minFov = cvFovMin.IntValue;
   int maxFov = cvFovMax.IntValue;
@@ -64,7 +64,7 @@ void ClearFOVClientState(int client) {
 
 public void OnFOVQueried(QueryCookie cookie, int client, ConVarQueryResult result, const char[] cvarName, const char[] fov) {
   if (result != ConVarQuery_Okay) return;
-  SetClientCookie(client, cookieFOV, "");
+  SetClientCookie(client, ck_iFov, "");
   SetFOV(client, StringToInt(fov));
 }
 
@@ -97,7 +97,7 @@ Action CSetFOV(int client, int args) {
   if (AreClientCookiesCached(client)) {
     char sCookie[4];
     IntToString(fov, sCookie, sizeof(sCookie));
-    SetClientCookie(client, cookieFOV, sCookie);
+    SetClientCookie(client, ck_iFov, sCookie);
     cookieSuccess = true;
     g_bSteamOnline = true;
 

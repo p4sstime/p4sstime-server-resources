@@ -80,9 +80,9 @@ Action CSuicide(int client, int args) {
 }
 
 CREATE_BOOL_SETTING(CChatCountdown,   bCountdown, ck_iCountdown, "JACK spawn timer captions")
-CREATE_BOOL_SETTING(CJackPickupHud,   bJackHud,   ck_bJackHud,    "JACK pickup HUD text")
-CREATE_BOOL_SETTING(CJackPickupChat,  bJackChat,  ck_bJackChat,   "JACK pickup chat text")
-CREATE_BOOL_SETTING(CJackPickupSound, bJackSound, ck_bJackSound,  "JACK pickup sound")
+CREATE_BOOL_SETTING(CJackPickupHud,   bJackHud,   ck_bJackHud,   "JACK pickup HUD text")
+CREATE_BOOL_SETTING(CJackPickupChat,  bJackChat,  ck_bJackChat,  "JACK pickup chat text")
+CREATE_BOOL_SETTING(CJackPickupSound, bJackSound, ck_bJackSound, "JACK pickup sound")
 
 void Hook_OnAllowInstantResupplyChange(ConVar convar, const char[] oldValue, const char[] newValue) {
   if (!bResupply.BoolValue)

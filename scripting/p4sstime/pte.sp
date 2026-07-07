@@ -101,7 +101,7 @@ bool      g_bResupplyUp[ MAXPLAYERS ];    // Has resupply been used during curre
 bool      g_bImmunity[ MAXPLAYERS ];
 int       g_iPreDamageHP[ MAXPLAYERS ];
 bool      g_bPendingHP[ MAXPLAYERS ];
-bool      g_bInfiniteAmmo[ MAXPLAYERS ];
+bool      g_bInfAmmo[ MAXPLAYERS ];
 
 // Respawn time control
 ConVar    g_cvRespawnTime;
@@ -249,7 +249,7 @@ public OnPluginStart() {
 
     // Initialize infinite ammo and backup tracking
     FOR_EACH_CLIENT( n ) {
-        g_bInfiniteAmmo[ n ]              = false;
+        g_bInfAmmo[ n ]              = false;
         g_bBackupInfiniteAmmoTracked[ n ] = false;
         g_bBackupImmunityTracked[ n ]     = false;
         g_bBackupInfiniteAmmo[ n ]        = false;
@@ -329,7 +329,7 @@ public void OnGameFrame() {
         if ( !IsValidClientAlive( client ) ) continue;
 
         // Handle infinite ammo excluding medics
-        if ( !IsMatch() && g_bImmunityAmmoEnabled && g_bInfiniteAmmo[ client ] && TF2_GetPlayerClass( client ) != TFClass_Medic ) {
+        if ( !IsMatch() && g_bImmunityAmmoEnabled && g_bInfAmmo[ client ] && TF2_GetPlayerClass( client ) != TFClass_Medic ) {
             // Get the active weapon
             int weapon = GetEntPropEnt( client, Prop_Send, "m_hActiveWeapon" );
             if ( weapon != -1 && IsValidEntity( weapon ) ) {
@@ -578,17 +578,17 @@ NEW_CMD( CImmune ) {
 // Toggle infinite ammo
 NEW_CMD( CInfAmmo ) {
     if ( IsMatch() || !g_bImmunityAmmoEnabled ) END_CMD( "Infinite ammo is disabled." );
-    if ( args == 0 ) g_bInfiniteAmmo[ client ] = !g_bInfiniteAmmo[ client ];
+    if ( args == 0 ) g_bInfAmmo[ client ] = !g_bInfAmmo[ client ];
     else END_CMD( "Usage: sm_ammo" );
 
-    SetAmmoCookie( client, g_bInfiniteAmmo[ client ] );
+    SetAmmoCookie( client, g_bInfAmmo[ client ] );
 
     if ( IsPlayerAlive( client ) ) {
         TF2_RespawnPlayer( client );
         ApplyBootsAttributes( client );
     }
 
-    END_CMD3( client, "Infinite ammo %s.", g_bInfiniteAmmo[ client ] ? "enabled" : "disabled" );
+    END_CMD3( client, "Infinite ammo %s.", g_bInfAmmo[ client ] ? "enabled" : "disabled" );
 }
 
 // Set a player's class
@@ -996,7 +996,7 @@ NEW_CMD( CToggleExtras ) {
         FOR_EACH_CLIENT( n ) {
             if ( IsClientInGame( n ) ) {
                 g_bImmunity[ n ]          = false;
-                g_bInfiniteAmmo[ n ]      = false;
+                g_bInfAmmo[ n ]      = false;
                 g_bStaticAmmoValid[ n ]   = false;
             }
         }
@@ -1222,8 +1222,8 @@ NEW_EV( EPSpawn ) {
 
     // Restore from backup system for infinite ammo and immunity
     if ( g_bBackupInfiniteAmmoTracked[ client ] ) {
-        g_bInfiniteAmmo[ client ] = g_bBackupInfiniteAmmo[ client ];
-        if ( g_bInfiniteAmmo[ client ] ) {
+        g_bInfAmmo[ client ] = g_bBackupInfiniteAmmo[ client ];
+        if ( g_bInfAmmo[ client ] ) {
             SetInitAmmo( client );
         }
     }
@@ -1595,7 +1595,7 @@ public OnClientDisconnect( int client ) {
     g_bImmunity[ client ]                  = false;
     g_bPendingHP[ client ]                 = false;
     g_iPreDamageHP[ client ]               = 0;
-    g_bInfiniteAmmo[ client ]              = false;
+    g_bInfAmmo[ client ]              = false;
 
     // Reset backup tracking for infinite ammo and immunity
     g_bBackupInfiniteAmmoTracked[ client ] = false;
@@ -1687,7 +1687,7 @@ bool GetAmmoCookie( int client ) {
     if ( strlen( value ) == 0 ) return false;
 
     bool enabled = ( StringToInt( value ) != 0 );
-    g_bInfiniteAmmo[ client ] = enabled;
+    g_bInfAmmo[ client ] = enabled;
 
     if ( g_bBackupFOVDB ) {
         g_bBackupInfiniteAmmo[ client ]        = enabled;
@@ -1695,7 +1695,7 @@ bool GetAmmoCookie( int client ) {
     }
 
     // Store original ammo if enabling
-    if ( g_bInfiniteAmmo[ client ] && IsValidClient( client ) ) {
+    if ( g_bInfAmmo[ client ] && IsValidClient( client ) ) {
         SetInitAmmo( client );
     }
     return true;
