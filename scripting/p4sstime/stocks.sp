@@ -106,6 +106,10 @@ public void DiffPrintToChatAll(const char[] format, any ...) {
   }
 }
 
+public bool IsTeam(int client1, int client2) {
+  return GetClientTeam(client1) == GetClientTeam(client2);
+}
+
 stock char[] TFTeamToString(TFTeam input) {
   char string[4];
   switch (input) {

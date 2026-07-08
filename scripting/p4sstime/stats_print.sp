@@ -327,6 +327,7 @@ void Print3DMultilineToConsole(int client, char[][][] lines, int length, int hei
         CreateTimer(s_iPrintSeq[client]++ * 0.05, Timer_DelayedConsolePrint, dp, TIMER_FLAG_NO_MAPCHANGE | TIMER_DATA_HNDL_CLOSE);
       }
     }
+  }
 }
 
 /**

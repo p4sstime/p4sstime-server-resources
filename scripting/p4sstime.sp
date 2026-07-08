@@ -23,23 +23,23 @@
 #define GENERIC ADMFLAG_GENERIC
 #define CONFIG  ADMFLAG_CONFIG
 
-#define HE      HookEvent
-#define HCC     HookConVarChange
-#define HEO     HookEntityOutput
-#define CC      RegConsoleCmd
-#define AC      RegAdminCmd
-#define                    RCC     RegClientCookie
-#define AddC      CAddColor
-#define CV      CreateConVar
-#define EvI     GetEventInt
-#define EvF     GetEventFloat
-#define ACA     RegAdminCmdWithShort
-#define CCA     RegConsoleCmdWithShort
+#define HE   HookEvent
+#define HCC  HookConVarChange
+#define HEO  HookEntityOutput
+#define CC   RegConsoleCmd
+#define AC   RegAdminCmd
+#define RCC  RegClientCookie
+#define AddC CAddColor
+#define CV   CreateConVar
+#define EvI  GetEventInt
+#define EvF  GetEventFloat
+#define ACA  RegAdminCmdWithShort
+#define CCA  RegConsoleCmdWithShort
 
-#define PC      return Plugin_Continue
-#define PCh     return Plugin_Changed
-#define PH      return Plugin_Handled
-#define PS      return Plugin_Stop
+#define PC   return Plugin_Continue
+#define PCh  return Plugin_Changed
+#define PH   return Plugin_Handled
+#define PS   return Plugin_Stop
 
 #define elif else if
 
@@ -808,6 +808,7 @@ public void OnGameFrame() {
           ChatEvent("The ball went neutral %.2fhu {chat}from the goal!", distFromRedGoal - 20);
         }
         eLastTickBallTeam = ballTeam;
+      }
     }
     eLastTickBallTeam = ballTeam;
   }
@@ -864,6 +865,7 @@ public void OnEntityCreated(int eIndex, const char[] eClassname) {
       VerboseLog("tf_projectile_healing_bolt spawned.");
       SDKHookEx(eIndex, SDKHook_StartTouchPost, MedicArrowTouchedSomething);
     }
+  }
 }
 
 Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
@@ -1227,16 +1229,13 @@ Action EPassCaught(Handle event, const char[] name, bool dontBroadcast) {
 
   if (TF2_GetClientTeam(thrower) == TFTeam_Spectator || TF2_GetClientTeam(catcher) == TFTeam_Spectator) PH;
 
-  if (bChatEventsFun.BoolValue && bChatEvents.BoolValue) {
-    if (GetClientTeam(thrower) == GetClientTeam(catcher)) {
-      if (PlayerInEnemyGoalieZone(catcher)) {
-        ChatEvent("%s {cBlock}blocked *their teammate* %s %s{chat}!", catcherNameTeamFormat, throwerNameTeamFormat, "{chat}");
-      }
-    }
+  if (bChatEventsFun.BoolValue && bChatEvents.BoolValue && IsTeam(thrower, catcher) && AtEnemyGoal(catcher)){
+    ChatEvent("%s {cBlock}blocked *their teammate* %s %s{chat}!", catcherNameTeamFormat, throwerNameTeamFormat, "{chat}");
+  }
 
-  if (GetClientTeam(thrower) != GetClientTeam(catcher)) {
+  if (!IsTeam(thrower, catcher)) {
     intercept = true;
-    if (PlayerInTeamGoalieZone(catcher)) {
+    if (AtTeamGoal(catcher)) {
       bSave = true;
       arr_iClientRoundStats[catcher].iSaves++;
       ChatEventToClients("%s {cBlock}blocked %s {chat}!", catcherNameTeamFormat, throwerNameTeamFormat);
@@ -1268,14 +1267,14 @@ Action EPassCaught(Handle event, const char[] name, bool dontBroadcast) {
 
 // When a player melee steals the ball from another player.
 Action EPassStolen(Event event, const char[] name, bool dontBroadcast) {
-  int thief      = event.GetInt("attacker");
-  int victim     = event.GetInt("victim");
-  bool steal2save   = false;
-  iPlyWhoGotJack = thief;
+  int thief       = event.GetInt("attacker");
+  int victim      = event.GetInt("victim");
+  bool steal2save = false;
+  iPlyWhoGotJack  = thief;
 
   iBallPickedUpTick = GetGameTickCount();
   VerboseLog("Ball picked up - t%d", iBallPickedUpTick);
-  if (PlayerInTeamGoalieZone(thief)) {
+  if (AtTeamGoal(thief)) {
     arr_iClientRoundStats[thief].iSteal2Saves++;
     steal2save = true;
   }
@@ -1296,7 +1295,7 @@ Action EPassStolen(Event event, const char[] name, bool dontBroadcast) {
   FormatPlayerNameWithTeam(thief, thiefNameTeamFormat);
   FormatPlayerNameWithTeam(victim, victimNameTeamFormat);
 
-  if (PlayerInTeamGoalieZone(thief)) {
+  if (AtTeamGoal(thief)) {
     ChatEvent("%s {cSteal}defensively stole {chat}from %s{chat}!", thiefNameTeamFormat, victimNameTeamFormat);
     TagChatSTV("%s defensively stole from %s. t%d", thiefName, victimName, STVTickCount());
   }
@@ -1346,7 +1345,7 @@ Action EPassScore(Event event, const char[] name, bool dontBroadcast) {
 }
 
 // Checks if a player is close enough to their team's goal to count as a goalie.
-bool PlayerInTeamGoalieZone(int client) {
+bool AtTeamGoal(int client) {
   int team = GetClientTeam(client);
   float position[3];
   GetClientAbsOrigin(client, position);
@@ -1376,7 +1375,7 @@ bool PosInGoalZone(float position[3], TFTeam team) {
 
 // Checks if a player is close enough to the *enemy* team's goal to count as a blocker.
 // For fun.
-bool PlayerInEnemyGoalieZone(int client) {
+bool AtEnemyGoal(int client) {
   int team = GetClientTeam(client);
   float position[3];
   GetClientAbsOrigin(client, position);
