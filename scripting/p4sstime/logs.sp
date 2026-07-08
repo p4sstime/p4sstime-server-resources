@@ -3,7 +3,7 @@ public void LogUploaded(bool success, const char[] logid, const char[] url) {
   if (!success) return;
   moreurl = "https://more.tf/log/";
   StrCat(moreurl, sizeof(moreurl), logid);
-  TagChatGlobal("Type {cScore}/more {chat}or {cScore}.more {chat}to view logs.");
+  TagChatAll("Type {cScore}/more {chat}or {cScore}.more {chat}to view logs.");
 }
 
 void GetTeamNameString(int team, char[] buffer, int maxlen) {

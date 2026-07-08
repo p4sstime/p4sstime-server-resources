@@ -14,6 +14,7 @@ public OnClientCookiesCached(int client) {
   GET_BOOL_COOKIE(ck_bStatsSeparateLines, arr_iClientPrefs[client].bStatsSeparateLines, false)
   GET_BOOL_COOKIE(ck_bInfAmmo, arr_iClientPrefs[client].bInfAmmo, false)
   GET_BOOL_COOKIE(ck_bImmunity,    arr_iClientPrefs[client].bImmunity,    false)
+  GET_BOOL_COOKIE(ck_bLegacyColors, arr_iClientPrefs[client].bLegacyColors, false)
 }
 
 Action CMenu(int client, int args) {
@@ -44,6 +45,8 @@ void ShowPassMenu(int client) {
   mPassMenu.AddItem("immunity", buffer);
   FormatEx(buffer, sizeof(buffer), "%s: %s", "Infinite ammo",      arr_iClientPrefs[client].bInfAmmo ? "ON" : "OFF");
   mPassMenu.AddItem("infammo", buffer);
+  FormatEx(buffer, sizeof(buffer), "%s: %s", "Legacy colors",      arr_iClientPrefs[client].bLegacyColors ? "ON" : "OFF");
+  mPassMenu.AddItem("legacycolors", buffer);
 
   mPassMenu.Display(client, MENU_TIME_FOREVER);
 }
@@ -65,6 +68,7 @@ int PassMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
     TOGGLE_SETTING("jackpickupsound",  bJackSound, ck_bJackSound)
     TOGGLE_SETTING("immunity",         bImmunity,  ck_bImmunity)
     TOGGLE_SETTING("infammo",          bInfAmmo,   ck_bInfAmmo)
+    TOGGLE_SETTING("legacycolors",     bLegacyColors, ck_bLegacyColors)
     elif (StrEqual(info, "stats")) {
       ShowStatsMenu(param1);
     }
@@ -80,15 +84,15 @@ void ShowStatsPreview(int client) {
   BuildStatsString(stats, sizeof(stats), 3, 1, 2, 4, 0, 1, arr_iClientPrefs[client].iStats - 1);
   
   if (arr_iClientPrefs[client].bStatsSeparateLines) {
-    char nameLine[MAX_MESSAGE_LENGTH];
-    Format(nameLine, sizeof(nameLine), "%s:", playerNameTeamFormatted);
-    CTagReply(client, "%s", nameLine);
-    CReplyToCommand(client, "%s", stats);
+    char name[MAX_MESSAGE_LENGTH];
+    Format(name, sizeof(name), "%s:", playerNameTeamFormatted);
+    CTagChat(client, "%s", name);
+    CNoTagChat(client, "%s", stats);
   }
   else {
     char combined[MAX_MESSAGE_LENGTH * 2];
     Format(combined, sizeof(combined), "%s: %s", playerNameTeamFormatted, stats);
-    CTagReply(client, "%s", combined);
+    CTagChat(client, "%s", combined);
   }
 }
 

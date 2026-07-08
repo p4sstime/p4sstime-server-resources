@@ -184,7 +184,7 @@ Action CSetClass(int client, int args) {
 
 Action CDice(int client, int args) {
   if (args < 1) {
-    TagChatClient(client, "Usage: sm_dice <\"custom\" | #userid | name | @team>");
+    CTagChat(client, "Usage: sm_dice <\"custom\" | #userid | name | @team>");
     PH;
   }
 
@@ -266,19 +266,19 @@ Action CDice(int client, int args) {
   } elif (customCount > 0) {
     PrintToChatAll("Rolled %s", customStrings[GetRandomInt(0, customCount - 1)]);
   } else {
-    TagChatClient(client, "No valid targets or options provided.");
+    CTagChat(client, "No valid targets or options provided.");
   }
 
   PH;
 }
 
 Action CReady(int client, int args) {
-  if (IsMatch()) { TagChatClient(client, "Ready command cannot be used during a game."); PH; }
-  if (args != 0) { TagChatClient(client, "Usage: sm_ready"); PH; }
+  if (IsMatch()) { CTagChat(client, "Ready command cannot be used during a game."); PH; }
+  if (args != 0) { CTagChat(client, "Usage: sm_ready"); PH; }
 
   TFTeam clientTeam = TF2_GetClientTeam(client);
   if (clientTeam != TFTeam_Red && clientTeam != TFTeam_Blue) {
-    TagChatClient(client, "You must be on RED or BLU to use this command.");
+    CTagChat(client, "You must be on RED or BLU to use this command.");
     PH;
   }
 
@@ -292,7 +292,7 @@ Action CReady(int client, int args) {
   } else {
     float elapsed = GetGameTime() - g_fUnreadyCooldown[teamIndex];
     if (elapsed < 5.0) {
-      TagChatClient(client, "Wait %.0f more second%s before unreadying.", 5.0 - elapsed, (5.0 - elapsed < 2.0) ? "" : "s");
+      CTagChat(client, "Wait %.0f more second%s before unreadying.", 5.0 - elapsed, (5.0 - elapsed < 2.0) ? "" : "s");
       PH;
     }
     g_fUnreadyCooldown[teamIndex] = GetGameTime();
@@ -330,23 +330,23 @@ Action CReady(int client, int args) {
 }
 
 Action CTeamName(int client, int args) {
-  if (IsMatch()) { TagChatClient(client, "Team rename can only be used during preround."); PH; }
-  if (args != 1) { TagChatClient(client, "Usage: sm_team_name <new_name>"); PH; }
+  if (IsMatch()) { CTagChat(client, "Team rename can only be used during preround."); PH; }
+  if (args != 1) { CTagChat(client, "Usage: sm_team_name <new_name>"); PH; }
 
   TFTeam clientTeam = TF2_GetClientTeam(client);
   if (clientTeam != TFTeam_Red && clientTeam != TFTeam_Blue) {
-    TagChatClient(client, "You must be on RED or BLU to use this command.");
+    CTagChat(client, "You must be on RED or BLU to use this command.");
     PH;
   }
 
   char newName[64];
   GetCmdArg(1, newName, sizeof(newName));
 
-  if (strlen(newName) < 1) { TagChatClient(client, "Team name cannot be empty."); PH; }
-  if (strlen(newName) > 5) { TagChatClient(client, "Team name cannot be longer than 5 characters."); PH; }
+  if (strlen(newName) < 1) { CTagChat(client, "Team name cannot be empty."); PH; }
+  if (strlen(newName) > 5) { CTagChat(client, "Team name cannot be longer than 5 characters."); PH; }
 
   int teamEntity = FindTeamEntity(view_as<int>(clientTeam));
-  if (teamEntity == -1) { TagChatClient(client, "Could not find team entity."); PH; }
+  if (teamEntity == -1) { CTagChat(client, "Could not find team entity."); PH; }
 
   SetEntPropString(teamEntity, Prop_Data, "m_szTeamname", newName);
 

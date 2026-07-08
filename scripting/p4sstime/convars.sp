@@ -209,7 +209,7 @@ void RemoveStocks(int client) {
 
       for (int i = 0; i < sizeof(blockedWeapons); i++) {
         if (StrEqual(classname, blockedWeapons[i])) {
-          TagChatClient(client, messages[i]);
+          CTagChat(client, messages[i]);
           TF2_RemoveWeaponSlot(client, (class == TFClass_Medic) ? 0 : 1);
           break;
         }

@@ -13,7 +13,7 @@
 #pragma semicolon 1 // required for logs.tf
 #pragma newdecls required
 
-#define VERSION "4.1.0"
+#define VERSION "4.2.0"
 
 // Macros
 #define GD      GameData 
@@ -75,6 +75,7 @@ enum struct enuClientSettings {
   bool bStatsSeparateLines;
   bool bImmunity;
   bool bInfAmmo;
+  bool bLegacyColors;
 }
 
 enum struct enuClientStats {
@@ -198,6 +199,7 @@ Cookie ck_iCountdown,
        ck_bStatsSeparateLines,
        ck_bImmunity,
        ck_bInfAmmo,
+       ck_bLegacyColors,
        ck_iFov;
 
 // log variables
@@ -223,7 +225,7 @@ stock void ChatEvent(const char[] format, any ...) {
     int len = strlen(format) + 255;
     char[] MessageToChat = new char[len];
     VFormat(MessageToChat, len, format, 2);
-    TagChatAllPlayers(MessageToChat);
+    TagChatAll(MessageToChat);
   }
 }
 
@@ -234,7 +236,7 @@ stock void ChatEventToClients(const char[] format, any ...) {
     VFormat(MessageToChat, len, format, 2);
     for (int x = 1; x < MaxClients + 1; x++) {
       if (!IsValidClient(x) || IsClientSourceTV(x)) continue;
-      TagChatClient(x, MessageToChat);
+      CTagChat(x, MessageToChat);
     }
   }
 }
@@ -244,12 +246,12 @@ stock void SendCountdownToClients(int time) {
     if (!IsValidClient(x) || !arr_iClientPrefs[x].bCountdown) continue;
     
     switch (time) {
-      case 10: TagChatClient(x, "{cGreen}10 seconds...");
-      case 5:  TagChatClient(x, "{cYellow}5 seconds...");
-      case 4:  TagChatClient(x, "{cYellow}4 seconds...");
-      case 3:  TagChatClient(x, "{cYellow}3 seconds...");
-      case 2:  TagChatClient(x, "{cRed}2 seconds...");
-      case 1:  TagChatClient(x, "{cRed}1 second...");
+      case 10: CTagChat(x, "{cGreen}10 seconds...");
+      case 5:  CTagChat(x, "{cYellow}5 seconds...");
+      case 4:  CTagChat(x, "{cYellow}4 seconds...");
+      case 3:  CTagChat(x, "{cYellow}3 seconds...");
+      case 2:  CTagChat(x, "{cRed}2 seconds...");
+      case 1:  CTagChat(x, "{cRed}1 second...");
     }
   }
 }
@@ -259,32 +261,32 @@ stock void SendSoundCountdownToClients(const char[] sound) {
     if (!IsValidClient(x) || !arr_iClientPrefs[x].bCountdown) continue;
     
     if (StrEqual(sound, "Announcer.RoundBegins10seconds"))
-      TagChatClient(x, "{cGreen}10 seconds...");
+      CTagChat(x, "{cGreen}10 seconds...");
     elif (StrEqual(sound, "Passtime.BallSpawn"))
-      TagChatClient(x, "{cGreen}Ball has spawned!");
+      CTagChat(x, "{cGreen}Ball has spawned!");
     if (bHalloweenMode) {
       if (StrEqual(sound, "Merasmus.RoundBegins5seconds"))
-        TagChatClient(x, "{cYellow}5 seconds...");
+        CTagChat(x, "{cYellow}5 seconds...");
       elif (StrEqual(sound, "Merasmus.RoundBegins4seconds"))
-        TagChatClient(x, "{cYellow}4 seconds...");
+        CTagChat(x, "{cYellow}4 seconds...");
       elif (StrEqual(sound, "Merasmus.RoundBegins3seconds"))
-        TagChatClient(x, "{cYellow}3 seconds...");
+        CTagChat(x, "{cYellow}3 seconds...");
       elif (StrEqual(sound, "Merasmus.RoundBegins2seconds"))
-        TagChatClient(x, "{cRed}2 seconds...");
+        CTagChat(x, "{cRed}2 seconds...");
       elif (StrEqual(sound, "Merasmus.RoundBegins1seconds"))
-        TagChatClient(x, "{cRed}1 second...");
+        CTagChat(x, "{cRed}1 second...");
     }
     else {
       if (StrEqual(sound, "Announcer.RoundBegins5seconds"))
-        TagChatClient(x, "{cYellow}5 seconds...");
+        CTagChat(x, "{cYellow}5 seconds...");
       elif (StrEqual(sound, "Announcer.RoundBegins4seconds"))
-        TagChatClient(x, "{cYellow}4 seconds...");
+        CTagChat(x, "{cYellow}4 seconds...");
       elif (StrEqual(sound, "Announcer.RoundBegins3seconds"))
-        TagChatClient(x, "{cYellow}3 seconds...");
+        CTagChat(x, "{cYellow}3 seconds...");
       elif (StrEqual(sound, "Announcer.RoundBegins2seconds"))
-        TagChatClient(x, "{cRed}2 seconds...");
+        CTagChat(x, "{cRed}2 seconds...");
       elif (StrEqual(sound, "Announcer.RoundBegins1seconds"))
-        TagChatClient(x, "{cRed}1 second...");
+        CTagChat(x, "{cRed}1 second...");
     }
   }
 }
@@ -311,7 +313,7 @@ stock void PlayJackSound(int client) {
 
 stock void ShowJackChat(int client, const char[] message) {
   if (arr_iClientPrefs[client].bJackChat) {
-    TagChatClient(client, "%s%s", "{cGreen}", message);
+    CTagChat(client, "%s%s", "{cGreen}", message);
   }
 }
 
@@ -514,6 +516,7 @@ public void OnPluginStart() {
   ck_iFov =       RCC("p4ssClientFOV",               "p4sstime's client FOV setting",                                     CookieAccess_Public);
   ck_bImmunity =  RCC("p4ssClientImmunity",          "p4sstime's immunity setting",                                       CookieAccess_Public);
   ck_bInfAmmo =   RCC("p4ssClientInfiniteAmmo",      "p4sstime's infinite ammo setting",                                  CookieAccess_Public);
+  ck_bLegacyColors = RCC("p4ssClientLegacyColors",   "p4sstime's client setting for using legacy colors",                 CookieAccess_Public);
 
   // Client commands
   CC("sm_pt_stats",        CChatStats,       "Toggle end-of-round stats");
@@ -568,6 +571,14 @@ public void OnPluginStart() {
   AddC("cOrange",         0xDD8125); // #DD8125
   AddC("cYellow",         0xECCD19); // #ECCD19
   
+  // Legacy
+  AddC("cOldRed",      0xFF0000); // #FF0000
+  AddC("cOldGreen",    0x00FF00); // #00FF00
+  AddC("cOldBlue",     0x0000FF); // #0000FF
+  AddC("cOldCyan",     0x00FFFF); // #00FFFF
+  AddC("cOldMagenta",  0xFF00FF); // #FF00FF
+  AddC("cOldYellow",   0xFFFF00); // #FFFF00
+  
   // Game event specific colors
   AddC("cScore",          0x3CB371); // #2bd501
   AddC("cAssist",         0x008B8B); // #48c0dc
@@ -575,6 +586,14 @@ public void OnPluginStart() {
   AddC("cNeutral",        0xDD8125); // #DD8125
   AddC("cIntercept",      0xA946C7); // #A946C7
   AddC("cSteal",          0xD64843); // #D64843
+  
+  // Legacy
+  AddC("cOldScore",    0x00FF00); // #00FF00
+  AddC("cOldAssist",   0x00FFFF); // #00FFFF
+  AddC("cOldBlock",    0xFFFF00); // #FFFF00
+  AddC("cOldNeutral",  0xFFA500); // #FFA500
+  AddC("cOldIntercept",0xFF00FF); // #FF00FF
+  AddC("cOldSteal",    0xFF0000); // #FF0000
 
   // ConVars
   bFixStocks =             CV("sm_pt_fix_stocks",              "1",    "Disable equipping shotgun, stickies, and needles; the allowlist can't block stock weapons.",       NOTIFY);
@@ -921,7 +940,7 @@ void MedicArrowTouchedSomething(int arrow, int other) {
 
     char medicAttackerNameTeamFmt[MAX_TEAMFORMAT_NAME_LENGTH];
     FormatPlayerNameWithTeam(eiMedicAttacker, medicAttackerNameTeamFmt);
-    TagChatAllPlayers("%s {cBlock}directed {chat}the ball with an {cNeutral}arrow{chat}!", medicAttackerNameTeamFmt);
+    TagChatAll("%s {cBlock}directed {chat}the ball with an {cNeutral}arrow{chat}!", medicAttackerNameTeamFmt);
   }
   VerboseLog("medic arrow from %d touched %s i %d", eiMedicAttacker, classname, other);
 }
@@ -934,7 +953,7 @@ Action ERoundReset(Event event, const char[] name, bool dontBroadcast) {
   bBallLoose = false;
   if (GetConVarInt(bPractice) == 1) {
     SetConVarInt(bPractice, 0);
-    TagChatGlobal("Game started; practice mode disabled.");
+    TagChatAll("Game started; practice mode disabled.");
   }
   bHalloweenMode = false;
   iRoundResetTick = GetGameTickCount();
@@ -1165,7 +1184,7 @@ Action EPassGet(Event event, const char[] name, bool dontBroadcast) {
         SDKHooks_TakeDamage(iPlyWhoGotJack, iPlyWhoGotJack, iPlyWhoGotJack, 500.0);
         char winstratterName[MAX_NAME_LENGTH];
         GetClientName(iPlyWhoGotJack, winstratterName, sizeof(winstratterName));
-        TagChatAllPlayers("{chat}%s {cScore}tried to {cScore}win strat.", winstratterName);
+        TagChatAll("{chat}%s {cScore}tried to {cScore}win strat.", winstratterName);
       }
     }
   }

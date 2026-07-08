@@ -4,8 +4,8 @@ Action CSpawnBall(int client, int args) {
   if (client == 0) name = "CONSOLE";
   else GetClientName(client, name, sizeof(name));
 
-  TagChatAllPlayers("{default}: Spawning the ball for practice...", name);
-  TagChatAllPlayers("{warning}THE GAME IS {cRed}NOT {warning}STARTING!");
+  TagChatAll("{default}: Spawning the ball for practice...", name);
+  TagChatAll("{warning}THE GAME IS {cRed}NOT {warning}STARTING!");
   bWaitingForBallSpawnToRestart = true;
   ServerCommand("mp_restartgame_immediate 1");
   PH;

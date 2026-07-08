@@ -1,4 +1,4 @@
-// Immunity and infinite ammo feature - only active outside of rounds
+// Immunity and infinite ammo
 
 bool IsMatch() {
   bool awaitingReadyRestart = view_as<bool>(GameRules_GetProp("m_bAwaitingReadyRestart"));
@@ -23,7 +23,7 @@ void SetAmmo(int client, int weapon, int ammo) {
 
 Action CImmune(int client, int args) {
   if (IsMatch()) {
-    TagChatClient(client, "Immunity is disabled during a match.");
+    CTagChat(client, "Immunity is disabled during a match.");
     PH;
   }
   arr_iClientPrefs[client].bImmunity = !arr_iClientPrefs[client].bImmunity;
@@ -32,13 +32,13 @@ Action CImmune(int client, int args) {
     TF2_RespawnPlayer(client);
     ApplyBootsAttributes(client);
   }
-  TagChatClient(client, "Immunity %s.", arr_iClientPrefs[client].bImmunity ? "enabled" : "disabled");
+  CTagChat(client, "Immunity %s.", arr_iClientPrefs[client].bImmunity ? "enabled" : "disabled");
   PH;
 }
 
 Action CInfAmmo(int client, int args) {
   if (IsMatch()) {
-    TagChatClient(client, "Infinite ammo is disabled during a match.");
+    CTagChat(client, "Infinite ammo is disabled during a match.");
     PH;
   }
   arr_iClientPrefs[client].bInfAmmo = !arr_iClientPrefs[client].bInfAmmo;
@@ -47,7 +47,7 @@ Action CInfAmmo(int client, int args) {
     TF2_RespawnPlayer(client);
     ApplyBootsAttributes(client);
   }
-  TagChatClient(client, "Infinite ammo %s.", arr_iClientPrefs[client].bInfAmmo ? "enabled" : "disabled");
+  CTagChat(client, "Infinite ammo %s.", arr_iClientPrefs[client].bInfAmmo ? "enabled" : "disabled");
   PH;
 }
 

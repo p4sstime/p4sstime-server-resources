@@ -35,43 +35,75 @@ bool GetIntCookie(int client, Cookie cookie, int& value) {
 public void CTagReply(int client, const char[] format, any ...) {
   char buffer[254];
   VFormat(buffer, sizeof(buffer), format, 3);
+  ApplyLegacyColors(buffer, sizeof(buffer), client);
   CReplyToCommand(client, "%s %s", gsTag, buffer);
 }
 
-public void TagChatGlobal(const char[] format, any ...) {
+public void TagChatAll(const char[] format, any ...) {
   char buffer[254];
 
   for (int i = 1; i <= MaxClients; i++) {
     if (IsClientInGame(i)) {
       SetGlobalTransTarget(i);
       VFormat(buffer, sizeof(buffer), format, 2);
-      CPrintToChat(i, "%s %s", gsTag, buffer);
+      char clientBuffer[254];
+      strcopy(clientBuffer, sizeof(clientBuffer), buffer);
+      ApplyLegacyColors(clientBuffer, sizeof(clientBuffer), i);
+      CPrintToChat(i, "%s %s", gsTag, clientBuffer);
     }
   }
 }
 
-public void TagChatAllPlayers(const char[] format, any ...) {
-  char buffer[254];
-
-  for (int i = 1; i <= MaxClients; i++) {
-    if (IsClientInGame(i) && !IsClientSourceTV(i)) {
-      SetGlobalTransTarget(i);
-      VFormat(buffer, sizeof(buffer), format, 2);
-      CPrintToChat(i, "%s %s", gsTag, buffer);
-    }
-  }
-}
-
-public void TagChatClient(int client, const char[] format, any ...) {
+public void CTagChat(int client, const char[] format, any ...) {
   char buffer[254];
   VFormat(buffer, sizeof(buffer), format, 3);
+  ApplyLegacyColors(buffer, sizeof(buffer), client);
   CPrintToChat(client, "%s %s", gsTag, buffer);
+}
+
+public void CNoTagChat(int client, const char[] format, any ...) {
+  char buffer[254];
+  VFormat(buffer, sizeof(buffer), format, 3);
+  ApplyLegacyColors(buffer, sizeof(buffer), client);
+  CPrintToChat(client, "%s", buffer);
 }
 
 public void TagChatSTV(const char[] format, any ...) {
   char buffer[254];
   VFormat(buffer, sizeof(buffer), format, 2);
   CPrintToSTV("%s %s", gsTagSTV, buffer);
+}
+
+public void ApplyLegacyColors(char[] buffer, int maxLength, int client) {
+  if (client > 0 && arr_iClientPrefs[client].bLegacyColors) {
+    ReplaceString(buffer, maxLength, "{cRed}",       "{cOldRed}");
+    ReplaceString(buffer, maxLength, "{cGreen}",     "{cOldGreen}");
+    ReplaceString(buffer, maxLength, "{cBlue}",      "{cOldBlue}");
+    ReplaceString(buffer, maxLength, "{cTeal}",      "{cOldCyan}");
+    ReplaceString(buffer, maxLength, "{cMagenta}",   "{cOldMagenta}");
+    ReplaceString(buffer, maxLength, "{cOrange}",    "{cOldYellow}");
+    ReplaceString(buffer, maxLength, "{cYellow}",    "{cOldYellow}");
+    ReplaceString(buffer, maxLength, "{cScore}",     "{cOldScore}");
+    ReplaceString(buffer, maxLength, "{cAssist}",    "{cOldAssist}");
+    ReplaceString(buffer, maxLength, "{cBlock}",     "{cOldBlock}");
+    ReplaceString(buffer, maxLength, "{cNeutral}",   "{cOldNeutral}");
+    ReplaceString(buffer, maxLength, "{cIntercept}", "{cOldIntercept}");
+    ReplaceString(buffer, maxLength, "{cSteal}",     "{cOldSteal}");
+  }
+}
+
+public void DiffPrintToChatAll(const char[] format, any ...) {
+  char buffer[254];
+  VFormat(buffer, sizeof(buffer), format, 2);
+  
+  for (int i = 1; i <= MaxClients; i++) {
+    if (IsClientInGame(i) && !IsFakeClient(i)) {
+      char clientBuffer[254];
+      strcopy(clientBuffer, sizeof(clientBuffer), buffer);
+      ApplyLegacyColors(clientBuffer, sizeof(clientBuffer), i);
+      CPrintToChat(i, "%s %s", gsTag, clientBuffer);
+    }
+  }
 }
 
 stock char[] TFTeamToString(TFTeam input) {

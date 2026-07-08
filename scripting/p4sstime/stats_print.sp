@@ -176,35 +176,35 @@ Action Timer_DisplayStats(Handle timer) {
     GetConsoleStatsArrStr(arrStrConsoleStatsRed, redTeam, redAmount, RED);
     GetConsoleStatsArrStr(arrStrConsoleStatsBlu, bluTeam, bluAmount, BLU);
 
-  for (int x = 1; x < MaxClients + 1; x++) {
-    if (!IsValidClient(x)) continue;
-    if (!arr_iClientPrefs[x].iStats) continue;
+  for (int client = 1; client < MaxClients + 1; client++) {
+    if (!IsValidClient(client)) continue;
+    if (!arr_iClientPrefs[client].iStats) continue;
 
-    LogToGame("Printing for client: %d", x);
+    LogToGame("Printing for client: %d", client);
 
-    s_iPrintSeq[x] = 0;
+    s_iPrintSeq[client] = 0;
 
-    bool isStv = IsClientSourceTV(x);
-    bool shouldPrintBluFirst = (TF2_GetClientTeam(x) == TFTeam_Red);
-    int fmt = arr_iClientPrefs[x].iStats - 1; // 1=long->0, 2=short->1, 3=minimal->2
+    bool isStv = IsClientSourceTV(client);
+    bool shouldPrintBluFirst = (TF2_GetClientTeam(client) == TFTeam_Red);
+    int fmt = arr_iClientPrefs[client].iStats - 1; // 1=long->0, 2=short->1, 3=minimal->2
 
     if (shouldPrintBluFirst) {
-      CPrintStats(x, arrStrBluStats[fmt], bluAmount * 2, arr_iClientPrefs[x].bStatsSeparateLines);
-      CPrintStats(x, arrStrRedStats[fmt], redAmount * 2, arr_iClientPrefs[x].bStatsSeparateLines);
+      CPrintStats(client, arrStrBluStats[fmt], bluAmount * 2, arr_iClientPrefs[client].bStatsSeparateLines);
+      CPrintStats(client, arrStrRedStats[fmt], redAmount * 2, arr_iClientPrefs[client].bStatsSeparateLines);
     }
     else {
-      CPrintStats(x, arrStrRedStats[fmt], redAmount * 2, arr_iClientPrefs[x].bStatsSeparateLines);
-      CPrintStats(x, arrStrBluStats[fmt], bluAmount * 2, arr_iClientPrefs[x].bStatsSeparateLines);
+      CPrintStats(client, arrStrRedStats[fmt], redAmount * 2, arr_iClientPrefs[client].bStatsSeparateLines);
+      CPrintStats(client, arrStrBluStats[fmt], bluAmount * 2, arr_iClientPrefs[client].bStatsSeparateLines);
     }
 
-    TagChatClient(x, "Possession: {teamred}RED %.1f%%{chat} · {teamblu}BLU %.1f%%", redBallPossessionPercent, bluBallPossessionPercent);
+    CTagChat(client, "Possession: {teamred}RED %.1f%%{chat} · {teamblu}BLU %.1f%%", redBallPossessionPercent, bluBallPossessionPercent);
     if (isStv) {
       TagChatSTV("BLU possession time in ticks: %d", iRedBallTime);
       TagChatSTV("RED possession time in ticks: %d", iBluBallTime);
     }
     else {
-      Print3DMultilineToConsole(x, arrStrConsoleStatsBlu, sizeof(arrStrConsoleStatsBlu), sizeof(arrStrConsoleStatsBlu[]));
-      Print3DMultilineToConsole(x, arrStrConsoleStatsRed, sizeof(arrStrConsoleStatsRed), sizeof(arrStrConsoleStatsRed[]));
+      Print3DMultilineToConsole(client, arrStrConsoleStatsBlu, sizeof(arrStrConsoleStatsBlu), sizeof(arrStrConsoleStatsBlu[]));
+      Print3DMultilineToConsole(client, arrStrConsoleStatsRed, sizeof(arrStrConsoleStatsRed), sizeof(arrStrConsoleStatsRed[]));
     }
   }
 
@@ -291,8 +291,12 @@ void GetConsoleStatsArrStr(char buf[MAXPLAYERS + 1][7][MAX_MESSAGE_LENGTH], int[
 
 void CPrintMultiline(int client, char[][] lines, int len) {
   for (int i = 0; i < len; i++) {
-    if (!StrEqual(lines[i], ""))
-      CReplyToCommand(client, "%s", lines[i]);
+    if (!StrEqual(lines[i], "")) {
+      char line[MAX_MESSAGE_LENGTH];
+      strcopy(line, sizeof(line), lines[i]);
+      ApplyLegacyColors(line, sizeof(line), client);
+      CPrintToChat(client, "%s", line);
+    }
   }
 }
 
@@ -306,6 +310,7 @@ void CPrintStats(int client, char[][] lines, int len, bool separateLines) {
       if (i + 1 < len && !StrEqual(lines[i], "") && !StrEqual(lines[i + 1], "")) {
         char combined[MAX_MESSAGE_LENGTH * 2];
         Format(combined, sizeof(combined), "%s %s", lines[i], lines[i + 1]);
+        ApplyLegacyColors(combined, sizeof(combined), client);
         CPrintToChat(client, combined);
       }
     }
