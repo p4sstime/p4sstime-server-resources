@@ -71,7 +71,7 @@ public void OnFOVQueried(QueryCookie cookie, int client, ConVarQueryResult resul
 Action CSetFOV(int client, int args) {
   if (args != 1) {
     CTagReply(client, "Usage: sm_pt_fov <fov>");
-    PH;
+    return Plugin_Handled;
   }
 
   int fov = GetCmdArgInt(1);
@@ -81,16 +81,16 @@ Action CSetFOV(int client, int args) {
   if (fov == 0) {
     QueryClientConVar(client, "fov_desired", OnFOVQueried);
     CTagReply(client, "Your FOV has been reset.");
-    PH;
+    return Plugin_Handled;
   }
 
   if (fov < minFov) {
     CTagReply(client, "The minimum FOV you can set is %d.", minFov);
-    PH;
+    return Plugin_Handled;
   }
   if (fov > maxFov) {
     CTagReply(client, "The maximum FOV you can set is %d.", maxFov);
-    PH;
+    return Plugin_Handled;
   }
 
   bool cookieSuccess = false;
@@ -113,5 +113,5 @@ Action CSetFOV(int client, int args) {
   SetFOV(client, fov);
 
   CTagReply(client, "Your FOV has been set to %d.%s", fov, cookieSuccess ? "" : " (Steam is down, this will be reset on leaving.)");
-  PH;
+  return Plugin_Handled;
 }

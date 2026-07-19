@@ -11,7 +11,7 @@ Action Timer_DelayedConsolePrint(Handle timer, DataPack dp) {
   char line[MAX_MESSAGE_LENGTH];
   dp.ReadString(line, sizeof(line));
   if (IsValidClient(client)) PrintToConsole(client, line);
-  PS;
+  return Plugin_Stop;
 }
 
 static const char sGoals[]      = "{cScore}%d goals";
@@ -39,7 +39,7 @@ Action CChatStats(int client, int args) {
   // If no arguments provided, show the stats menu
   if (args == 0) {
     ShowStatsMenu(client);
-    PH;
+    return Plugin_Handled;
   }
   
   char arg[32];
@@ -64,16 +64,16 @@ Action CChatStats(int client, int args) {
   }
   else {
     CTagReply(client, "Invalid argument. Use: 0/off, 1/long, 2/short, or 3/min/minimal");
-    PH;
+    return Plugin_Handled;
   }
   
   SetIntCookie(client, ck_iStats, arr_iClientPrefs[client].iStats);
-  PH;
+  return Plugin_Handled;
 }
 
 Action Timer_ShowMoreTF(Handle timer, any client) {
   if (!IsValidClient(client))
-    PS;
+    return Plugin_Stop;
 
   char num[3];
   Handle Kv = CreateKeyValues("data");
@@ -85,7 +85,7 @@ Action Timer_ShowMoreTF(Handle timer, any client) {
   ShowVGUIPanel(client, "info", Kv);
   CloseHandle(Kv);
 
-  PS;
+  return Plugin_Stop;
 }
 
 // Clear all plugin stats for the specified client.
@@ -211,7 +211,7 @@ Action Timer_DisplayStats(Handle timer) {
   for (int i = 0; i < MaxClients + 1; i++)
     ClearLocalStats(i);
 
-  PS;
+  return Plugin_Stop;
 }
 
 void GetTeamStatsArrStr(char buf[(MAXPLAYERS + 1) * 2][MAX_MESSAGE_LENGTH], int[] teamMembers, int length, int format = 0) {

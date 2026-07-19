@@ -53,10 +53,10 @@ void TargetStringAlias(char[] target, int size) {
 // ====================================================================================================
 
 Action CForceReady(int client, int args) {
-  if (IsMatch()) PC;
+  if (IsMatch()) return Plugin_Continue;
   if (args != 2) {
     ReplyToCommand(client, "[SM] Usage: sm_force_ready <red|blu> <0|1>");
-    PH;
+    return Plugin_Handled;
   }
 
   char teamArg[10];
@@ -64,19 +64,19 @@ Action CForceReady(int client, int args) {
   int teamIndex = ParseTeamIndex(teamArg);
   int status    = GetCmdArgInt(2);
 
-  if (teamIndex == -1) { ReplyToCommand(client, "[SM] Invalid team. Use 'red' or 'blu'."); PH; }
-  if (status < 0 || status > 1) { ReplyToCommand(client, "[SM] Invalid status. Use 0 (not ready) or 1 (ready)."); PH; }
+  if (teamIndex == -1) { ReplyToCommand(client, "[SM] Invalid team. Use 'red' or 'blu'."); return Plugin_Handled; }
+  if (status < 0 || status > 1) { ReplyToCommand(client, "[SM] Invalid status. Use 0 (not ready) or 1 (ready)."); return Plugin_Handled; }
 
   GameRules_SetProp("m_bTeamReady", status, 1, teamIndex + 2);
   g_bIsTeamReady[teamIndex] = (status != 0);
 
-  PH;
+  return Plugin_Handled;
 }
 
 Action CToggleRespawn(int client, int args) {
   if (args != 1) {
     ReplyToCommand(client, "[SM] Usage: sm_enable_respawn <0|1>");
-    PH;
+    return Plugin_Handled;
   }
 
   char arg[4];
@@ -85,12 +85,12 @@ Action CToggleRespawn(int client, int args) {
 
   if (value != 0 && value != 1) {
     ReplyToCommand(client, "[SM] Usage: sm_enable_respawn <0|1>");
-    PH;
+    return Plugin_Handled;
   }
 
   g_bInstantRespawnEnabled = (value != 0);
   ReplyToCommand(client, "[SM] Instant respawn %s", g_bInstantRespawnEnabled ? "enabled" : "disabled");
-  PH;
+  return Plugin_Handled;
 }
 
 Action CSetTeam(int client, int args) {
@@ -101,7 +101,7 @@ Action CSetTeam(int client, int args) {
 
   if (args != 2 || team == TFTeam_Unassigned) {
     ReplyToCommand(client, "[SM] Usage: sm_setteam <#userid|name> <spec|red|blu>");
-    PH;
+    return Plugin_Handled;
   }
 
   int  targetList[MAXPLAYERS];
@@ -110,7 +110,7 @@ Action CSetTeam(int client, int args) {
   int  count = ProcessTargetString(targetArg, client, targetList, MAXPLAYERS, COMMAND_FILTER_CONNECTED, targetName, sizeof(targetName), tnIsMl);
   bool changed = false;
 
-  if (count == COMMAND_TARGET_NONE) PH;
+  if (count == COMMAND_TARGET_NONE) return Plugin_Handled;
 
   for (int n = 0; n < count; n++) {
     int t = targetList[n];
@@ -130,13 +130,13 @@ Action CSetTeam(int client, int args) {
     ReplyToCommand(client, "[SM] Switched %s to %s", targetName, teamName);
   }
 
-  PH;
+  return Plugin_Handled;
 }
 
 Action CSetClass(int client, int args) {
   if (args != 2) {
     ReplyToCommand(client, "[SM] Usage: sm_setclass <#userid|name> <soldier|demo|medic>");
-    PH;
+    return Plugin_Handled;
   }
 
   char classArg[16];
@@ -144,7 +144,7 @@ Action CSetClass(int client, int args) {
   TFClassType tfclass = ParseClass(classArg);
   if (tfclass == TFClass_Unknown) {
     ReplyToCommand(client, "[SM] Invalid class. Use soldier, demo, or medic.");
-    PH;
+    return Plugin_Handled;
   }
 
   char targetArg[33];
@@ -156,7 +156,7 @@ Action CSetClass(int client, int args) {
   int  count   = ProcessTargetString(targetArg, client, targets, MAXPLAYERS, COMMAND_FILTER_CONNECTED, targetName, sizeof(targetName), tnIsMl);
   bool changed = false;
 
-  if (count == COMMAND_TARGET_NONE) PH;
+  if (count == COMMAND_TARGET_NONE) return Plugin_Handled;
 
   for (int n = 0; n < count; n++) {
     int t = targets[n];
@@ -179,13 +179,13 @@ Action CSetClass(int client, int args) {
     ReplyToCommand(client, "[SM] Set %s class to %s", targetName, className);
   }
 
-  PH;
+  return Plugin_Handled;
 }
 
 Action CDice(int client, int args) {
   if (args < 1) {
     CTagChat(client, "Usage: sm_dice <\"custom\" | #userid | name | @team>");
-    PH;
+    return Plugin_Handled;
   }
 
   char customStrings[10][64];
@@ -269,17 +269,17 @@ Action CDice(int client, int args) {
     CTagChat(client, "No valid targets or options provided.");
   }
 
-  PH;
+  return Plugin_Handled;
 }
 
 Action CReady(int client, int args) {
-  if (IsMatch()) { CTagChat(client, "Ready command cannot be used during a game."); PH; }
-  if (args != 0) { CTagChat(client, "Usage: sm_ready"); PH; }
+  if (IsMatch()) { CTagChat(client, "Ready command cannot be used during a game."); return Plugin_Handled; }
+  if (args != 0) { CTagChat(client, "Usage: sm_ready"); return Plugin_Handled; }
 
   TFTeam clientTeam = TF2_GetClientTeam(client);
   if (clientTeam != TFTeam_Red && clientTeam != TFTeam_Blue) {
     CTagChat(client, "You must be on RED or BLU to use this command.");
-    PH;
+    return Plugin_Handled;
   }
 
   int  teamIndex          = (clientTeam == TFTeam_Red) ? 0 : 1;
@@ -293,7 +293,7 @@ Action CReady(int client, int args) {
     float elapsed = GetGameTime() - g_fUnreadyCooldown[teamIndex];
     if (elapsed < 5.0) {
       CTagChat(client, "Wait %.0f more second%s before unreadying.", 5.0 - elapsed, (5.0 - elapsed < 2.0) ? "" : "s");
-      PH;
+      return Plugin_Handled;
     }
     g_fUnreadyCooldown[teamIndex] = GetGameTime();
   }
@@ -326,27 +326,27 @@ Action CReady(int client, int args) {
   GetClientName(client, playerName, sizeof(playerName));
   TeamChatAnnounce(clientTeam, "%s {default}changed team state to {steamlightgreen}%s", playerName, newReadyState ? "Ready" : "Not Ready");
 
-  PH;
+  return Plugin_Handled;
 }
 
 Action CTeamName(int client, int args) {
-  if (IsMatch()) { CTagChat(client, "Team rename can only be used during preround."); PH; }
-  if (args != 1) { CTagChat(client, "Usage: sm_team_name <new_name>"); PH; }
+  if (IsMatch()) { CTagChat(client, "Team rename can only be used during preround."); return Plugin_Handled; }
+  if (args != 1) { CTagChat(client, "Usage: sm_team_name <new_name>"); return Plugin_Handled; }
 
   TFTeam clientTeam = TF2_GetClientTeam(client);
   if (clientTeam != TFTeam_Red && clientTeam != TFTeam_Blue) {
     CTagChat(client, "You must be on RED or BLU to use this command.");
-    PH;
+    return Plugin_Handled;
   }
 
   char newName[64];
   GetCmdArg(1, newName, sizeof(newName));
 
-  if (strlen(newName) < 1) { CTagChat(client, "Team name cannot be empty."); PH; }
-  if (strlen(newName) > 5) { CTagChat(client, "Team name cannot be longer than 5 characters."); PH; }
+  if (strlen(newName) < 1) { CTagChat(client, "Team name cannot be empty."); return Plugin_Handled; }
+  if (strlen(newName) > 5) { CTagChat(client, "Team name cannot be longer than 5 characters."); return Plugin_Handled; }
 
   int teamEntity = FindTeamEntity(view_as<int>(clientTeam));
-  if (teamEntity == -1) { CTagChat(client, "Could not find team entity."); PH; }
+  if (teamEntity == -1) { CTagChat(client, "Could not find team entity."); return Plugin_Handled; }
 
   SetEntPropString(teamEntity, Prop_Data, "m_szTeamname", newName);
 
@@ -354,5 +354,5 @@ Action CTeamName(int client, int args) {
   GetClientName(client, playerName, sizeof(playerName));
   TeamChatAnnounce(clientTeam, "%s {default}changed team name to {steamlightgreen}%s", playerName, newName);
 
-  PH;
+  return Plugin_Handled;
 }

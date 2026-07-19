@@ -24,7 +24,7 @@ void SetAmmo(int client, int weapon, int ammo) {
 Action CImmune(int client, int args) {
   if (IsMatch()) {
     CTagChat(client, "Immunity is disabled during a match.");
-    PH;
+    return Plugin_Handled;
   }
   arr_iClientPrefs[client].bImmunity = !arr_iClientPrefs[client].bImmunity;
   SetBoolCookie(client, ck_bImmunity, arr_iClientPrefs[client].bImmunity);
@@ -33,13 +33,13 @@ Action CImmune(int client, int args) {
     ApplyBootsAttributes(client);
   }
   CTagChat(client, "Immunity %s.", arr_iClientPrefs[client].bImmunity ? "enabled" : "disabled");
-  PH;
+  return Plugin_Handled;
 }
 
 Action CInfAmmo(int client, int args) {
   if (IsMatch()) {
     CTagChat(client, "Infinite ammo is disabled during a match.");
-    PH;
+    return Plugin_Handled;
   }
   arr_iClientPrefs[client].bInfAmmo = !arr_iClientPrefs[client].bInfAmmo;
   SetBoolCookie(client, ck_bInfAmmo, arr_iClientPrefs[client].bInfAmmo);
@@ -48,11 +48,11 @@ Action CInfAmmo(int client, int args) {
     ApplyBootsAttributes(client);
   }
   CTagChat(client, "Infinite ammo %s.", arr_iClientPrefs[client].bInfAmmo ? "enabled" : "disabled");
-  PH;
+  return Plugin_Handled;
 }
 
 public Action Hook_ImmunityOnTakeDamage(int victim, int &attacker, int &inflictor, float &damage, int &damagetype, int &weapon, float damageForce[3], float damagePosition[3], int damagecustom) {
-  if (IsMatch()) PC;
+  if (IsMatch()) return Plugin_Continue;
 
   if (arr_iClientPrefs[victim].bImmunity) {
     g_bPendingHP[victim] = true;
@@ -66,7 +66,7 @@ public Action Hook_ImmunityOnTakeDamage(int victim, int &attacker, int &inflicto
     return Plugin_Changed;
   }
 
-  PC;
+  return Plugin_Continue;
 }
 
 public void Hook_ImmunityOnTakeDamagePost(int victim, int attacker, int inflictor, float damage, int damagetype, int weapon, float damageForce[3], float damagePosition[3], int damagecustom) {

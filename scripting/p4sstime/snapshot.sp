@@ -3,5 +3,5 @@ Action CSnapshot(int client, int args) {
   TFTeam ballTeam = GetBallTeam();
   team = TFTeamToString(ballTeam);
   CTagReply(client, "Ball team: %s (%d)", team, ballTeam);
-  PH;
+  return Plugin_Handled;
 }

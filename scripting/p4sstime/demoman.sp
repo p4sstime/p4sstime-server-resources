@@ -100,13 +100,13 @@ void ClearDemoClientState(int client) {
 Action CToggleDemoResist(int client, int args) {
   if (args != 1) {
     CTagReply(client, "Usage: sm_pt_demoresist <0|1>");
-    PH;
+    return Plugin_Handled;
   }
 
   int value = GetCmdArgInt(1);
   if (value != 0 && value != 1) {
     CTagReply(client, "Usage: sm_pt_demoresist <0|1>");
-    PH;
+    return Plugin_Handled;
   }
 
   g_bDemoResistEnabled = (value != 0);
@@ -117,5 +117,5 @@ Action CToggleDemoResist(int client, int args) {
   }
 
   CTagReply(client, "Demo blast resistance %s", g_bDemoResistEnabled ? "{cGreen}enabled" : "{cRed}disabled");
-  PH;
+  return Plugin_Handled;
 }

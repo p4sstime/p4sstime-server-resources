@@ -20,7 +20,7 @@ public OnClientCookiesCached(int client) {
 Action CMenu(int client, int args) {
   if (IsValidClient(client))
     ShowPassMenu(client);
-  PH;
+  return Plugin_Handled;
 }
 
 static const char g_sStatsNames[][] = { "OFF", "LONG", "SHORT", "MINIMAL" };

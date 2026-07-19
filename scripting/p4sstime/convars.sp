@@ -9,7 +9,7 @@ Action %1(int client, int args) {\
     SetBoolCookie(client, %3, arr_iClientPrefs[client].%2);\
     CTagReply(client, "%4: %%s", arr_iClientPrefs[client].%2 ? "ON" : "OFF");\
   } else CTagReply(client, "Invalid argument, use either 1 or 0");\
-  PH;\
+  return Plugin_Handled;\
 }
 
 Action EPlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
@@ -21,7 +21,7 @@ Action EPlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
   RestoreFOV(client);
   if (TF2_GetPlayerClass(client) == TFClass_DemoMan) { QueryClientConVar(client, "m_filter", FilterCheck, false); }
 
-  PH;
+  return Plugin_Handled;
 }
 
 Action OnChangeClass(int client, const char[] strCommand, int args) {
@@ -44,16 +44,16 @@ Action OnChangeClass(int client, const char[] strCommand, int args) {
     }
   }
   if (arr_bPlyIsDead[client] == true && bFixRespawnBypass.BoolValue) {
-    if (class == TFClass_Medic && med) PH;
-    elif (class == TFClass_DemoMan && demo) PH;
-    elif (class == TFClass_Soldier && solly > 2) PH;
+    if (class == TFClass_Medic && med) return Plugin_Handled;
+    elif (class == TFClass_DemoMan && demo) return Plugin_Handled;
+    elif (class == TFClass_Soldier && solly > 2) return Plugin_Handled;
     if (class != TFClass_Unknown && class != TFClass_Pyro && class != TFClass_Heavy && class != TFClass_Engineer && class != TFClass_Spy && class != TFClass_Sniper && class != TFClass_Scout) {
       SetEntProp(client, Prop_Send, "m_iDesiredPlayerClass", class);
       PrintCenterText(client, "Class when spawned will be %s.", sChosenClass);
     }
-    PH;
+    return Plugin_Handled;
   }
-  PC;
+  return Plugin_Continue;
 }
 
 public void TF2_OnConditionAdded(int client, TFCond condition) {
@@ -71,12 +71,12 @@ Action EPlayerResup(Event event, const char[] name, bool dontBroadcast) {
   ApplyDemoResistance(client);
   ApplyBootsAttributes(client);
 
-  PH;
+  return Plugin_Handled;
 }
 
 Action CSuicide(int client, int args) {
   ForcePlayerSuicide(client);
-  PH;
+  return Plugin_Handled;
 }
 
 CREATE_BOOL_SETTING(CChatCountdown,   bCountdown, ck_iCountdown, "JACK spawn timer captions")
@@ -104,21 +104,21 @@ void Hook_OnAllowInstantResupplyChange(ConVar convar, const char[] oldValue, con
 Action CResupDn(int client, int args) {
   if (!bResupply.BoolValue) {
     PrintToConsole(client, "[PASS] +resupply is disabled.");
-    PH;
+    return Plugin_Handled;
   }
-  if (!IsClientInGame(client)) PH;
+  if (!IsClientInGame(client)) return Plugin_Handled;
 
   g_bResupplyDn[client] = true;
   g_bResupplyUp[client] = false;
 
   BufferedResupply(client);
-  PH;
+  return Plugin_Handled;
 }
 
 Action CResupUp(int client, int args) {
-  if (!IsClientInGame(client)) PH;
+  if (!IsClientInGame(client)) return Plugin_Handled;
   g_bResupplyDn[client] = false;
-  PH;
+  return Plugin_Handled;
 }
 
 void BufferedResupply(int client) {

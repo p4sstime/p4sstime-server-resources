@@ -29,5 +29,5 @@ void FilterCheck(QueryCookie cookie, int client, ConVarQueryResult result, const
 Action MultiCheck(Handle timer, any client) {
   QueryClientConVar(client, "m_filter", FilterCheck, true);
   TurnBindCheck(client);  // would prefer to check every tick but im too lazy to implement. this should be good enough for our purposes tho
-  PH;
+  return Plugin_Handled;
 }

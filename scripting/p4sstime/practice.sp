@@ -13,7 +13,7 @@ Action AddFiveMinutes(Handle timer) {
     int entityTimer = FindEntityByClassname(-1, "team_round_timer");
     SetVariantInt(300);
     AcceptEntityInput(entityTimer, "AddTime");
-    PC;
+    return Plugin_Continue;
   }
-  else PS;
+  else return Plugin_Stop;
 }

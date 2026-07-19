@@ -85,7 +85,7 @@ public void ApplyLegacyColors(char[] buffer, int maxLength, int client) {
     ReplaceString(buffer, maxLength, "{cYellow}",    "{cOldYellow}");
     ReplaceString(buffer, maxLength, "{cScore}",     "{cOldScore}");
     ReplaceString(buffer, maxLength, "{cAssist}",    "{cOldAssist}");
-    ReplaceString(buffer, maxLength, "{cBlock}",     "{cOldBlock}");
+    ReplaceString(buffer, maxLength, "{cBlock}",     "{cOldDefense}");
     ReplaceString(buffer, maxLength, "{cNeutral}",   "{cOldNeutral}");
     ReplaceString(buffer, maxLength, "{cIntercept}", "{cOldIntercept}");
     ReplaceString(buffer, maxLength, "{cSteal}",     "{cOldSteal}");
