@@ -150,3 +150,102 @@ void RegConsoleCmdWithShort(const char[] name, const char[] shortName, ConCmd ha
   RegConsoleCmd(name,      handler, description);
   RegConsoleCmd(shortName, handler, description);
 }
+
+// Save- and Loadpoint data structures
+#define MAXSLOTS 2
+
+bool g_bSavepointValid = false;
+float g_vSavePos[3];
+float g_vSaveAng[3];
+float g_vSaveVel[3];
+int g_iSavedClip1[MAXSLOTS];
+int g_iSavedClip2[MAXSLOTS];
+int g_iSavedAmmoType[MAXSLOTS][2];
+int g_iSavedAmmoCount[MAXSLOTS][2];
+
+// Save a point
+stock Action CSavepoint( int client, int args ) {
+    if ( IsMatch() || !g_bSaveEnabled ) EndCommand( client, "Saving is disabled." );
+    if ( client <= 0 || client > MaxClients || !IsClientInGame( client ) ) return Plugin_Handled;
+    if ( !IsPlayerAlive( client ) ) return Plugin_Handled;
+
+    GetClientAbsOrigin( client, g_vSavePos );
+    GetClientEyeAngles( client, g_vSaveAng );
+    GetEntPropVector( client, Prop_Data, "m_vecAbsVelocity", g_vSaveVel );
+
+    // Save current ammo and clips for carried weapons
+    for ( int s = 0; s < MAXSLOTS; s++ ) {
+        g_iSavedClip1[ s ]          = -1;
+        g_iSavedClip2[ s ]          = -1;
+        g_iSavedAmmoType[ s ][ 0 ]  = -1;
+        g_iSavedAmmoType[ s ][ 1 ]  = -1;
+        g_iSavedAmmoCount[ s ][ 0 ] = 0;
+        g_iSavedAmmoCount[ s ][ 1 ] = 0;
+
+        int wep                     = GetPlayerWeaponSlot( client, s );
+        if ( wep != -1 ) {
+            g_iSavedClip1[ s ]         = GetEntProp( wep, Prop_Send, "m_iClip1" );
+            g_iSavedClip2[ s ]         = GetEntProp( wep, Prop_Send, "m_iClip2" );
+
+            int at1                    = GetEntProp( wep, Prop_Send, "m_iPrimaryAmmoType" );
+            int at2                    = GetEntProp( wep, Prop_Send, "m_iSecondaryAmmoType" );
+            g_iSavedAmmoType[ s ][ 0 ] = at1;
+            g_iSavedAmmoType[ s ][ 1 ] = at2;
+            if ( at1 >= 0 ) g_iSavedAmmoCount[ s ][ 0 ] = GetEntProp( client, Prop_Send, "m_iAmmo", _, at1 );
+            if ( at2 >= 0 ) g_iSavedAmmoCount[ s ][ 1 ] = GetEntProp( client, Prop_Send, "m_iAmmo", _, at2 );
+        }
+    }
+    g_bSavepointValid = true;
+
+    EndCommand( client, "Location saved!" );
+    return Plugin_Handled;
+}
+
+// Load saved point
+stock Action CLoadpoint( int client, int args ) {
+    if ( IsMatch() || !g_bSaveEnabled ) EndCommand( client, "Loading is disabled." );
+    if ( !IsValidClientAlive( client ) ) return Plugin_Handled;
+    if ( args != 0 ) EndCommand( client, "Usage: sm_load" );
+    if ( !g_bSavepointValid ) EndCommand( client, "No savepoint set yet." );
+
+    TeleportEntity( client, g_vSavePos, g_vSaveAng, g_vSaveVel );
+
+    // Restore ammo and clips for current carried weapons
+    for ( int s = 0; s < MAXSLOTS; s++ ) {
+        int wep = GetPlayerWeaponSlot( client, s );
+        if ( wep != -1 ) {
+            if ( g_iSavedClip1[ s ] >= 0 ) SetEntProp( wep, Prop_Send, "m_iClip1", g_iSavedClip1[ s ] );
+            if ( g_iSavedClip2[ s ] >= 0 ) SetEntProp( wep, Prop_Send, "m_iClip2", g_iSavedClip2[ s ] );
+        }
+
+        // Set reserve ammo by ammo types
+        int at1 = g_iSavedAmmoType[ s ][ 0 ];
+        int at2 = g_iSavedAmmoType[ s ][ 1 ];
+        if ( at1 >= 0 ) SetEntProp( client, Prop_Send, "m_iAmmo", g_iSavedAmmoCount[ s ][ 0 ], _, at1 );
+        if ( at2 >= 0 ) SetEntProp( client, Prop_Send, "m_iAmmo", g_iSavedAmmoCount[ s ][ 1 ], _, at2 );
+    }
+    return Plugin_Handled;
+}
+
+// Check if a valid savepoint is saved
+stock bool IsSavepointValid() {
+  return g_bSavepointValid;
+}
+
+// Clear the savepoint
+stock void ClearSavepoint() {
+  g_bSavepointValid = false;
+}
+
+// Sends a message to the client and returns PH
+stock Action EndCommand( int client, const char[] format, any... ) {
+    char buffer[ 254 ];
+    VFormat( buffer, sizeof( buffer ), format, 3 );
+    ReplyToCommand( client, "%s", buffer );
+    return Plugin_Handled;
+}
+
+// Checks if a client in-game, connected, not fake, in a valid team, and alive
+bool IsValidClientAlive( int client ) {
+    return IsValidClient( client ) && IsPlayerAlive( client );
+}

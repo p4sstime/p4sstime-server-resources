@@ -168,6 +168,9 @@ bool g_bInstantRespawnEnabled = true;
 // Immunity & infinite ammo
 bool g_bPendingHP[MAXPLAYERS + 1];
 
+// Save/Load spawn
+bool g_bSaveEnabled = true;
+
 // Mirror spawnpoint system for side-aware resupply
 ArrayList g_hCachedSpawnRooms;
 ArrayList g_hCachedSpawnPoints[2];  // RED and BLU spawn points
@@ -529,12 +532,14 @@ public void OnPluginStart() {
   CC("-resupply",          CResupUp);
 
   // Client commands with aliases
-  CCA("sm_pt_suicide", "sm_pt_kill", CSuicide,     "Killbind with no cooldown");
-  CCA("sm_immune",     "sm_i",       CImmune,      "Toggle immunity");
-  CCA("sm_ammo",       "sm_a",       CInfAmmo,     "Toggle infinite ammo");
-  CCA("sm_diceroll",   "sm_dice",    CDice,        "Select a random player from targets");
-  CCA("sm_ready",      "sm_r",       CReady,       "Toggle your team's ready state");
-  CCA("sm_team_name",  "sm_tn",      CTeamName,    "Rename your team");
+  CCA("sm_pt_suicide", "sm_pt_kill", CSuicide,   "Killbind with no cooldown");
+  CCA("sm_immune",     "sm_i",       CImmune,    "Toggle immunity");
+  CCA("sm_ammo",       "sm_a",       CInfAmmo,   "Toggle infinite ammo");
+  CCA("sm_diceroll",   "sm_dice",    CDice,      "Select a random player from targets");
+  CCA("sm_ready",      "sm_r",       CReady,     "Toggle your team's ready state");
+  CCA("sm_team_name",  "sm_tn",      CTeamName,  "Rename your team");
+  CCA("sm_save",       "sm_sv",      CSavepoint, "Save a spawn point");
+  CCA("sm_load",       "sm_ld",      CLoadpoint, "Teleport to saved spawn");
 
   // Admin commands
   AC("sm_pt_snapshot",    CSnapshot,         GENERIC, "Take a snapshot of the plugin's current variable values.");
