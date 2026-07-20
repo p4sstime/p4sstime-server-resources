@@ -497,16 +497,16 @@ public void OnPluginStart() {
   g_hMirrorSpawnPoints[1][1] = new ArrayList();  // BLU right
 
   // Cookies
-  ck_iCountdown = RCC("p4ssClientCountdownCaption",  "p4sstime's client setting (1/0) for captions for JACK spawn timer", CookieAccess_Public);
-  ck_bJackHud =   RCC("p4ssClientJACKPickupHudText", "p4sstime's client setting (1/0) for HUD text when picking up JACK", CookieAccess_Public);
-  ck_bJackChat =  RCC("p4ssClientJACKPickupChatMsg", "p4sstime's client setting (1/0) for chat msg when picking up JACK", CookieAccess_Public);
-  ck_bJackSound = RCC("p4ssClientJACKPickupSound",   "p4sstime's client setting (1/0) for sound when picking up JACK",    CookieAccess_Public);
-  ck_iStats =     RCC("p4ssClientStats",             "p4sstime's client setting (0/1/2) for EoR stats",                   CookieAccess_Public);
+  ck_iCountdown =          RCC("p4ssClientCountdownCaption",  "p4sstime's client setting (1/0) for captions for JACK spawn timer", CookieAccess_Public);
+  ck_bJackHud =            RCC("p4ssClientJACKPickupHudText", "p4sstime's client setting (1/0) for HUD text when picking up JACK", CookieAccess_Public);
+  ck_bJackChat =           RCC("p4ssClientJACKPickupChatMsg", "p4sstime's client setting (1/0) for chat msg when picking up JACK", CookieAccess_Public);
+  ck_bJackSound =          RCC("p4ssClientJACKPickupSound",   "p4sstime's client setting (1/0) for sound when picking up JACK",    CookieAccess_Public);
+  ck_iStats =              RCC("p4ssClientStats",             "p4sstime's client setting (0/1/2) for EoR stats",                   CookieAccess_Public);
   ck_bStatsSeparateLines = RCC("p4ssClientStatsSeparateLines", "p4sstime's client setting for separating stats into 2 lines", CookieAccess_Public);
-  ck_iFov =       RCC("p4ssClientFOV",               "p4sstime's client FOV setting",                                     CookieAccess_Public);
-  ck_bImmunity =  RCC("p4ssClientImmunity",          "p4sstime's immunity setting",                                       CookieAccess_Public);
-  ck_bInfAmmo =   RCC("p4ssClientInfiniteAmmo",      "p4sstime's infinite ammo setting",                                  CookieAccess_Public);
-  ck_bLegacyColors = RCC("p4ssClientLegacyColors",   "p4sstime's client setting for using legacy colors",                 CookieAccess_Public);
+  ck_iFov =                RCC("p4ssClientFOV",               "p4sstime's client FOV setting",                                     CookieAccess_Public);
+  ck_bImmunity =           RCC("p4ssClientImmunity",          "p4sstime's immunity setting",                                       CookieAccess_Public);
+  ck_bInfAmmo =            RCC("p4ssClientInfiniteAmmo",      "p4sstime's infinite ammo setting",                                  CookieAccess_Public);
+  ck_bLegacyColors =       RCC("p4ssClientLegacyColors",   "p4sstime's client setting for using legacy colors",                 CookieAccess_Public);
 
   // Client commands
   CC("sm_pt_stats",        CChatStats,       "Toggle end-of-round stats");
@@ -699,9 +699,11 @@ public void OnPluginStart() {
 
   StartPrepSDKCall(SDKCall_Static);
   PrepSDKCall_SetFromConf(gameData, SDKConf_Signature, "PointInRespawnRoom");
+
   PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer);
   PrepSDKCall_AddParameter(SDKType_Vector,      SDKPass_ByRef);
   PrepSDKCall_AddParameter(SDKType_Bool,        SDKPass_ByValue);
+
   PrepSDKCall_SetReturnInfo(SDKType_Bool,       SDKPass_ByValue);
   pointInRespawnRoom = EndPrepSDKCall();
   if (pointInRespawnRoom == null)
@@ -1041,6 +1043,7 @@ float DistanceAboveGround(int victim) { // taken from mgemod
   return distance;
 }
 
+// Macro for changing blast jump statuses for clients
 #define JUMP_HANDLER(%1,%2) \
   Action %1(Event event, const char[] name, bool dontBroadcast) { \
     int client = GetClientOfUserId(event.GetInt("userid")); \
