@@ -254,37 +254,29 @@ stock void SendCountdownToClients(int time) {
   }
 }
 
+#define MRB(%1,%2) (StrEqual(sound, "Merasmus.RoundBegins%1seconds")) CTagChat(x, "%2%1 seconds...")
+#define ARB(%1,%2) (StrEqual(sound, "Announcer.RoundBegins%1seconds")) CTagChat(x, "%2%1 seconds...")
+
 stock void SendSoundCountdownToClients(const char[] sound) {
   for (int x = 1; x < MaxClients + 1; x++) {
     if (!IsValidClient(x) || !arr_iClientPrefs[x].bCountdown) continue;
     
-    if (StrEqual(sound, "Announcer.RoundBegins10seconds"))
-      CTagChat(x, "{cGreen}10 seconds...");
+    if ARB(10,cGreen);
     elif (StrEqual(sound, "Passtime.BallSpawn"))
       CTagChat(x, "{cGreen}Ball has spawned!");
     if (bHalloweenMode) {
-      if (StrEqual(sound, "Merasmus.RoundBegins5seconds"))
-        CTagChat(x, "{cYellow}5 seconds...");
-      elif (StrEqual(sound, "Merasmus.RoundBegins4seconds"))
-        CTagChat(x, "{cYellow}4 seconds...");
-      elif (StrEqual(sound, "Merasmus.RoundBegins3seconds"))
-        CTagChat(x, "{cYellow}3 seconds...");
-      elif (StrEqual(sound, "Merasmus.RoundBegins2seconds"))
-        CTagChat(x, "{cRed}2 seconds...");
-      elif (StrEqual(sound, "Merasmus.RoundBegins1seconds"))
-        CTagChat(x, "{cRed}1 second...");
+      if MRB(5,{cYellow});
+      elif MRB(4,{cYellow});
+      elif MRB(3,{cYellow});
+      elif MRB(2,{cRed});
+      elif MRB(1,{cRed});
     }
     else {
-      if (StrEqual(sound, "Announcer.RoundBegins5seconds"))
-        CTagChat(x, "{cYellow}5 seconds...");
-      elif (StrEqual(sound, "Announcer.RoundBegins4seconds"))
-        CTagChat(x, "{cYellow}4 seconds...");
-      elif (StrEqual(sound, "Announcer.RoundBegins3seconds"))
-        CTagChat(x, "{cYellow}3 seconds...");
-      elif (StrEqual(sound, "Announcer.RoundBegins2seconds"))
-        CTagChat(x, "{cRed}2 seconds...");
-      elif (StrEqual(sound, "Announcer.RoundBegins1seconds"))
-        CTagChat(x, "{cRed}1 second...");
+      if ARB(5,{cYellow});
+      elif ARB(4,{cYellow});
+      elif ARB(3,{cYellow});
+      elif ARB(2,{cRed});
+      elif ARB(1,{cRed});
     }
   }
 }
