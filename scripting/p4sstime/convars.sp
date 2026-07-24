@@ -57,7 +57,7 @@ Action OnChangeClass(int client, const char[] strCommand, int args) {
 }
 
 public void TF2_OnConditionAdded(int client, TFCond condition) {
-  if (condition == TFCond_PasstimeInterception && !bFixBlur.BoolValue) {
+  if (condition == TFCond_PasstimeInterception && bFixBlur.BoolValue) {
     ClientCommand(client, "r_screenoverlay \"\"");
   }
   if (condition == TFCond_Charging && TF2_GetPlayerClass(client) == TFClass_DemoMan) {
