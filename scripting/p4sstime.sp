@@ -881,6 +881,8 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
   // so incredibly ugly
   VerboseLog("passtime_ball damage debug: playerWhoSplashed: %d, playerTeam: %s, ballTeam: %s", attacker, TFTeamToString(playerTeam), TFTeamToString(ballTeam));
   bBallSplashed = true;
+  float fSplashedBallPos[3];
+  GetEntPropVector(entJack, Prop_Send, "m_vecOrigin", fSplashedBallPos);
   bool inGoalZone, expectedBallTeam;
   if (playerTeam == TFTeam_Blue) {
     VerboseLog("passtime_ball damage debug: player team is BLU, checking if in blu goal and if ball is red.");
@@ -902,6 +904,9 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
     FormatPlayerNameWithTeam(iPlyWhoGotJack, throwerNameTeam);
     ChatEvent("%s {cNeutral}splashed %s{chat}!", playerNameTeam, throwerNameTeam);
     TagChatSTV("%s splashed %N. t%d", playerName, iPlyWhoGotJack, STVTickCount());
+    SetLogInfo(attacker);
+    LogGameEvent("pass_splash_defense", "(ball position \"%.0f %.0f %.0f\")",
+                fSplashedBallPos[0], fSplashedBallPos[1], fSplashedBallPos[2]);
     arr_iClientRoundStats[attacker].iSplashes++;
   }
 
