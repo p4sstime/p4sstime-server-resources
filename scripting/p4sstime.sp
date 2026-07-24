@@ -311,7 +311,7 @@ stock void LogGameEvent(const char[] eventName, const char[] format, any ...) {
   int len = strlen(format) + 255;
   char[] MessageToLog = new char[len];
   VFormat(MessageToLog, len, format, 3);
-  LogToGame("\"%s\" %s", eventName, MessageToLog);
+  LogToGame("\"%N<%i><%s><%s>\" triggered \"%s\" %s", user1, GetClientUserId(user1), user1steamid, user1team, eventName, MessageToLog);
 }
 
 stock void LogScoreEvent(int scorer, int points, bool panacea, bool winstrat, bool deathbomb, float dist, float speed) {
@@ -417,7 +417,7 @@ stock void LogBallSpawn(const char[] spawnName, int caller) {
 
 stock void LogCatapultEvent(const char[] catapultName) {
   SetLogInfo(iPlyWhoGotJack);
-  LogGameEvent("%s with the jack", catapultName, "(position \"%.0f %.0f %.0f\")",
+  LogGameEvent(catapultName, "with the jack (position \"%.0f %.0f %.0f\")",
               user1position[0], user1position[1], user1position[2]);
   arr_iClientRoundStats[iPlyWhoGotJack].iCatapults++;
 }
