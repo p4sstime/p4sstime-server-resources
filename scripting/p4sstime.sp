@@ -765,6 +765,10 @@ public void OnMapInit(const char[] mapName) {
 
 public void OnMapStart() { // get goal locations
   int goal1 = FindEntityByClassname(-1, "func_passtime_goal");
+  if (goal1 == -1) {
+    PrintToServer("[p4sstime] Goal entity not found, is this a passtime map?");
+    return;
+  }
   int goal2 = FindEntityByClassname(goal1, "func_passtime_goal");
   int team1 = GetEntProp(goal1, Prop_Send, "m_iTeamNum");
   if (team1 == 2) {
