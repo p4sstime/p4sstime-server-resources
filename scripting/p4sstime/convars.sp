@@ -290,9 +290,6 @@ void BuildEntityCache() {
     }
   }
 
-  PrintToServer("[p4sstime] Entity cache built: %d spawn rooms, %d RED spawns, %d BLU spawns, timer: %d",
-                 g_hCachedSpawnRooms.Length, g_hCachedSpawnPoints[0].Length, g_hCachedSpawnPoints[1].Length, g_iCachedTimerEntity);
-
   AnalyzeMirrorSpawnpoints();
 }
 
@@ -311,7 +308,7 @@ void AnalyzeMirrorSpawnpoints() {
   int totalSpawns = g_hCachedSpawnPoints[0].Length + g_hCachedSpawnPoints[1].Length;
   if (totalSpawns < 2) {
     g_bMirrorSystemInitialized = false;
-    PrintToServer("[p4sstime] Mirror system disabled: insufficient spawnpoints (%d)", totalSpawns);
+    PrintToServer("[p4sstime] Resupply swap disabled: no valid spawnpoints (%d)", totalSpawns);
     return;
   }
 
@@ -334,7 +331,7 @@ void AnalyzeMirrorSpawnpoints() {
 
   if (count < 2) {
     g_bMirrorSystemInitialized = false;
-    PrintToServer("[p4sstime] Mirror system disabled: insufficient valid spawnpoints (%d)", count);
+    PrintToServer("[p4sstime] Resupply swap disabled: no valid spawnpoints (%d)", count);
     return;
   }
 
@@ -356,8 +353,4 @@ void AnalyzeMirrorSpawnpoints() {
   }
 
   g_bMirrorSystemInitialized = true;
-  PrintToServer("[p4sstime] Mirror system initialized: plane at (%.1f, %.1f), RED spawns: %d left/%d right, BLU spawns: %d left/%d right",
-                 g_fMirrorPlaneX, g_fMirrorPlaneY,
-                 g_hMirrorSpawnPoints[0][0].Length, g_hMirrorSpawnPoints[0][1].Length,
-                 g_hMirrorSpawnPoints[1][0].Length, g_hMirrorSpawnPoints[1][1].Length);
 }

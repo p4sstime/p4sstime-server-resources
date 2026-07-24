@@ -13,7 +13,7 @@
 #pragma semicolon 1 // required for logs.tf
 #pragma newdecls required
 
-#define VERSION "4.3.0"
+#define VERSION "4.4.0"
 
 // Macros
 #define GD      GameData 
@@ -710,6 +710,7 @@ public void OnPluginStart() {
     LogError("Failed to find PointInRespawnRoom -- certain features may be non-functional");
 
   InitAttributeSDKCalls();
+  PrintToServer("p4sstime v%s loaded", VERSION);
 }
 
 public void OnLibraryAdded(const char[] name) {
