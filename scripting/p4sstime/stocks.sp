@@ -165,7 +165,7 @@ int g_iSavedAmmoCount[MAXSLOTS][2];
 
 // Save a point
 stock Action CSavepoint( int client, int args ) {
-    if ( IsMatch() || !g_bSaveEnabled ) EndCommand( client, "Saving is disabled." );
+    if ( IsMatch() || !g_bSaveEnabled ) return EndCommand( client, "Saving is disabled." );
     if ( client <= 0 || client > MaxClients || !IsClientInGame( client ) ) return Plugin_Handled;
     if ( !IsPlayerAlive( client ) ) return Plugin_Handled;
 
@@ -203,10 +203,10 @@ stock Action CSavepoint( int client, int args ) {
 
 // Load saved point
 stock Action CLoadpoint( int client, int args ) {
-    if ( IsMatch() || !g_bSaveEnabled ) EndCommand( client, "Loading is disabled." );
+    if ( IsMatch() || !g_bSaveEnabled ) return EndCommand( client, "Loading is disabled." );
     if ( !IsValidClientAlive( client ) ) return Plugin_Handled;
-    if ( args != 0 ) EndCommand( client, "Usage: sm_load" );
-    if ( !g_bSavepointValid ) EndCommand( client, "No savepoint set yet." );
+    if ( args != 0 ) return EndCommand( client, "Usage: sm_load" );
+    if ( !g_bSavepointValid ) return EndCommand( client, "No savepoint set yet." );
 
     TeleportEntity( client, g_vSavePos, g_vSaveAng, g_vSaveVel );
 
