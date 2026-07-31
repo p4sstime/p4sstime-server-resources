@@ -1,44 +1,53 @@
 // This file relates to all convars and will contain the functions for them
 
-Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
-{
-  int client            = GetClientOfUserId(event.GetInt("userid"));
-  arrbPlyIsDead[client] = false;
-  RemoveShotty(client);
+// Macro for creating bool settings handlers
+#define CREATE_BOOL_SETTING(%1,%2,%3,%4)\
+Action %1(int client, int args) {\
+  bool value;\
+  if (GetCmdArgIntEx(1, value)) {\
+    arr_iClientPrefs[client].%2 = value;\
+    SetBoolCookie(client, %3, arr_iClientPrefs[client].%2);\
+    CTagReply(client, "%4: %%s", arr_iClientPrefs[client].%2 ? "ON" : "OFF");\
+  } else CTagReply(client, "Invalid argument, use either 1 or 0");\
+  return Plugin_Handled;\
+}
+
+Action EPlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
+  int client = GetClientOfUserId(event.GetInt("userid"));
+  arr_bPlyIsDead[client] = false;
+  RemoveStocks(client);
+  ApplyDemoResistance(client);
+  ApplyBootsAttributes(client);
+  RestoreFOV(client);
   if (TF2_GetPlayerClass(client) == TFClass_DemoMan) { QueryClientConVar(client, "m_filter", FilterCheck, false); }
 
   return Plugin_Handled;
 }
 
-Action OnChangeClass(int client, const char[] strCommand, int args)
-{
+Action OnChangeClass(int client, const char[] strCommand, int args) {
   // class limits; demo = 1, med = 1, soldier = 3
   // essentially we just check every time someone changes class if the class change is possible. i dont like doing it this way but alternative is dhooks :vomit:
-  char sChosenClass[12];
-  bool demo  = false;
-  bool med   = false;
+  char    sChosenClass[12];
+  bool demo = false;
+  bool med = false;
   int  solly = 0;
   GetCmdArg(1, sChosenClass, sizeof(sChosenClass));
-  TFClassType class  = TF2_GetClass(sChosenClass);
+  TFClassType class = TF2_GetClass(sChosenClass);
   TFTeam currentTeam = TF2_GetClientTeam(client);
-  for (int x = 1; x < MaxClients + 1; x++)
-  {
+  for (int x = 1; x < MaxClients + 1; x++) {
     if (!IsValidClient(x)) continue;
-    if (TF2_GetClientTeam(x) == currentTeam)
-    {
+    if (TF2_GetClientTeam(x) == currentTeam) {
       TFClassType classcheck = TF2_GetPlayerClass(x);
       if (classcheck == TFClass_Soldier) solly++;
-      else if (classcheck == TFClass_DemoMan) demo = true;
-      else if (classcheck == TFClass_Medic) med = true;
+      elif (classcheck == TFClass_DemoMan) demo = true;
+      elif (classcheck == TFClass_Medic) med = true;
     }
   }
-  if (arrbPlyIsDead[client] == true && bSwitchDuringRespawn.BoolValue)
-  {
+  if (arr_bPlyIsDead[client] == true && bFixRespawnBypass.BoolValue) {
     if (class == TFClass_Medic && med) return Plugin_Handled;
-    else if (class == TFClass_DemoMan && demo) return Plugin_Handled;
-    else if (class == TFClass_Soldier && solly > 2) return Plugin_Handled;
-    if (class != TFClass_Unknown && class != TFClass_Pyro && class != TFClass_Heavy && class != TFClass_Engineer && class != TFClass_Spy && class != TFClass_Sniper && class != TFClass_Scout)
-    {
+    elif (class == TFClass_DemoMan && demo) return Plugin_Handled;
+    elif (class == TFClass_Soldier && solly > 2) return Plugin_Handled;
+    if (class != TFClass_Unknown && class != TFClass_Pyro && class != TFClass_Heavy && class != TFClass_Engineer && class != TFClass_Spy && class != TFClass_Sniper && class != TFClass_Scout) {
       SetEntProp(client, Prop_Send, "m_iDesiredPlayerClass", class);
       PrintCenterText(client, "Class when spawned will be %s.", sChosenClass);
     }
@@ -47,187 +56,301 @@ Action OnChangeClass(int client, const char[] strCommand, int args)
   return Plugin_Continue;
 }
 
-public void TF2_OnConditionAdded(int client, TFCond condition)
-{
-  if (condition == TFCond_PasstimeInterception && bStealBlurryOverlay.BoolValue)
-  {
+public void TF2_OnConditionAdded(int client, TFCond condition) {
+  if (condition == TFCond_PasstimeInterception && bFixBlur.BoolValue) {
     ClientCommand(client, "r_screenoverlay \"\"");
   }
-  if (condition == TFCond_Charging && TF2_GetPlayerClass(client) == TFClass_DemoMan)
-  {
+  if (condition == TFCond_Charging && TF2_GetPlayerClass(client) == TFClass_DemoMan) {
     CreateTimer(0.1, MultiCheck, client);
   }
 }
 
-Action Event_PlayerResup(Event event, const char[] name, bool dontBroadcast)
-{
+Action EPlayerResup(Event event, const char[] name, bool dontBroadcast) {
   int client = GetClientOfUserId(event.GetInt("userid"));
-  RemoveShotty(client);
+  RemoveStocks(client);
+  ApplyDemoResistance(client);
+  ApplyBootsAttributes(client);
 
   return Plugin_Handled;
 }
 
-Action Command_PasstimeSuicide(int client, int args)
-{
-  if (bRoundActive)
-  {
-    ForcePlayerSuicide(client);
-    ReplyToCommand(client, "[PASS] Committed suicide");
-  }
-  else
-  {
-    ReplyToCommand(client, "[PASS] Round is not active");
-  }
+Action CSuicide(int client, int args) {
+  ForcePlayerSuicide(client);
   return Plugin_Handled;
 }
 
-Action Command_PasstimeCoundownCaption(int client, int args)
-{
-  int value = 0;
-  if (GetCmdArgIntEx(1, value))
-  {
-    if (value == 1)
-      arrbJackAcqSettings[client].bPlyCoundownCaptionSetting = true;
-    else if (value == 0)
-      arrbJackAcqSettings[client].bPlyCoundownCaptionSetting = false;
-    if (value == 1 || value == 0)
-    {
-      SetCookieBool(client, cookieCountdownCaption, arrbJackAcqSettings[client].bPlyCoundownCaptionSetting);
-      ReplyToCommand(client, "[PASS] JACK spawn timer captions: %s", arrbJackAcqSettings[client].bPlyCoundownCaptionSetting ? "ON" : "OFF");
-    }
-  }
-  else
-    ReplyToCommand(client, "[PASS] Invalid argument");
-  return Plugin_Handled;
-}
+CREATE_BOOL_SETTING(CChatCountdown,   bCountdown, ck_iCountdown, "JACK spawn timer captions")
+CREATE_BOOL_SETTING(CJackPickupHud,   bJackHud,   ck_bJackHud,   "JACK pickup HUD text")
+CREATE_BOOL_SETTING(CJackPickupChat,  bJackChat,  ck_bJackChat,  "JACK pickup chat text")
+CREATE_BOOL_SETTING(CJackPickupSound, bJackSound, ck_bJackSound, "JACK pickup sound")
 
-Action Command_PasstimeJackPickupHud(int client, int args)
-{
-  int value = 0;
-  if (GetCmdArgIntEx(1, value))
-  {
-    if (value == 1)
-      arrbJackAcqSettings[client].bPlyHudTextSetting = true;
-    else if (value == 0)
-      arrbJackAcqSettings[client].bPlyHudTextSetting = false;
-    if (value == 1 || value == 0)
-    {
-      SetCookieBool(client, cookieJACKPickupHud, arrbJackAcqSettings[client].bPlyHudTextSetting);
-      ReplyToCommand(client, "[PASS] JACK pickup HUD text: %s", arrbJackAcqSettings[client].bPlyHudTextSetting ? "ON" : "OFF");
-    }
-  }
-  else
-    ReplyToCommand(client, "[PASS] Invalid argument");
-  return Plugin_Handled;
-}
-
-Action Command_PasstimeJackPickupChat(int client, int args)
-{
-  int value = 0;
-  if (GetCmdArgIntEx(1, value))
-  {
-    if (value == 1)
-      arrbJackAcqSettings[client].bPlyChatPrintSetting = true;
-    if (value == 0)
-      arrbJackAcqSettings[client].bPlyChatPrintSetting = false;
-    if (value == 1 || value == 0)
-    {
-      SetCookieBool(client, cookieJACKPickupChat, arrbJackAcqSettings[client].bPlyChatPrintSetting);
-      ReplyToCommand(client, "[PASS] JACK pickup chat text: %s", arrbJackAcqSettings[client].bPlyChatPrintSetting ? "ON" : "OFF");
-    }
-  }
-  else
-    ReplyToCommand(client, "[PASS] Invalid argument");
-  return Plugin_Handled;
-}
-
-Action Command_PasstimeJackPickupSound(int client, int args)
-{
-  int value = 0;
-  if (GetCmdArgIntEx(1, value))
-  {
-    if (value == 1)
-      arrbJackAcqSettings[client].bPlySoundSetting = true;
-    if (value == 0)
-      arrbJackAcqSettings[client].bPlySoundSetting = false;
-    if (value == 1 || value == 0)
-    {
-      SetCookieBool(client, cookieJACKPickupSound, arrbJackAcqSettings[client].bPlySoundSetting);
-      ReplyToCommand(client, "[PASS] JACK pickup sound: %s", arrbJackAcqSettings[client].bPlySoundSetting ? "ON" : "OFF");
-    }
-  }
-  else
-    ReplyToCommand(client, "[PASS] Invalid argument");
-  return Plugin_Handled;
-}
-
-void Hook_OnAllowInstantResupplyChange(ConVar convar, const char[] oldValue, const char[] newValue)
-{
-  if (!bAllowInstantResupply.BoolValue)
+void Hook_OnAllowInstantResupplyChange(ConVar convar, const char[] oldValue, const char[] newValue) {
+  if (!bResupply.BoolValue)
     return;
 
-  if (tfPlayerForceRegenerateAndRespawn == null)
-  {
+  if (tfPlayerForceRegenerateAndRespawn == null) {
     LogError("Cannot allow instant resupply due to missing CTFPlayer::ForceRegenerateAndRespawn function");
-    bAllowInstantResupply.BoolValue = false;
+    bResupply.BoolValue = false;
     return;
   }
 
-  if (pointInRespawnRoom == null)
-  {
+  if (pointInRespawnRoom == null) {
     LogError("Cannot allow instant resupply due to missing PointInRespawnRoom function");
-    bAllowInstantResupply.BoolValue = false;
+    bResupply.BoolValue = false;
     return;
   }
 }
-Action Command_PasstimeResupply(int client, int args)
-{
-  if (!bAllowInstantResupply.BoolValue)
-    return Plugin_Handled;
 
-  if (nextInstantResupplyTime[client] > GetGameTime())
+Action CResupDn(int client, int args) {
+  if (!bResupply.BoolValue) {
+    PrintToConsole(client, "[PASS] +resupply is disabled.");
     return Plugin_Handled;
+  }
+  if (!IsClientInGame(client)) return Plugin_Handled;
 
-  if (!IsPlayerAlive(client))
-    return Plugin_Handled;
+  g_bResupplyDn[client] = true;
+  g_bResupplyUp[client] = false;
+
+  BufferedResupply(client);
+  return Plugin_Handled;
+}
+
+Action CResupUp(int client, int args) {
+  if (!IsClientInGame(client)) return Plugin_Handled;
+  g_bResupplyDn[client] = false;
+  return Plugin_Handled;
+}
+
+void BufferedResupply(int client) {
+  if (!bResupply.BoolValue) return;
+  if (!g_bResupplyDn[client] || g_bResupplyUp[client]) return;
+  if (!IsPlayerAlive(client)) return;
+
+  // Check if cooldown is active (blocked input)
+  if (nextInstantResupplyTime[client] > 0.0) return;
 
   float origin[3];
   GetClientAbsOrigin(client, origin);
+  if (!PointInRespawnRoom(client, origin, false)) return;
 
-  if (!PointInRespawnRoom(client, origin, false))
-    return Plugin_Handled;
+  // SUCCESSFUL input: apply decay-based cooldown
+  float maxDecay = fResupplyCooldown.FloatValue;
+  float decayAddition = fResupplyDecayAddition.FloatValue;
 
-  nextInstantResupplyTime[client] = GetGameTime() + flInstantResupplyTimeBetween.FloatValue;
-  ForceRegenerateAndRespawn(client);
+  // 1. Current decay determines the cooldown applied to this click
+  nextInstantResupplyTime[client] = resupplyDecay[client] < maxDecay ? resupplyDecay[client] : maxDecay;
 
-  return Plugin_Handled;
-}
+  // 2. Add decay penalty for subsequent presses
+  float newDecay = resupplyDecay[client] + decayAddition;
+  resupplyDecay[client] = newDecay < maxDecay ? newDecay : maxDecay;
 
-void RemoveShotty(int client)
-{
-  if (bEquipStockWeapons.BoolValue)
-  {
-    TFClassType class = TF2_GetPlayerClass(client);
-    int iWep;
-    if (class == TFClass_DemoMan || class == TFClass_Soldier) iWep = GetPlayerWeaponSlot(client, 1);
-    else if (class == TFClass_Medic) iWep = GetPlayerWeaponSlot(client, 0);
+  // Try to use side-aware spawnpoint selection if mirror system is available
+  if (g_bMirrorSystemInitialized) {
+    TFTeam clientTeam = TF2_GetClientTeam(client);
+    int teamIndex = (clientTeam == TFTeam_Red) ? 0 : 1;
 
-    if (iWep >= 0)
-    {
-      char classname[64];
-      GetEntityClassname(iWep, classname, sizeof(classname));
+    if (teamIndex == 0 || teamIndex == 1) {
+      float playerOrigin[3];
+      GetClientAbsOrigin(client, playerOrigin);
 
-      if (StrEqual(classname, "tf_weapon_shotgun_soldier") || StrEqual(classname, "tf_weapon_pipebomblauncher"))
-      {
-        PrintToChat(client, "\x07ff0000[PASS] Shotgun/Stickies equipped");
-        TF2_RemoveWeaponSlot(client, 1);
-      }
+      int currentSide = (playerOrigin[0] < g_fMirrorPlaneX) ? 0 : 1;
+      int targetSide = (currentSide == 0) ? 1 : 0;
 
-      if (StrEqual(classname, "tf_weapon_syringegun_medic"))
-      {
-        PrintToChat(client, "\x07ff0000[PASS] Syringe Gun equipped");
-        TF2_RemoveWeaponSlot(client, 0);
+      ArrayList targetSpawns = g_hMirrorSpawnPoints[teamIndex][targetSide];
+
+      if (targetSpawns.Length > 0) {
+        int spawnIndex = g_iCurrentSpawnIndex[teamIndex][targetSide];
+        int spawnEntity = targetSpawns.Get(spawnIndex);
+
+        g_iCurrentSpawnIndex[teamIndex][targetSide] = (spawnIndex + 1) % targetSpawns.Length;
+
+        if (IsValidEntity(spawnEntity)) {
+          float spawnOrigin[3], spawnAngles[3];
+          GetEntPropVector(spawnEntity, Prop_Data, "m_vecOrigin", spawnOrigin);
+          GetEntPropVector(spawnEntity, Prop_Data, "m_angRotation", spawnAngles);
+
+          TF2_RespawnPlayer(client);
+          TeleportEntity(client, spawnOrigin, spawnAngles, {0.0, 0.0, 0.0});
+          ApplyBootsAttributes(client);
+          g_bResupplyUp[client] = true;
+          return;
+        }
       }
     }
   }
+
+  // Fallback to default resupply
+  ForceRegenerateAndRespawn(client);
+  ApplyBootsAttributes(client);
+  g_bResupplyUp[client] = true;
+}
+
+void RemoveStocks(int client) {
+  if (bFixStocks.BoolValue) {
+    TFClassType class = TF2_GetPlayerClass(client);
+    int iWep;
+    if (class == TFClass_DemoMan || class == TFClass_Soldier) iWep = GetPlayerWeaponSlot(client, 1);
+    elif (class == TFClass_Medic) iWep = GetPlayerWeaponSlot(client, 0);
+
+    if (iWep >= 0) {
+      char classname[64];
+      GetEntityClassname(iWep, classname, sizeof(classname));
+
+      static char blockedWeapons[3][32] = {
+        "tf_weapon_shotgun_soldier",
+        "tf_weapon_pipebomblauncher",
+        "tf_weapon_syringegun_medic"
+      };
+      static char messages[3][32] = {
+        "Shotgun equipped",
+        "Stickies equipped",
+        "Syringe Gun equipped"
+      };
+
+      for (int i = 0; i < sizeof(blockedWeapons); i++) {
+        if (StrEqual(classname, blockedWeapons[i])) {
+          CTagChat(client, messages[i]);
+          TF2_RemoveWeaponSlot(client, (class == TFClass_Medic) ? 0 : 1);
+          break;
+        }
+      }
+    }
+  }
+}
+
+// Validate entity cache and rebuild if any cached entity has become invalid
+void ValidateEntityCache() {
+  bool needsRebuild = false;
+
+  if (g_iCachedTimerEntity != -1 && !IsValidEntity(g_iCachedTimerEntity))
+    needsRebuild = true;
+
+  if (!needsRebuild) {
+    for (int idx = 0; idx < g_hCachedSpawnRooms.Length; idx++) {
+      if (!IsValidEntity(g_hCachedSpawnRooms.Get(idx))) {
+        needsRebuild = true;
+        break;
+      }
+    }
+  }
+
+  if (!needsRebuild) {
+    for (int team = 0; team < 2; team++) {
+      for (int idx = 0; idx < g_hCachedSpawnPoints[team].Length; idx++) {
+        if (!IsValidEntity(g_hCachedSpawnPoints[team].Get(idx))) {
+          needsRebuild = true;
+          break;
+        }
+      }
+      if (needsRebuild) break;
+    }
+  }
+
+  if (needsRebuild) {
+    PrintToServer("[p4sstime] Entity cache invalidated, rebuilding...");
+    BuildEntityCache();
+  }
+}
+
+// Build entity cache for mirror spawnpoint system
+void BuildEntityCache() {
+  g_hCachedSpawnRooms.Clear();
+  g_hCachedSpawnPoints[0].Clear();
+  g_hCachedSpawnPoints[1].Clear();
+  g_iCachedTimerEntity = -1;
+
+  // Cache team_round_timer entities
+  int entity = -1;
+  while ((entity = FindEntityByClassname(entity, "team_round_timer")) != -1) {
+    if (IsValidEntity(entity)) {
+      g_iCachedTimerEntity = entity;
+      break;
+    }
+  }
+
+  // Cache func_respawnroom entities
+  entity = -1;
+  while ((entity = FindEntityByClassname(entity, "func_respawnroom")) != -1) {
+    if (IsValidEntity(entity)) {
+      g_hCachedSpawnRooms.Push(entity);
+    }
+  }
+
+  // Cache info_player_teamspawn entities
+  entity = -1;
+  while ((entity = FindEntityByClassname(entity, "info_player_teamspawn")) != -1) {
+    if (IsValidEntity(entity)) {
+      int team = GetEntProp(entity, Prop_Send, "m_iTeamNum");
+      if (team == 2) {
+        g_hCachedSpawnPoints[0].Push(entity);
+      }
+      else if (team == 3) {
+        g_hCachedSpawnPoints[1].Push(entity);
+      }
+    }
+  }
+
+  AnalyzeMirrorSpawnpoints();
+}
+
+// Analyze spawnpoints for mirror system - determine left/right split based on coordinates
+void AnalyzeMirrorSpawnpoints() {
+  g_hMirrorSpawnPoints[0][0].Clear();
+  g_hMirrorSpawnPoints[0][1].Clear();
+  g_hMirrorSpawnPoints[1][0].Clear();
+  g_hMirrorSpawnPoints[1][1].Clear();
+
+  g_iCurrentSpawnIndex[0][0] = 0;
+  g_iCurrentSpawnIndex[0][1] = 0;
+  g_iCurrentSpawnIndex[1][0] = 0;
+  g_iCurrentSpawnIndex[1][1] = 0;
+
+  int totalSpawns = g_hCachedSpawnPoints[0].Length + g_hCachedSpawnPoints[1].Length;
+  if (totalSpawns < 2) {
+    g_bMirrorSystemInitialized = false;
+    PrintToServer("[p4sstime] Resupply swap disabled: no valid spawnpoints (%d)", totalSpawns);
+    return;
+  }
+
+  float totalX = 0.0, totalY = 0.0;
+  int count = 0;
+
+  for (int team = 0; team < 2; team++) {
+    int spawnCount = g_hCachedSpawnPoints[team].Length;
+    for (int j = 0; j < spawnCount; j++) {
+      int entity = g_hCachedSpawnPoints[team].Get(j);
+      if (IsValidEntity(entity)) {
+        float origin[3];
+        GetEntPropVector(entity, Prop_Data, "m_vecOrigin", origin);
+        totalX += origin[0];
+        totalY += origin[1];
+        count++;
+      }
+    }
+  }
+
+  if (count < 2) {
+    g_bMirrorSystemInitialized = false;
+    PrintToServer("[p4sstime] Resupply swap disabled: no valid spawnpoints (%d)", count);
+    return;
+  }
+
+  g_fMirrorPlaneX = totalX / count;
+  g_fMirrorPlaneY = totalY / count;
+
+  for (int team = 0; team < 2; team++) {
+    int spawnCount = g_hCachedSpawnPoints[team].Length;
+    for (int j = 0; j < spawnCount; j++) {
+      int entity = g_hCachedSpawnPoints[team].Get(j);
+      if (IsValidEntity(entity)) {
+        float origin[3];
+        GetEntPropVector(entity, Prop_Data, "m_vecOrigin", origin);
+
+        int side = (origin[0] < g_fMirrorPlaneX) ? 0 : 1;
+        g_hMirrorSpawnPoints[team][side].Push(entity);
+      }
+    }
+  }
+
+  g_bMirrorSystemInitialized = true;
 }

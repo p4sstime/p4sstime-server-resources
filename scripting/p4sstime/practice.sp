@@ -1,8 +1,6 @@
 // This file relates to all features for practice mode and will contain the functions for them
-void Hook_OnPracticeModeChange(ConVar convar, const char[] oldValue, const char[] newValue)
-{
-  if (bPracticeMode.BoolValue)
-  {
+void Hook_OnPracticeModeChange(ConVar convar, const char[] oldValue, const char[] newValue) {
+  if (bPractice.BoolValue) {
     int entityTimer = FindEntityByClassname(-1, "team_round_timer");
     SetVariantInt(300);
     AcceptEntityInput(entityTimer, "AddTime");
@@ -10,10 +8,8 @@ void Hook_OnPracticeModeChange(ConVar convar, const char[] oldValue, const char[
   }
 }
 
-Action AddFiveMinutes(Handle timer)
-{
-  if (bPracticeMode.BoolValue)
-  {
+Action AddFiveMinutes(Handle timer) {
+  if (bPractice.BoolValue) {
     int entityTimer = FindEntityByClassname(-1, "team_round_timer");
     SetVariantInt(300);
     AcceptEntityInput(entityTimer, "AddTime");
