@@ -70,6 +70,8 @@ public Action Hook_ImmunityOnTakeDamage(int victim, int &attacker, int &inflicto
 }
 
 public void Hook_ImmunityOnTakeDamagePost(int victim, int attacker, int inflictor, float damage, int damagetype, int weapon, float damageForce[3], float damagePosition[3], int damagecustom) {
+  ShowAirshotMessage(victim, attacker);
+  ClearDirectHit(victim);
   if (IsMatch()) return;
 
   if (g_bPendingHP[victim]) {
@@ -81,6 +83,9 @@ public void Hook_ImmunityOnTakeDamagePost(int victim, int attacker, int inflicto
 
 public void OnClientPutInServer(int client) {
   g_bPendingHP[client]    = false;
+  g_iPlyObserverMode[client] = -1;
+  g_iPlyObserverTarget[client] = -1;
+  ClearDirectHit(client);
   SDKHook(client, SDKHook_OnTakeDamage,     Hook_ImmunityOnTakeDamage);
   SDKHook(client, SDKHook_OnTakeDamagePost, Hook_ImmunityOnTakeDamagePost);
 }
