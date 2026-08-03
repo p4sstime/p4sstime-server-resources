@@ -273,7 +273,7 @@ Action CDice(int client, int args) {
 }
 
 Action CReady(int client, int args) {
-  if (IsMatch()) { CTagChat(client, "Ready command cannot be used during a game."); return Plugin_Handled; }
+  if (IsMatch()) return Plugin_Handled;
   if (args != 0) { CTagChat(client, "Usage: sm_ready"); return Plugin_Handled; }
 
   TFTeam clientTeam = TF2_GetClientTeam(client);
@@ -316,6 +316,8 @@ Action CReady(int client, int args) {
       GameRules_SetPropFloat("m_flRestartRoundTime", -1.0);
       GameRules_SetProp("m_bAwaitingReadyRestart", 1);
       if (cvRestart != null) cvRestart.SetInt(0);
+
+      SetGameState(STATE_WAITING);
 
       char teamName[4];
       strcopy(teamName, sizeof(teamName), (clientTeam == TFTeam_Red) ? "RED" : "BLU");
