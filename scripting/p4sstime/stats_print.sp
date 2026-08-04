@@ -180,8 +180,6 @@ Action Timer_DisplayStats(Handle timer) {
     if (!IsValidClient(client)) continue;
     if (!arr_iClientPrefs[client].iStats) continue;
 
-    LogToGame("Printing for client: %d", client);
-
     s_iPrintSeq[client] = 0;
 
     bool isStv = IsClientSourceTV(client);

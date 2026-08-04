@@ -13,7 +13,7 @@
 #pragma semicolon 1 // required for logs.tf
 #pragma newdecls required
 
-#define VERSION "3.0.0"
+#define VERSION "3.0.1"
 
 // Macros
 #define GD      GameData 
@@ -71,6 +71,7 @@ enum struct enuClientSettings {
   bool bImmunity;
   bool bInfAmmo;
   bool bLegacyColors;
+  bool bAirshotLog;
 }
 
 enum struct enuClientStats {
@@ -188,7 +189,16 @@ bool g_bSteamOnline = true;
 bool g_bBackupFOVDB;
 bool g_bPlayerTracked[MAXPLAYERS + 1];
 int  g_iPlayerFOV[MAXPLAYERS + 1];
-// b plyTakenDirectHit[MAXPLAYERS + 1];
+int  g_iPlySpecFov[MAXPLAYERS + 1];
+int  g_iPlyObserverMode[MAXPLAYERS + 1];
+int  g_iPlyObserverTarget[MAXPLAYERS + 1];
+// Direct hit tracking for airshot messages
+bool  g_bTookDirectHit[MAXPLAYERS + 1];
+bool  g_bDirectHitAirborne[MAXPLAYERS + 1];
+int   g_iDirectHitAttacker[MAXPLAYERS + 1];
+int   g_iDirectHitTick[MAXPLAYERS + 1];
+float g_fDirectHitSpeed[MAXPLAYERS + 1];
+float g_fDirectHitDistance[MAXPLAYERS + 1];
 Cookie ck_iCountdown,
        ck_bJackHud,
        ck_bJackChat,
@@ -198,7 +208,9 @@ Cookie ck_iCountdown,
        ck_bImmunity,
        ck_bInfAmmo,
        ck_bLegacyColors,
-       ck_iFov;
+       ck_iFov,
+       ck_iSpecFov,
+       ck_bAirshotLog;
 
 // log variables
 int   user1;
@@ -391,6 +403,79 @@ stock void ShowScoreMessage(int scorer, int assistant, bool panacea, bool winstr
   }
 }
 
+// Airshot direct hit tracking
+void OnProjectileTouch(int entity, int other) {
+  if (other < 1 || other > MaxClients || !IsClientInGame(other)) return;
+
+  g_bTookDirectHit[other] = true;
+  g_bDirectHitAirborne[other] = !(GetEntityFlags(other) & FL_ONGROUND);
+  g_iDirectHitAttacker[other] = EntRefToEntIndex(GetEntPropEnt(entity, Prop_Data, "m_hOwnerEntity"));
+  g_iDirectHitTick[other] = GetGameTickCount();
+
+  float velocity[3];
+  GetEntPropVector(other, Prop_Data, "m_vecAbsVelocity", velocity);
+  g_fDirectHitSpeed[other] = GetVectorLength(velocity);
+
+  int attacker = g_iDirectHitAttacker[other];
+  if (attacker < 1 || attacker > MaxClients || !IsClientInGame(attacker)) {
+    g_fDirectHitDistance[other] = 0.0;
+    return;
+  }
+
+  float attPos[3], vicPos[3];
+  GetClientAbsOrigin(attacker, attPos);
+  GetClientAbsOrigin(other, vicPos);
+  g_fDirectHitDistance[other] = GetVectorDistance(attPos, vicPos);
+
+  char class[32];
+  GetEntityClassname(entity, class, sizeof(class));
+}
+
+stock void ClearDirectHit(int client) {
+  g_bTookDirectHit[client] = false;
+  g_bDirectHitAirborne[client] = false;
+  g_iDirectHitAttacker[client] = 0;
+  g_iDirectHitTick[client] = 0;
+  g_fDirectHitSpeed[client] = 0.0;
+  g_fDirectHitDistance[client] = 0.0;
+}
+
+stock void ShowAirshotMessage(int victim, int attacker) {
+  if (!bChatEvents.BoolValue) return;
+  if (!IsValidClient(victim) || !IsValidClient(attacker)) return;
+  if (victim == attacker) return;
+  if (g_iDirectHitAttacker[victim] != attacker) return;
+  if (g_iDirectHitTick[victim] != GetGameTickCount()) return;
+  if (!g_bTookDirectHit[victim]) return;
+  if (IsPlayerAlive(victim)) return;
+  if (TF2_GetClientTeam(victim) == TF2_GetClientTeam(attacker)) return;
+
+  float speed = g_fDirectHitSpeed[victim];
+  float dist = g_fDirectHitDistance[victim];
+  bool fast = speed > 1000.0;
+  bool far = dist > 800.0;
+
+  if (!fast && !far) {
+    return;
+  }
+
+  char attackerName[MAX_TEAMFORMAT_NAME_LENGTH], victimName[MAX_TEAMFORMAT_NAME_LENGTH];
+  FormatPlayerNameWithTeam(attacker, attackerName);
+  FormatPlayerNameWithTeam(victim, victimName);
+
+  if (fast && far) {
+    ChatEvent("%s {cNeutral}airshot {chat}%s at {cNeutral}%.0f hu/s {chat}from {cNeutral}%.0fhu{chat}!", attackerName, victimName, speed, dist);
+  } else if (fast) {
+    ChatEvent("%s {cNeutral}airshot {chat}%s at {cNeutral}%.0f hu/s{chat}!", attackerName, victimName, speed);
+  } else {
+    ChatEvent("%s {cNeutral}airshot {chat}%s from {cNeutral}%.0fhu{chat}!", attackerName, victimName, dist);
+  }
+
+  char attackerNamePlain[MAX_NAME_LENGTH], victimNamePlain[MAX_NAME_LENGTH];
+  GetClientName(attacker, attackerNamePlain, sizeof(attackerNamePlain));
+  GetClientName(victim, victimNamePlain, sizeof(victimNamePlain));
+}
+
 stock void LogBallSpawn(const char[] spawnName, int caller) {
   char logMessage[64];
   if (StrEqual(spawnName, "passtime_ball_spawn1")) {
@@ -504,6 +589,8 @@ public void OnPluginStart() {
   ck_iStats =              RCC("p4ssClientStats",             "p4sstime's client setting (0/1/2) for EoR stats",                   CookieAccess_Public);
   ck_bStatsSeparateLines = RCC("p4ssClientStatsSeparateLines", "p4sstime's client setting for separating stats into 2 lines", CookieAccess_Public);
   ck_iFov =                RCC("p4ssClientFOV",               "p4sstime's client FOV setting",                                     CookieAccess_Public);
+  ck_iSpecFov =            RCC("p4ssClientSpecFOV",           "p4sstime's spectator FOV setting",                                  CookieAccess_Public);
+  ck_bAirshotLog =         RCC("p4ssClientAirshotLog",        "p4sstime's airshot log toggle",                                     CookieAccess_Public);
   ck_bImmunity =           RCC("p4ssClientImmunity",          "p4sstime's immunity setting",                                       CookieAccess_Public);
   ck_bInfAmmo =            RCC("p4ssClientInfiniteAmmo",      "p4sstime's infinite ammo setting",                                  CookieAccess_Public);
   ck_bLegacyColors =       RCC("p4ssClientLegacyColors",   "p4sstime's client setting for using legacy colors",                 CookieAccess_Public);
@@ -516,6 +603,7 @@ public void OnPluginStart() {
   CC("sm_pt_menu",         CMenu,            "Open the PASS Time menu");
   CC("sm_pt_countdown",    CChatCountdown,   "Toggle JACK spawn timer captions");
   CC("sm_fov",             CSetFOV,          "Set your field of view");
+  CC("sm_spec_fov",        CSetSpecFOV,      "Set your spectator FOV");
   CC("+sm_resupply",       CResupDn,         "Instant buffered resupply in spawn");
   CC("-sm_resupply",       CResupUp);
   CC("+sm_pt_resupply",    CResupDn,         "Instant buffered resupply in spawn");
@@ -646,12 +734,20 @@ public void OnPluginStart() {
   HE("teamplay_broadcast_audio",     EMidgameCountdown);
   HE("teamplay_round_active",        EPlayersCanMove);
   HE("teamplay_round_win",           ETeamWin);
+  HE("teamplay_round_restart_seconds", EGameState_RoundRestartSeconds);
+  HE("teamplay_restart_round",       EGameState_RestartRound);
+  HE("teamplay_map_time_remaining",  EGameState_MapTimeRemaining);
+  HE("teamplay_round_start",         EGameState_RoundStart);
+  HE("teamplay_game_over",           EGameState_GameOver);
   HE("stats_resetround",             ERoundReset);
 
   HEO("trigger_catapult",         "OnCatapulted", EOOnCatapult);
   HEO("info_passtime_ball_spawn", "OnSpawnBall",  EOOnSpawnBall);
 
   AddCommandListener(OnChangeClass, "joinclass");
+  AddCommandListener(OnSpecCommand, "spec_next");
+  AddCommandListener(OnSpecCommand, "spec_prev");
+  AddCommandListener(OnSpecCommand, "spec_mode");
 
   HCC(bPractice, Hook_OnPracticeModeChange);
   HCC(bResupply, Hook_OnAllowInstantResupplyChange);
@@ -660,6 +756,7 @@ public void OnPluginStart() {
   // HCC(trikzProjDev, Hook_OnProjCollideDev);
 
   CreateTimer(0.5, GoalHealTimer, 0, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
+  CreateTimer(0.05, Timer_CheckSpecFov, _, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
   /*for (i client = 1; client <= MaxClients; client++)
     if (IsClientInGame(client))
       OnClientPutInServer(client);*/
@@ -859,6 +956,10 @@ public void OnEntityCreated(int eIndex, const char[] eClassname) {
     VerboseLog("passtime_ball spawned i \"%d\"", eIndex);
     SetJack(eIndex);
   }
+  if (StrEqual(eClassname, "tf_projectile_rocket") || StrEqual(eClassname, "tf_projectile_pipe")) {
+    SDKHookEx(eIndex, SDKHook_Touch, OnProjectileTouch);
+  }
+
   if (bMedicSplash.BoolValue) {
     if (StrEqual(eClassname, "tf_projectile_healing_bolt")) {
       VerboseLog("tf_projectile_healing_bolt spawned.");
@@ -985,6 +1086,7 @@ Action EMidgameCountdown(Event event, const char[] name, bool dontBroadcast) {
 }
 
 Action EPlayersCanMove(Event event, const char[] name, bool dontBroadcast) {
+  OnGameStateRoundActive();
   int offset = GameConfGetOffset(gameData, "CTFPlayer::m_bPasstimeBallSlippery");
   for (int x = 1; x < MaxClients + 1; x++) {
     if (!IsValidClient(x)) continue;
@@ -998,6 +1100,7 @@ Action EPlayersCanMove(Event event, const char[] name, bool dontBroadcast) {
 }
 
 Action ETeamWin(Event event, const char[] name, bool dontBroadcast) {
+  OnGameStateRoundWin();
   CreateTimer(0.5, Timer_DisplayStats);
   iPlyWhoGotJack = 0;  // reset this because it's a good idea. doesn't actually fix anything but this shouldn't carry over between rounds
   return Plugin_Handled;
@@ -1415,10 +1518,10 @@ void FormatPlayerNameWithTeam(int player, char[] outputString) {
   char playerName[MAX_NAME_LENGTH];
   GetClientName(player, playerName, sizeof(playerName));
   if (TF2_GetClientTeam(player) == TFTeam_Blue) {
-    Format(outputString, MAX_NAME_LENGTH + 7, "{teamblu}%s", playerName);
+    Format(outputString, MAX_NAME_LENGTH + 7, "{teamblu}%s{chat}", playerName);
   }
   else {
-    Format(outputString, MAX_NAME_LENGTH + 7, "{teamred}%s", playerName);
+    Format(outputString, MAX_NAME_LENGTH + 7, "{teamred}%s{chat}", playerName);
   }
 }
 

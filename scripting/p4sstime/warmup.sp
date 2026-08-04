@@ -1,5 +1,67 @@
 // Immunity and infinite ammo
 
+// Game state machine
+enum GameState {
+  STATE_WAITING,
+  STATE_COUNTDOWN,
+  STATE_GAME_START,
+  STATE_ROUND_ACTIVE,
+  STATE_ROUND_FINISHED,
+  STATE_GAME_FINISHED
+};
+
+GameState g_iGameState       = STATE_WAITING;
+bool      g_bRoundStartPending = false;
+
+Action EGameState_RoundRestartSeconds(Event event, const char[] name, bool dontBroadcast) {
+  g_iGameState = STATE_COUNTDOWN;
+  return Plugin_Continue;
+}
+
+Action EGameState_RestartRound(Event event, const char[] name, bool dontBroadcast) {
+  g_iGameState = STATE_GAME_START;
+  g_bRoundStartPending = false;
+  return Plugin_Continue;
+}
+
+Action EGameState_MapTimeRemaining(Event event, const char[] name, bool dontBroadcast) {
+  g_iGameState = STATE_GAME_START;
+  return Plugin_Continue;
+}
+
+Action EGameState_RoundStart(Event event, const char[] name, bool dontBroadcast) {
+  g_iGameState = STATE_GAME_START;
+  g_bRoundStartPending = true;
+  return Plugin_Continue;
+}
+
+Action EGameState_GameOver(Event event, const char[] name, bool dontBroadcast) {
+  g_iGameState = STATE_GAME_FINISHED;
+  return Plugin_Continue;
+}
+
+void SetGameState(GameState state) {
+  g_iGameState = state;
+}
+
+void OnGameStateRoundActive() {
+  if (g_bRoundStartPending) {
+    g_iGameState = STATE_ROUND_ACTIVE;
+    g_bRoundStartPending = false;
+  } else if (g_iGameState == STATE_ROUND_FINISHED) {
+    // Game ended directly from a round win
+    g_iGameState = STATE_GAME_FINISHED;
+  } else {
+    // round_active without a matching round_start - treat as game end
+    g_iGameState = STATE_GAME_FINISHED;
+  }
+}
+
+void OnGameStateRoundWin() {
+  g_iGameState = STATE_ROUND_FINISHED;
+  g_bRoundStartPending = false;
+}
+
 bool IsMatch() {
   bool awaitingReadyRestart = view_as<bool>(GameRules_GetProp("m_bAwaitingReadyRestart"));
   bool timerPaused          = false;
@@ -11,7 +73,15 @@ bool IsMatch() {
     timerDisabled = view_as<bool>(GetEntProp(g_iCachedTimerEntity, Prop_Send, "m_bIsDisabled"));
   }
 
-  return !(awaitingReadyRestart || timerPaused || timerDisabled || isPostRound);
+  bool activeByTimer = !(awaitingReadyRestart || timerPaused || timerDisabled || isPostRound);
+
+  bool activeByState = g_iGameState == STATE_GAME_START
+                    || g_iGameState == STATE_ROUND_ACTIVE
+                    || g_iGameState == STATE_ROUND_FINISHED;
+
+  // State machine is primary, but the timer/gamerules check keeps the plugin
+  // from reporting the wrong state on a fresh load before any events arrive.
+  return activeByState || activeByTimer;
 }
 
 void SetAmmo(int client, int weapon, int ammo) {
@@ -70,6 +140,8 @@ public Action Hook_ImmunityOnTakeDamage(int victim, int &attacker, int &inflicto
 }
 
 public void Hook_ImmunityOnTakeDamagePost(int victim, int attacker, int inflictor, float damage, int damagetype, int weapon, float damageForce[3], float damagePosition[3], int damagecustom) {
+  ShowAirshotMessage(victim, attacker);
+  ClearDirectHit(victim);
   if (IsMatch()) return;
 
   if (g_bPendingHP[victim]) {
@@ -81,6 +153,9 @@ public void Hook_ImmunityOnTakeDamagePost(int victim, int attacker, int inflicto
 
 public void OnClientPutInServer(int client) {
   g_bPendingHP[client]    = false;
+  g_iPlyObserverMode[client] = -1;
+  g_iPlyObserverTarget[client] = -1;
+  ClearDirectHit(client);
   SDKHook(client, SDKHook_OnTakeDamage,     Hook_ImmunityOnTakeDamage);
   SDKHook(client, SDKHook_OnTakeDamagePost, Hook_ImmunityOnTakeDamagePost);
 }
