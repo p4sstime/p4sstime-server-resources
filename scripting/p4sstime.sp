@@ -273,7 +273,7 @@ stock void SendSoundCountdownToClients(const char[] sound) {
   for (int x = 1; x < MaxClients + 1; x++) {
     if (!IsValidClient(x) || !arr_iClientPrefs[x].bCountdown) continue;
     
-    if ARB(10,cGreen);
+    if ARB(10,{cGreen});
     elif (StrEqual(sound, "Passtime.BallSpawn"))
       CTagChat(x, "{cGreen}Ball has spawned!");
     if (bHalloweenMode) {
