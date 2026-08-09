@@ -440,32 +440,40 @@ stock void ClearDirectHit(int client) {
   g_fDirectHitDistance[client] = 0.0;
 }
 
+stock bool IsAirShot(int victim, int attacker, float &speed, float &dist) {
+  if (!IsValidClient(victim) || !IsValidClient(attacker)) return false;
+  if (victim == attacker) return false;
+  if (g_iDirectHitAttacker[victim] != attacker) return false;
+  if (g_iDirectHitTick[victim] != GetGameTickCount()) return false;
+  if (!g_bTookDirectHit[victim]) return false;
+  if (IsPlayerAlive(victim)) return false;
+  if (TF2_GetClientTeam(victim) == TF2_GetClientTeam(attacker)) return false;
+  if (!arr_bBlastJumpStatus[victim] && !IsAboveSolidGround(victim, 100.0)) return false;
+
+  speed = g_fDirectHitSpeed[victim];
+  dist = g_fDirectHitDistance[victim];
+  bool isFast = speed > 1000.0;
+  bool isFar = dist > 800.0;
+
+  return isFast || isFar;
+}
+
 stock void ShowAirshotMessage(int victim, int attacker) {
   if (!bChatEvents.BoolValue) return;
-  if (!IsValidClient(victim) || !IsValidClient(attacker)) return;
-  if (victim == attacker) return;
-  if (g_iDirectHitAttacker[victim] != attacker) return;
-  if (g_iDirectHitTick[victim] != GetGameTickCount()) return;
-  if (!g_bTookDirectHit[victim]) return;
-  if (IsPlayerAlive(victim)) return;
-  if (TF2_GetClientTeam(victim) == TF2_GetClientTeam(attacker)) return;
 
-  float speed = g_fDirectHitSpeed[victim];
-  float dist = g_fDirectHitDistance[victim];
-  bool fast = speed > 1000.0;
-  bool far = dist > 800.0;
+  float speed, dist;
+  if (!IsAirShot(victim, attacker, speed, dist)) return;
 
-  if (!fast && !far) {
-    return;
-  }
+  bool isFast = speed > 1000.0;
+  bool isFar = dist > 800.0;
 
   char attackerName[MAX_TEAMFORMAT_NAME_LENGTH], victimName[MAX_TEAMFORMAT_NAME_LENGTH];
   FormatPlayerNameWithTeam(attacker, attackerName);
   FormatPlayerNameWithTeam(victim, victimName);
 
-  if (fast && far) {
+  if (isFast && isFar) {
     ChatEvent("%s {cNeutral}airshot {chat}%s at {cNeutral}%.0f hu/s {chat}from {cNeutral}%.0fhu{chat}!", attackerName, victimName, speed, dist);
-  } else if (fast) {
+  } else if (isFast) {
     ChatEvent("%s {cNeutral}airshot {chat}%s at {cNeutral}%.0f hu/s{chat}!", attackerName, victimName, speed);
   } else {
     ChatEvent("%s {cNeutral}airshot {chat}%s from {cNeutral}%.0fhu{chat}!", attackerName, victimName, dist);
@@ -1154,6 +1162,25 @@ float DistanceAboveGround(int victim) { // taken from mgemod
 
   delete trace;
   return distance;
+}
+
+bool IsAboveSolidGround(int client, float minHeight) {
+  float vStart[3], vEnd[3], vNormal[3];
+  float vAngles[3] = { 90.0, 0.0, 0.0 };
+  GetClientAbsOrigin(client, vStart);
+  Handle trace = TR_TraceRayFilterEx(vStart, vAngles, MASK_PLAYERSOLID, RayType_Infinite, TraceEntityFilterPlayer);
+
+  bool solid = false;
+  if (TR_DidHit(trace)) {
+    TR_GetEndPosition(vEnd, trace);
+    TR_GetPlaneNormal(trace, vNormal);
+
+    float distance = GetVectorDistance(vStart, vEnd, false);
+    solid = (distance >= minHeight && vNormal[2] > 0.70710678); // 0.70710678 is cos(45°)
+  }
+
+  delete trace;
+  return solid;
 }
 
 // Macro for changing blast jump statuses for clients
