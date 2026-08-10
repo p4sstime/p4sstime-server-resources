@@ -17,7 +17,7 @@ public OnClientCookiesCached(int client) {
   GET_BOOL_COOKIE(ck_bLegacyColors, arr_iClientPrefs[client].bLegacyColors, false)
   GET_BOOL_COOKIE(ck_bAirshotLog, arr_iClientPrefs[client].bAirshotLog, false)
   GetSpecFOVCookie(client);
-  if (TF2_GetClientTeam(client) == TFTeam_Spectator) ApplySpecFov(client);
+  if (IsClientInGame(client) && TF2_GetClientTeam(client) == TFTeam_Spectator) ApplySpecFov(client);
 }
 
 Action CMenu(int client, int args) {
