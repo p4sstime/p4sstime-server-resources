@@ -117,7 +117,7 @@ ConVar fGoalRegeneration;
 int iPlyWhoGotJack;
 // int plyDirecter;
 int ibFirstGrabCheck;
-int entJack;
+int entJack = INVALID_ENT_REFERENCE;
 int entPassTarget;
 int ibBallSpawnedLower;
 int iRoundResetTick;
@@ -545,7 +545,6 @@ stock void LogPassBallStolen(int thief, int victim, bool steal2save) {
 
 // Modules (loaded here cause the methods above are dependent on them)
 #include "p4sstime/stocks.sp"
-#include "p4sstime/snapshot.sp"
 #include "p4sstime/logs.sp"
 #include "p4sstime/pass_menu.sp"
 #include "p4sstime/practice.sp"
@@ -621,7 +620,6 @@ public void OnPluginStart() {
   CCA("sm_load",       "sm_ld",      CLoadpoint, "Teleport to saved spawn");
 
   // Admin commands
-  AC("sm_pt_snapshot",    CSnapshot,         GENERIC, "Take a snapshot of the plugin's current variable values.");
   AC("sm_pt_spawnball",   CSpawnBall,        GENERIC, "Spawn the jack for pre-game practice.");
   AC("sm_pt_demoresist",  CToggleDemoResist, GENERIC, "Toggle demo blast vulnerability");
 
@@ -779,8 +777,8 @@ public void OnPluginStart() {
     iWinStratDistance = 400;
   }
 
-  int jackIndex = FindEntityByClassname(-1, "passtime_ball");
-  if (jackIndex != -1) entJack = jackIndex;
+  int jack = FindEntityByClassname(-1, "passtime_ball");
+  if (jack != -1) SetJack(jack);
 
   if (LibraryExists("updater")) {
     OnLibraryAdded("updater");
@@ -881,17 +879,18 @@ public void OnMapStart() { // get goal locations
 }
 
 public void OnMapEnd() {
-  entJack = 0;
+  entJack = INVALID_ENT_REFERENCE;
   ClearAttributeDefCache();
 }
 
 public void OnGameFrame() {
-  if (bBallLoose && IsValidJackEntity()) {
-    TFTeam ballTeam = GetBallTeam();
+  int jack = GetJack();
+  if (bBallLoose && jack != INVALID_ENT_REFERENCE) {
+    TFTeam ballTeam = view_as<TFTeam>(GetEntProp(jack, Prop_Send, "m_iTeamNum"));
     if (ballTeam != eLastTickBallTeam) {
       VerboseLog("Ball team changed from %d (%s) to %d (%s)", eLastTickBallTeam, TFTeamToString(eLastTickBallTeam), ballTeam, TFTeamToString(ballTeam));
       float ballPos[3];
-      GetEntPropVector(entJack, Prop_Send, "m_vecOrigin", ballPos);
+      GetEntPropVector(jack, Prop_Send, "m_vecOrigin", ballPos);
       float distFromBluGoal = GetVectorDistance(ballPos, fBluGoalPos);
       float distFromRedGoal = GetVectorDistance(ballPos, fRedGoalPos);
       VerboseLog("Loose ball distance from goals: \"blu\" \"%.2f\" \"red\" \"%.2f\"", distFromBluGoal, distFromRedGoal);
@@ -982,16 +981,16 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
   VerboseLog("passtime_ball damage debug: playerWhoSplashed: %d, playerTeam: %s, ballTeam: %s", attacker, TFTeamToString(playerTeam), TFTeamToString(ballTeam));
   bBallSplashed = true;
   float fSplashedBallPos[3];
-  GetEntPropVector(entJack, Prop_Send, "m_vecOrigin", fSplashedBallPos);
+  GetEntPropVector(victim, Prop_Send, "m_vecOrigin", fSplashedBallPos);
   bool inGoalZone, expectedBallTeam;
   if (playerTeam == TFTeam_Blue) {
     VerboseLog("passtime_ball damage debug: player team is BLU, checking if in blu goal and if ball is red.");
-    inGoalZone = EntInGoalZone(entJack, TFTeam_Blue);
+    inGoalZone = EntInGoalZone(victim, TFTeam_Blue);
     expectedBallTeam = (ballTeam == TFTeam_Red);
   }
   else {
     VerboseLog("passtime_ball damage debug: player team is RED, checking if in red goal and if ball is blu.");
-    inGoalZone = EntInGoalZone(entJack, TFTeam_Red);
+    inGoalZone = EntInGoalZone(victim, TFTeam_Red);
     expectedBallTeam = (ballTeam == TFTeam_Blue);
   }
 
@@ -1207,11 +1206,11 @@ public void OnClientDisconnect(int client) {
 /*-------------------------------------------------- PASS Events --------------------------------------------------*/
 void EOOnSpawnBall(const char[] name, int caller, int activator, float delay) {
   char spawnName[24];
-  entJack = FindEntityByClassname(-1, "passtime_ball");
 
+  int jack = GetJack();
   bBallLoose = true;
   ibBallSpawnedLower = 0;
-  if (bFixJackCollision.BoolValue) SetEntityCollisionGroup(entJack, 4);
+  if (bFixJackCollision.BoolValue && jack != -1) SetEntityCollisionGroup(jack, 4);
   if (bWaitingForBallSpawnToRestart) {
     ServerCommand("mp_tournament_restart");
     bWaitingForBallSpawnToRestart = false;
@@ -1244,7 +1243,14 @@ Action EPassFree(Event event, const char[] name, bool dontBroadcast) {
   arr_bDeathbombCheck[entDeathBomber] = false;  // if anyone at all throws the ball, the deathbomb is automatically false
 
   HideJackHud(owner);
-  GetEntPropVector(entJack, Prop_Data, "m_vecAbsOrigin",   fFreeBallPos);
+
+  int jack = GetJack();
+  if (jack != INVALID_ENT_REFERENCE) {
+    GetEntPropVector(jack, Prop_Data, "m_vecAbsOrigin", fFreeBallPos);
+  } else {
+    LogError("invalid jack entity when free position");
+  }
+
   GetEntPropVector(owner,   Prop_Data, "m_vecAbsVelocity", fFreeBallThrowerVec);
   entPassTarget = EntRefToEntIndex(GetEntPropEnt(owner, Prop_Send, "m_hPasstimePassTarget"));
   if (!(arr_bBlastJumpStatus[owner])) {
@@ -1429,9 +1435,16 @@ Action EPassScore(Event event, const char[] name, bool dontBroadcast) {
   if (ibBallSpawnedLower || bBallSplashed)
     arr_bPanaceaCheck[scorer] = false;
 
-  float fScoredBallPos[3];
-  GetEntPropVector(entJack, Prop_Send, "m_vecOrigin", fScoredBallPos);
-  float dist = GetVectorDistance(fFreeBallPos, fScoredBallPos, false);
+  float dist = 0;
+  int jack = GetJack();
+  if (jack != INVALID_ENT_REFERENCE) {
+    float fScoredBallPos[3];
+    GetEntPropVector(jack, Prop_Send, "m_vecOrigin", fScoredBallPos);
+    dist = GetVectorDistance(fFreeBallPos, fScoredBallPos, false);
+  } else {
+    LogError("invalid jack entity when calculating score distance");
+  }
+
   float speed = GetVectorLength(fFreeBallThrowerVec, false);
 
   if (arr_bDeathbombCheck[entDeathBomber]) {
@@ -1504,7 +1517,7 @@ bool AtEnemyGoal(int client) {
 void EOOnCatapult(const char[] output, int caller, int activator, float delay) {
   char catapultName[15];
   GetEntPropString(caller, Prop_Data, "m_iName", catapultName, sizeof(catapultName));
-  if (activator == entJack && iPlyWhoGotJack != 0) {
+  if (activator == GetJack() && iPlyWhoGotJack != 0) {
     if (StrEqual(catapultName, "red_catapult1") || StrEqual(catapultName, "red_catapult2") || StrEqual(catapultName, "blu_catapult1") || StrEqual(catapultName, "blu_catapult2") && IsClientConnected(iPlyWhoGotJack)) {
       LogCatapultEvent(catapultName);
     }
@@ -1524,32 +1537,6 @@ void FormatPlayerNameWithTeam(int player, char[] outputString) {
   }
 }
 
-// 0: TEAM_UNASSIGNED
-// 1: spectator
-// 2: TF_TEAM_RED
-// 3: TF_TEAM_BLU
-bool IsValidJackEntity() {
-  if (entJack == 0 || !IsValidEntity(entJack)) return false;
-  char classname[32];
-  GetEntityClassname(entJack, classname, sizeof(classname));
-  return StrEqual(classname, "passtime_ball");
-}
-
-stock TFTeam GetBallTeam() {
-  if (!IsValidJackEntity()) {
-    LogStackTrace("Ball entity invalid, returning Unassigned");
-    return TFTeam_Unassigned;
-  }
-  int team = GetEntProp(entJack, Prop_Send, "m_iTeamNum");
-  switch (team) {
-    case 0:  return TFTeam_Unassigned;
-    case 1:  return TFTeam_Spectator;
-    case 2:  return TFTeam_Red;
-    case 3:  return TFTeam_Blue;
-    default: return TFTeam_Unassigned;
-  }
-}
-
 // Utility function
 stock void VerboseLog(const char[] format, any...) {
   if (bVerboseLogs.BoolValue) {
@@ -1561,11 +1548,24 @@ stock void VerboseLog(const char[] format, any...) {
   }
 }
 
+int GetJack() {
+    return EntRefToEntIndex(entJack);
+}
+
 void SetJack(int eIndex) {
-  if (!SDKHookEx(eIndex, SDKHook_OnTakeDamage, PasstimeBallTookDamage)) {
-    LogError("Could not hook passtime_ball. Splash detection will not work.");
+  int ref = EntIndexToEntRef(eIndex);
+
+  if (ref != INVALID_ENT_REFERENCE) {
+    if (entJack != ref) {
+      if (!SDKHookEx(eIndex, SDKHook_OnTakeDamage, PasstimeBallTookDamage)) {
+        LogError("Could not hook passtime_ball. Splash detection will not work.");
+      }
+    }
+
+    entJack = ref;
+  } else {
+    entJack = INVALID_ENT_REFERENCE;
   }
-  entJack = eIndex;
 }
 
 bool PointInRespawnRoom(int client, float origin[3], bool sameTeamOnly) {
