@@ -218,21 +218,9 @@ void RemoveStocks(int client) {
   }
 }
 
-// check to see if the timer entity is still valid
-// seems like IsValidEntity() is not enough because a different can use the same index
-bool IsValidTimerEntity() {
-  if (g_iCachedTimerEntity == -1 || !IsValidEntity(g_iCachedTimerEntity)) return false;
-  char classname[32];
-  GetEntityClassname(g_iCachedTimerEntity, classname, sizeof(classname));
-  return StrEqual(classname, "team_round_timer");
-}
-
 // Validate entity cache and rebuild if any cached entity has become invalid
 void ValidateEntityCache() {
   bool needsRebuild = false;
-
-  if (g_iCachedTimerEntity != -1 && !IsValidTimerEntity())
-    needsRebuild = true;
 
   if (!needsRebuild) {
     for (int idx = 0; idx < g_hCachedSpawnRooms.Length; idx++) {
@@ -266,19 +254,9 @@ void BuildEntityCache() {
   g_hCachedSpawnRooms.Clear();
   g_hCachedSpawnPoints[0].Clear();
   g_hCachedSpawnPoints[1].Clear();
-  g_iCachedTimerEntity = -1;
-
-  // Cache team_round_timer entities
-  int entity = -1;
-  while ((entity = FindEntityByClassname(entity, "team_round_timer")) != -1) {
-    if (IsValidEntity(entity)) {
-      g_iCachedTimerEntity = entity;
-      break;
-    }
-  }
 
   // Cache func_respawnroom entities
-  entity = -1;
+  int entity = -1;
   while ((entity = FindEntityByClassname(entity, "func_respawnroom")) != -1) {
     if (IsValidEntity(entity)) {
       g_hCachedSpawnRooms.Push(entity);
