@@ -887,7 +887,7 @@ public void OnMapEnd() {
 }
 
 public void OnGameFrame() {
-  if (bBallLoose) {
+  if (bBallLoose && IsValidJackEntity()) {
     TFTeam ballTeam = GetBallTeam();
     if (ballTeam != eLastTickBallTeam) {
       VerboseLog("Ball team changed from %d (%s) to %d (%s)", eLastTickBallTeam, TFTeamToString(eLastTickBallTeam), ballTeam, TFTeamToString(ballTeam));
@@ -1529,8 +1529,15 @@ void FormatPlayerNameWithTeam(int player, char[] outputString) {
 // 1: spectator
 // 2: TF_TEAM_RED
 // 3: TF_TEAM_BLU
+bool IsValidJackEntity() {
+  if (entJack == 0 || !IsValidEntity(entJack)) return false;
+  char classname[32];
+  GetEntityClassname(entJack, classname, sizeof(classname));
+  return StrEqual(classname, "passtime_ball");
+}
+
 stock TFTeam GetBallTeam() {
-  if (entJack == 0 || !IsValidEntity(entJack)) {
+  if (!IsValidJackEntity()) {
     LogStackTrace("Ball entity invalid, returning Unassigned");
     return TFTeam_Unassigned;
   }

@@ -218,11 +218,20 @@ void RemoveStocks(int client) {
   }
 }
 
+// check to see if the timer entity is still valid
+// seems like IsValidEntity() is not enough because a different can use the same index
+bool IsValidTimerEntity() {
+  if (g_iCachedTimerEntity == -1 || !IsValidEntity(g_iCachedTimerEntity)) return false;
+  char classname[32];
+  GetEntityClassname(g_iCachedTimerEntity, classname, sizeof(classname));
+  return StrEqual(classname, "team_round_timer");
+}
+
 // Validate entity cache and rebuild if any cached entity has become invalid
 void ValidateEntityCache() {
   bool needsRebuild = false;
 
-  if (g_iCachedTimerEntity != -1 && !IsValidEntity(g_iCachedTimerEntity))
+  if (g_iCachedTimerEntity != -1 && !IsValidTimerEntity())
     needsRebuild = true;
 
   if (!needsRebuild) {
