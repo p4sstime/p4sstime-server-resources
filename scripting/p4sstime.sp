@@ -180,7 +180,6 @@ int g_iCurrentSpawnIndex[2][2];  // [team][side] current spawnpoint index
 float g_fMirrorPlaneX = 0.0;  // X coordinate of the middle plane
 float g_fMirrorPlaneY = 0.0;  // Y coordinate of the middle plane
 bool g_bMirrorSystemInitialized = false;
-int g_iCachedTimerEntity = -1;
 
 // FOV
 ConVar cvFovMin;

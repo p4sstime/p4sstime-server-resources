@@ -61,9 +61,10 @@ bool IsMatch() {
   bool timerDisabled        = false;
   bool isPostRound          = GameRules_GetRoundState() == RoundState_TeamWin;
 
-  if (IsValidTimerEntity()) {
-    timerPaused   = view_as<bool>(GetEntProp(g_iCachedTimerEntity, Prop_Send, "m_bTimerPaused"));
-    timerDisabled = view_as<bool>(GetEntProp(g_iCachedTimerEntity, Prop_Send, "m_bIsDisabled"));
+  int timer = GetOrFindTimer();
+  if (timer != -1) {
+    timerPaused   = view_as<bool>(GetEntProp(timer, Prop_Send, "m_bTimerPaused"));
+    timerDisabled = view_as<bool>(GetEntProp(timer, Prop_Send, "m_bIsDisabled"));
   }
 
   return !(awaitingReadyRestart || timerPaused || timerDisabled || isPostRound);
