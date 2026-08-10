@@ -13,7 +13,7 @@
 #pragma semicolon 1 // required for logs.tf
 #pragma newdecls required
 
-#define VERSION "3.0.1"
+#define VERSION "3.0.2"
 
 // Macros
 #define GD      GameData 
