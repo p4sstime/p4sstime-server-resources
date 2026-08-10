@@ -249,15 +249,3 @@ stock Action EndCommand( int client, const char[] format, any... ) {
 bool IsValidClientAlive( int client ) {
     return IsValidClient( client ) && IsPlayerAlive( client );
 }
-
-int g_iCachedTimerEntity = INVALID_ENT_REFERENCE;
-stock int GetOrFindTimer() {
-    int entity = EntRefToEntIndex( g_iCachedTimerEntity );
-    if (entity == INVALID_ENT_REFERENCE) {
-        entity = FindEntityByClassname( -1, "team_round_timer" );
-        if ( entity != -1 )
-            g_iCachedTimerEntity = EntIndexToEntRef( entity );
-    }
-
-    return entity;
-}
