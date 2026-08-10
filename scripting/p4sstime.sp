@@ -739,11 +739,6 @@ public void OnPluginStart() {
   HE("teamplay_broadcast_audio",     EMidgameCountdown);
   HE("teamplay_round_active",        EPlayersCanMove);
   HE("teamplay_round_win",           ETeamWin);
-  HE("teamplay_round_restart_seconds", EGameState_RoundRestartSeconds);
-  HE("teamplay_restart_round",       EGameState_RestartRound);
-  HE("teamplay_map_time_remaining",  EGameState_MapTimeRemaining);
-  HE("teamplay_round_start",         EGameState_RoundStart);
-  HE("teamplay_game_over",           EGameState_GameOver);
   HE("stats_resetround",             ERoundReset);
 
   HEO("trigger_catapult",         "OnCatapulted", EOOnCatapult);
@@ -1092,7 +1087,6 @@ Action EMidgameCountdown(Event event, const char[] name, bool dontBroadcast) {
 }
 
 Action EPlayersCanMove(Event event, const char[] name, bool dontBroadcast) {
-  OnGameStateRoundActive();
   int offset = GameConfGetOffset(gameData, "CTFPlayer::m_bPasstimeBallSlippery");
   for (int x = 1; x < MaxClients + 1; x++) {
     if (!IsValidClient(x)) continue;
@@ -1106,7 +1100,6 @@ Action EPlayersCanMove(Event event, const char[] name, bool dontBroadcast) {
 }
 
 Action ETeamWin(Event event, const char[] name, bool dontBroadcast) {
-  OnGameStateRoundWin();
   CreateTimer(0.5, Timer_DisplayStats);
   iPlyWhoGotJack = 0;  // reset this because it's a good idea. doesn't actually fix anything but this shouldn't carry over between rounds
   return Plugin_Handled;

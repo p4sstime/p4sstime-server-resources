@@ -1,73 +1,10 @@
 // Immunity and infinite ammo
 
-// Game state machine
-enum GameState {
-  STATE_WAITING,
-  STATE_COUNTDOWN,
-  STATE_GAME_START,
-  STATE_ROUND_ACTIVE,
-  STATE_ROUND_FINISHED,
-  STATE_GAME_FINISHED
-};
-
-GameState g_iGameState       = STATE_WAITING;
-
-Action EGameState_RoundRestartSeconds(Event event, const char[] name, bool dontBroadcast) {
-  g_iGameState = STATE_COUNTDOWN;
-  return Plugin_Continue;
-}
-
-Action EGameState_RestartRound(Event event, const char[] name, bool dontBroadcast) {
-  g_iGameState = STATE_GAME_START;
-  return Plugin_Continue;
-}
-
-Action EGameState_MapTimeRemaining(Event event, const char[] name, bool dontBroadcast) {
-  g_iGameState = STATE_GAME_START;
-  return Plugin_Continue;
-}
-
-Action EGameState_RoundStart(Event event, const char[] name, bool dontBroadcast) {
-  g_iGameState = STATE_GAME_START;
-  return Plugin_Continue;
-}
-
-Action EGameState_GameOver(Event event, const char[] name, bool dontBroadcast) {
-  g_iGameState = STATE_GAME_FINISHED;
-  return Plugin_Continue;
-}
-
-void SetGameState(GameState state) {
-  g_iGameState = state;
-}
-
-void OnGameStateRoundActive() {
-  g_iGameState = STATE_ROUND_ACTIVE;
-}
-
-void OnGameStateRoundWin() {
-  g_iGameState = STATE_ROUND_FINISHED;
-}
-
 bool IsMatch() {
-  if (g_iGameState != STATE_WAITING) {
-    return g_iGameState == STATE_GAME_START
-        || g_iGameState == STATE_ROUND_ACTIVE
-        || g_iGameState == STATE_ROUND_FINISHED;
-  }
+  bool inWaitingForPlayers = view_as<bool>(GameRules_GetProp("m_bInWaitingForPlayers"));
+  bool isRoundOver         = GameRules_GetRoundState() == RoundState_GameOver;
 
-  bool awaitingReadyRestart = view_as<bool>(GameRules_GetProp("m_bAwaitingReadyRestart"));
-  bool timerPaused          = false;
-  bool timerDisabled        = false;
-  bool isPostRound          = GameRules_GetRoundState() == RoundState_TeamWin;
-
-  int timer = GetOrFindTimer();
-  if (timer != -1) {
-    timerPaused   = view_as<bool>(GetEntProp(timer, Prop_Send, "m_bTimerPaused"));
-    timerDisabled = view_as<bool>(GetEntProp(timer, Prop_Send, "m_bIsDisabled"));
-  }
-
-  return !(awaitingReadyRestart || timerPaused || timerDisabled || isPostRound);
+  return !inWaitingForPlayers && !isRoundOver;
 }
 
 void SetAmmo(int client, int weapon, int ammo) {
