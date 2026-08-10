@@ -11,7 +11,6 @@ enum GameState {
 };
 
 GameState g_iGameState       = STATE_WAITING;
-bool      g_bRoundStartPending = false;
 
 Action EGameState_RoundRestartSeconds(Event event, const char[] name, bool dontBroadcast) {
   g_iGameState = STATE_COUNTDOWN;
@@ -20,7 +19,6 @@ Action EGameState_RoundRestartSeconds(Event event, const char[] name, bool dontB
 
 Action EGameState_RestartRound(Event event, const char[] name, bool dontBroadcast) {
   g_iGameState = STATE_GAME_START;
-  g_bRoundStartPending = false;
   return Plugin_Continue;
 }
 
@@ -31,7 +29,6 @@ Action EGameState_MapTimeRemaining(Event event, const char[] name, bool dontBroa
 
 Action EGameState_RoundStart(Event event, const char[] name, bool dontBroadcast) {
   g_iGameState = STATE_GAME_START;
-  g_bRoundStartPending = true;
   return Plugin_Continue;
 }
 
@@ -45,43 +42,31 @@ void SetGameState(GameState state) {
 }
 
 void OnGameStateRoundActive() {
-  if (g_bRoundStartPending) {
-    g_iGameState = STATE_ROUND_ACTIVE;
-    g_bRoundStartPending = false;
-  } else if (g_iGameState == STATE_ROUND_FINISHED) {
-    // Game ended directly from a round win
-    g_iGameState = STATE_GAME_FINISHED;
-  } else {
-    // round_active without a matching round_start - treat as game end
-    g_iGameState = STATE_GAME_FINISHED;
-  }
+  g_iGameState = STATE_ROUND_ACTIVE;
 }
 
 void OnGameStateRoundWin() {
   g_iGameState = STATE_ROUND_FINISHED;
-  g_bRoundStartPending = false;
 }
 
 bool IsMatch() {
+  if (g_iGameState != STATE_WAITING) {
+    return g_iGameState == STATE_GAME_START
+        || g_iGameState == STATE_ROUND_ACTIVE
+        || g_iGameState == STATE_ROUND_FINISHED;
+  }
+
   bool awaitingReadyRestart = view_as<bool>(GameRules_GetProp("m_bAwaitingReadyRestart"));
   bool timerPaused          = false;
   bool timerDisabled        = false;
   bool isPostRound          = GameRules_GetRoundState() == RoundState_TeamWin;
 
-  if (g_iCachedTimerEntity != -1 && IsValidEntity(g_iCachedTimerEntity)) {
+  if (IsValidTimerEntity()) {
     timerPaused   = view_as<bool>(GetEntProp(g_iCachedTimerEntity, Prop_Send, "m_bTimerPaused"));
     timerDisabled = view_as<bool>(GetEntProp(g_iCachedTimerEntity, Prop_Send, "m_bIsDisabled"));
   }
 
-  bool activeByTimer = !(awaitingReadyRestart || timerPaused || timerDisabled || isPostRound);
-
-  bool activeByState = g_iGameState == STATE_GAME_START
-                    || g_iGameState == STATE_ROUND_ACTIVE
-                    || g_iGameState == STATE_ROUND_FINISHED;
-
-  // State machine is primary, but the timer/gamerules check keeps the plugin
-  // from reporting the wrong state on a fresh load before any events arrive.
-  return activeByState || activeByTimer;
+  return !(awaitingReadyRestart || timerPaused || timerDisabled || isPostRound);
 }
 
 void SetAmmo(int client, int weapon, int ammo) {
