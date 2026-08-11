@@ -10,7 +10,6 @@ Action Timer_DelayedConsolePrint(Handle timer, DataPack dp) {
   int client = dp.ReadCell();
   char line[MAX_MESSAGE_LENGTH];
   dp.ReadString(line, sizeof(line));
-  delete dp;
   if (IsValidClient(client)) PrintToConsole(client, line);
   return Plugin_Stop;
 }
