@@ -1,10 +1,7 @@
 // Immunity and infinite ammo
 
 bool IsMatch() {
-  bool inWaitingForPlayers = view_as<bool>(GameRules_GetProp("m_bInWaitingForPlayers"));
-  bool isRoundOver         = GameRules_GetRoundState() == RoundState_GameOver;
-
-  return !inWaitingForPlayers && !isRoundOver;
+  return !view_as<bool>(GameRules_GetProp("m_bInWaitingForPlayers"));
 }
 
 void SetAmmo(int client, int weapon, int ammo) {
