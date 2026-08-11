@@ -32,7 +32,7 @@ void ShowPassMenu(int client) {
   mPassMenu = new Menu(PassMenuHandler);
   mPassMenu.SetTitle("P4SS Menu");
 
-  char buffer[2048];
+  char buffer[256];
 
   FormatEx(buffer, sizeof(buffer), "%s: %s", "Jack spawn timer captions", arr_iClientPrefs[client].bCountdown ? "ON" : "OFF");
   mPassMenu.AddItem("countdowncaption", buffer);
