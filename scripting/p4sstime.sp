@@ -1545,9 +1545,10 @@ void EOOnCatapult(const char[] output, int caller, int activator, float delay) {
   if (carrier != INVALID_ENT_REFERENCE) return;
 
   int prevCarrier = GetBallPrevCarrier(jack);
-
-  LogCatapultEvent(catapultName, prevCarrier);
-  TagChatSTV("%N triggered \"%s\" with the jack. t%d", prevCarrier, catapultName, STVTickCount());
+  if (prevCarrier != INVALID_ENT_REFERENCE) {
+    LogCatapultEvent(catapultName, prevCarrier);
+    TagChatSTV("%N triggered \"%s\" with the jack. t%d", prevCarrier, catapultName, STVTickCount());
+  }
 }
 
 // outputString must be of size MAX_NAME_LENGTH + 7 or greater.
