@@ -54,25 +54,26 @@ void ShowPassMenu(int client) {
   mPassMenu.Display(client, MENU_TIME_FOREVER);
 }
 
-#define TOGGLE_SETTING(%1,%2,%3) \
-  if (StrEqual(info, %1)) { \
-    arr_iClientPrefs[param1].%2 = !arr_iClientPrefs[param1].%2; \
-    SetBoolCookie(param1, %3, arr_iClientPrefs[param1].%2); \
-    ShowPassMenu(param1); \
-  }
+#define TOGGLE_SETTING(%1,%2,%3) do { \
+    if (StrEqual(info, %1)) { \
+      arr_iClientPrefs[param1].%2 = !arr_iClientPrefs[param1].%2; \
+      SetBoolCookie(param1, %3, arr_iClientPrefs[param1].%2); \
+      ShowPassMenu(param1); \
+    } \
+  } while(0)
 
 int PassMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
   if (action == MenuAction_Select) {
     char info[32], display[255];
     mPassMenu.GetItem(param2, info, sizeof(info), _, display, sizeof(display));
-    TOGGLE_SETTING("countdowncaption", bCountdown, ck_iCountdown)
-    TOGGLE_SETTING("jackpickuphud",    bJackHud,   ck_bJackHud)
-    TOGGLE_SETTING("jackpickupchat",   bJackChat,  ck_bJackChat)
-    TOGGLE_SETTING("jackpickupsound",  bJackSound, ck_bJackSound)
-    TOGGLE_SETTING("immunity",         bImmunity,  ck_bImmunity)
-    TOGGLE_SETTING("infammo",          bInfAmmo,   ck_bInfAmmo)
-    TOGGLE_SETTING("legacycolors",     bLegacyColors, ck_bLegacyColors)
-    elif (StrEqual(info, "stats")) {
+    TOGGLE_SETTING("countdowncaption", bCountdown, ck_iCountdown);
+    TOGGLE_SETTING("jackpickuphud",    bJackHud,   ck_bJackHud);
+    TOGGLE_SETTING("jackpickupchat",   bJackChat,  ck_bJackChat);
+    TOGGLE_SETTING("jackpickupsound",  bJackSound, ck_bJackSound);
+    TOGGLE_SETTING("immunity",         bImmunity,  ck_bImmunity);
+    TOGGLE_SETTING("infammo",          bInfAmmo,   ck_bInfAmmo);
+    TOGGLE_SETTING("legacycolors",     bLegacyColors, ck_bLegacyColors);
+    if (StrEqual(info, "stats")) {
       ShowStatsMenu(param1);
     }
   }
