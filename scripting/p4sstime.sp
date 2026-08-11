@@ -170,13 +170,10 @@ bool g_bPendingHP[MAXPLAYERS + 1];
 bool g_bSaveEnabled = true;
 
 // Mirror spawnpoint system for side-aware resupply
-ArrayList g_hCachedSpawnRooms;
-ArrayList g_hCachedSpawnPoints[2];  // RED and BLU spawn points
-ArrayList g_hMirrorSpawnPoints[2][2];  // [team][side] where team=0=RED,1=BLU and side=0=left,1=right
+ArrayList g_hMirrorSpawnPoints[2][2];  // [team][side] where team=0=RED,1=BLU and side=0=left,1=right MUST query AreMirrorSpawnPointsAvailable side-effects
 int g_iCurrentSpawnIndex[2][2];  // [team][side] current spawnpoint index
 float g_fMirrorPlaneX = 0.0;  // X coordinate of the middle plane
 float g_fMirrorPlaneY = 0.0;  // Y coordinate of the middle plane
-bool g_bMirrorSystemInitialized = false;
 
 // FOV
 ConVar cvFovMin;
@@ -568,9 +565,6 @@ public void OnPluginStart() {
   gameData = new GameData("p4sstime"); // Load config
 
   // Initialize mirror spawnpoint arrays
-  g_hCachedSpawnRooms =        new ArrayList();
-  g_hCachedSpawnPoints[0] =    new ArrayList();  // RED
-  g_hCachedSpawnPoints[1] =    new ArrayList();  // BLU
   g_hMirrorSpawnPoints[0][0] = new ArrayList();  // RED left
   g_hMirrorSpawnPoints[0][1] = new ArrayList();  // RED right
   g_hMirrorSpawnPoints[1][0] = new ArrayList();  // BLU left
@@ -862,9 +856,6 @@ public void OnMapStart() { // get goal locations
     GetEntPropVector(goal2, Prop_Send, "m_vecOrigin", fBluGoalPos);
     GetEntPropVector(goal1, Prop_Send, "m_vecOrigin", fRedGoalPos);
   }
-
-  // for mirror spawnpoints
-  BuildEntityCache();
 }
 
 public void OnMapEnd() {
@@ -901,12 +892,6 @@ public void OnGameFrame() {
     }
   }
 }
-
-  static int iEntityCacheFrame = 0;
-  if (++iEntityCacheFrame >= 30) {
-    iEntityCacheFrame = 0;
-    ValidateEntityCache();
-  }
 
   // Buffered resupply: while key is held and player enters spawn, auto-resupply
   if (bResupply.BoolValue) {
