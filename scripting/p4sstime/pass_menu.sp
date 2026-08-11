@@ -45,6 +45,8 @@ void ShowPassMenu(int client) {
   mPassMenu.AddItem("infammo", buffer);
   FormatEx(buffer, sizeof(buffer), "%s: %s", "Legacy colors",      arr_iClientPrefs[client].bLegacyColors ? "ON" : "OFF");
   mPassMenu.AddItem("legacycolors", buffer);
+  if (CheckCommandAccess(client, "sm_pt_spawnball", ADMFLAG_GENERIC))
+    mPassMenu.AddItem("spawnball", "Start practice mode");
 
   if (mPassMenu.ItemCount <= 9) {
     mPassMenu.Pagination = MENU_NO_PAGINATION;
@@ -54,35 +56,37 @@ void ShowPassMenu(int client) {
   mPassMenu.Display(client, MENU_TIME_FOREVER);
 }
 
-#define PREF(%1,%2,%3) \
-  if (StrEqual(info, %1)) { \
+#define PREF(%1,%2,%3)                                          \
+  if (StrEqual(info, %1)) {                                     \
     arr_iClientPrefs[client].%2 = !arr_iClientPrefs[client].%2; \
-    SetBoolCookie(client, %3, arr_iClientPrefs[client].%2); \
-    ShowPassMenu(client); \
+    SetBoolCookie(client, %3, arr_iClientPrefs[client].%2);     \
+    ShowPassMenu(client);                                       \
   }
 
-#define PREF_CALLBACK(%1,%2,%3,%4) \
-  if (StrEqual(info, %1)) { \
+#define PREF_CALLBACK(%1,%2,%3,%4)                              \
+  if (StrEqual(info, %1)) {                                     \
     arr_iClientPrefs[client].%2 = !arr_iClientPrefs[client].%2; \
-    SetBoolCookie(client, %3, arr_iClientPrefs[client].%2); \
-    ShowPassMenu(client); \
-    %4(client); \
+    SetBoolCookie(client, %3, arr_iClientPrefs[client].%2);     \
+    ShowPassMenu(client);                                       \
+    %4(client);                                                 \
+  }
+  
+#define CALLBACK(%1,%2)     \
+  if (StrEqual(info, %1)) { \
+    %2;             \
   }
 
 int PassMenuHandler(Menu menu, MenuAction action, int client, int position) {
   if (action == MenuAction_Select) {
     char info[32], display[255];
-    mPassMenu.GetItem(position, info, sizeof(info), _, display, sizeof(display));
+    mPassMenu.GetItem(position, info, sizeof(info), _, display, sizeof(display))
     PREF("countdowncaption",  bCountdown,    ck_iCountdown)
     PREF_CALLBACK("immunity", bImmunity,     ck_bImmunity, HandleWarmupToggle)
     PREF_CALLBACK("infammo",  bInfAmmo,      ck_bInfAmmo, HandleWarmupToggle)
     PREF("legacycolors",      bLegacyColors, ck_bLegacyColors)
-    elif (StrEqual(info, "pickupcues")) {
-      ShowPickupMenu(client);
-    }
-    elif (StrEqual(info, "stats")) {
-      ShowStatsMenu(client);
-    }
+    CALLBACK("pickupcues", ShowPickupMenu(client))
+    CALLBACK("stats",      ShowStatsMenu(client))
+    CALLBACK("spawnball",  HandleSpawnBall())
   }
   return 0;  // just do this to get rid of warning
 }

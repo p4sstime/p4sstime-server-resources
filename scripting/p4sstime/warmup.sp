@@ -80,20 +80,20 @@ void HandleWarmupToggle(int client) {
   }
 }
 
+void HandleSpawnBall() {
+  TagChatAll("Spawning the ball for practice...");
+  TagChatAll("{warning}THE GAME IS {cRed}NOT {warning}STARTING!");
+  bWaitingForBallSpawnToRestart = true;
+  ServerCommand("mp_restartgame_immediate 1");
+}
+
 Action CSpawnBall(int client, int args) {
   if (IsMatch()) {
     CTagChat(client, "Starting practice mode is disabled during a match.");
     return Plugin_Handled;
   }
-  char name[MAX_NAME_LENGTH];
   VerboseLog("ptspawnball called from client %d", client);
-  if (client == 0) name = "CONSOLE";
-  else GetClientName(client, name, sizeof(name));
-
-  TagChatAll("Spawning the ball for practice...", name);
-  TagChatAll("{warning}THE GAME IS {cRed}NOT {warning}STARTING!");
-  bWaitingForBallSpawnToRestart = true;
-  ServerCommand("mp_restartgame_immediate 1");
+  HandleSpawnBall();
   return Plugin_Handled;
 }
 
