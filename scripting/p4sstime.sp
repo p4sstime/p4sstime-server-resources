@@ -31,6 +31,15 @@
 #define RCC  RegClientCookie
 #define AddC CAddColor
 #define CV   CreateConVar
+#define DEPRECATED(%1,%2) { \
+  g_hDeprecatedConVars.SetString(%1, %2); \
+  ConVar _deprecatedConVar = FindConVar(%1); \
+  if (_deprecatedConVar != null) { \
+    HCC(_deprecatedConVar, CDeprecatedConVarChanged); \
+  } else { \
+    RegServerCmd(%1, CDeprecated, "Deprecated command"); \
+  } \
+}
 #define EvI  GetEventInt
 #define EvF  GetEventFloat
 #define ACA  RegAdminCmdWithShort
@@ -113,6 +122,7 @@ ConVar fResupplyCooldown;
 ConVar fResupplyDecayRate;
 ConVar fResupplyDecayAddition;
 ConVar fGoalRegeneration;
+StringMap g_hDeprecatedConVars;
 
 // int plyDirecter;
 int ibFirstGrabCheck;
@@ -557,6 +567,44 @@ public Plugin myinfo = {
   url         = "https://github.com/p4sstime/p4sstime-server-resources/releases"
 };
 
+public Action CDeprecated(int args) {
+  char cmd[64];
+  GetCmdArg(0, cmd, sizeof(cmd));
+
+  char newName[64];
+  if (!g_hDeprecatedConVars.GetString(cmd, newName, sizeof(newName)))
+    return Plugin_Handled;
+
+  ConVar cv = FindConVar(newName);
+  if (cv == null)
+    return Plugin_Handled;
+
+  if (args >= 1) {
+    char value[64];
+    GetCmdArg(1, value, sizeof(value));
+    cv.SetString(value, false, false);
+  }
+
+  LogMessage("DEPRECATED: %s is deprecated, please use %s instead.", cmd, newName);
+  return Plugin_Handled;
+}
+
+public void CDeprecatedConVarChanged(ConVar convar, const char[] oldValue, const char[] newValue) {
+  char oldName[64];
+  convar.GetName(oldName, sizeof(oldName));
+
+  char replaceName[64];
+  if (!g_hDeprecatedConVars.GetString(oldName, replaceName, sizeof(replaceName)))
+    return;
+
+  ConVar cv = FindConVar(replaceName);
+  if (cv == null)
+    return;
+
+  cv.SetString(newValue, false, false);
+  LogMessage("DEPRECATED: %s is deprecated, please use %s instead.", oldName, replaceName);
+}
+
 public void OnPluginStart() {
   gameData = new GameData("p4sstime"); // Load config
 
@@ -660,23 +708,35 @@ public void OnPluginStart() {
   AddC("cOldSteal",     0xFF8000); // #FF8000
 
   // ConVars
-  bFixStocks =             CV("sm_pt_stock_blocklist",                  "1",    "Disable equipping shotgun, stickies, and needles; the allowlist can't block stock weapons.",       NOTIFY);
-  bFixRespawnBypass =      CV("sm_pt_block_instant_respawn",            "1",    "Disable switching classes while dead to respawn immediately.",                                     NOTIFY);
-  bFixJackCollision =      CV("sm_pt_disable_jack_drop_item_collision", "1",    "Disable jack collision on ammo packs and weapons.",                                                NOTIFY);
-  bFixBlur =               CV("sm_pt_disable_intercept_blur",           "1",    "Disable blurry screen overlay when intercepting or stealing.",                                     NOTIFY);
-  bChatEvents =            CV("sm_pt_print_events",                     "1",    "Enable printing of passtime events to chat both during and after games. Does not affect logging.", NOTIFY);
-  bChatEventsFun =         CV("sm_pt_print_events_fun",                 "0",    "If sm_pt_print_events is 1, enable printing additional fun stats.",                                NOTIFY);
-  bWinstratKills =         CV("sm_pt_winstrat_kills",                   "0",    "Enable killing winstratters and printing \"tried to winstrat\" in chat.",                          NOTIFY);
-  bVerboseLogs =           CV("sm_pt_logs_verbose",                     "0",    "Enable printing additional information to logs.");
-  bMedicSplash =           CV("sm_pt_medic_can_splash",                 "1",    "Enable medic arrows neutralizing the jack.",                                                       NOTIFY);
-  bMedicSplashPush =       CV("sm_pt_medic_splash_pushes_ball",         "1",    "If sm_pt_medic_can_splash is 1, enable crossbow push on the jack.",                                    NOTIFY);
-  bResupply =              CV("sm_pt_resupply_enabled",                 "1",    "Enable instant resupply.",                                                                         NOTIFY);
-  fResupplyCooldown =      CV("sm_pt_resupply_cooldown",                "0.5",  "Set the resupply cooldown duration in seconds (also used as max decay cap).",                      NOTIFY);
-  fResupplyDecayRate =     CV("sm_pt_resupply_decay_rate",              "0.15", "Set the resupply decay rate (seconds of decay recovered per second).",                             NOTIFY);
-  fResupplyDecayAddition = CV("sm_pt_resupply_decay_addition",          "0.2",  "Set the resupply decay addition per successful resupply.",                                         NOTIFY);
-  fGoalRegeneration =      CV("sm_pt_goal_heal",                        "0",    "Set the amount of health regeneration every 500ms while in the goal zone.",                        NOTIFY);
-  bPractice =              CV("sm_pt_practice",                         "0",    "Enable practice mode. When the round timer reaches 5 minutes, add 5 minutes to the timer.",        NOTIFY, true, 0.0, true, 1.0);
-  cvRespawnTime =          CV("sm_pt_respawn_time",                     "0.0",  "Player respawn delay in seconds",                                                                 NOTIFY);
+  g_hDeprecatedConVars = new StringMap();
+
+  DEPRECATED("sm_pt_stock_blocklist", "sm_pt_fix_stocks")
+  bFixStocks =             CV("sm_pt_fix_stocks",              "1",    "Disable equipping shotgun, stickies, and needles; the allowlist can't block stock weapons.",       NOTIFY);
+  DEPRECATED("sm_pt_block_instant_respawn", "sm_pt_fix_respawn_bypass")
+  bFixRespawnBypass =      CV("sm_pt_fix_respawn_bypass",      "1",    "Disable switching classes while dead to respawn immediately.",                                     NOTIFY);
+  DEPRECATED("sm_pt_disable_jack_drop_item_collision", "sm_pt_fix_jack_collision")
+  bFixJackCollision =      CV("sm_pt_fix_jack_collision",      "1",    "Disable jack collision on ammo packs and weapons.",                                                NOTIFY);
+  DEPRECATED("sm_pt_disable_intercept_blur", "sm_pt_fix_blur")
+  bFixBlur =               CV("sm_pt_fix_blur",                "1",    "Disable blurry screen overlay when intercepting or stealing.",                                     NOTIFY);
+  DEPRECATED("sm_pt_print_events", "sm_pt_chat_events")
+  bChatEvents =            CV("sm_pt_chat_events",             "1",    "Enable printing of passtime events to chat both during and after games. Does not affect logging.", NOTIFY);
+  DEPRECATED("sm_pt_print_events_fun", "sm_pt_chat_events_fun")
+  bChatEventsFun =         CV("sm_pt_chat_events_fun",         "0",    "If sm_pt_chat_events is 1, enable printing additional fun stats.",                                 NOTIFY);
+  DEPRECATED("sm_pt_winstrat_kills", "sm_pt_kill_winstrats")
+  bWinstratKills =         CV("sm_pt_kill_winstrats",          "0",    "Enable killing winstratters and printing \"tried to winstrat\" in chat.",                          NOTIFY);
+  bVerboseLogs =           CV("sm_pt_logs_verbose",            "0",    "Enable printing additional information to logs.");
+  DEPRECATED("sm_pt_medic_can_splash", "sm_pt_medic_splash")
+  bMedicSplash =           CV("sm_pt_medic_splash",            "1",    "Enable medic arrows neutralizing the jack.",                                                       NOTIFY);
+  DEPRECATED("sm_pt_medic_splash_pushes_ball", "sm_pt_medic_splash_push")
+  bMedicSplashPush =       CV("sm_pt_medic_splash_push",       "1",    "If sm_pt_medic_splash is 1, enable crossbow push on the jack.",                                    NOTIFY);
+  bResupply =              CV("sm_pt_resupply_enabled",        "1",    "Enable instant resupply.",                                                                         NOTIFY);
+  fResupplyCooldown =      CV("sm_pt_resupply_cooldown",       "0.5",  "Set the resupply cooldown duration in seconds (also used as max decay cap).",                      NOTIFY);
+  fResupplyDecayRate =     CV("sm_pt_resupply_decay_rate",     "0.15", "Set the resupply decay rate (seconds of decay recovered per second).",                             NOTIFY);
+  fResupplyDecayAddition = CV("sm_pt_resupply_decay_addition", "0.2",  "Set the resupply decay addition per successful resupply.",                                         NOTIFY);
+  DEPRECATED("sm_pt_goal_heal", "sm_pt_goal_regeneration")
+  fGoalRegeneration =      CV("sm_pt_goal_regeneration",       "0",    "Set the amount of health regeneration every 500ms while in the goal zone.",                        NOTIFY);
+  bPractice =              CV("sm_pt_practice",                "0",    "Enable practice mode. When the round timer reaches 5 minutes, add 5 minutes to the timer.",        NOTIFY, true, 0.0, true, 1.0);
+  cvRespawnTime =          CV("sm_pt_respawn_time",            "0.0",  "Player respawn delay in seconds",                                                                  NOTIFY);
 
   // Demoman boots attribute ConVars
   cvBootsChargeTurn = CV("sm_pt_boots_charge_turn", "3.0",  "Charge turn control multiplier for Demoman boots",     NOTIFY);
@@ -1237,9 +1297,9 @@ Action EPassFree(Event event, const char[] name, bool dontBroadcast) {
     if (jack != INVALID_ENT_REFERENCE) {
       GetEntPropVector(jack, Prop_Data, "m_vecAbsOrigin", fFreeBallPos);
     } else {
-      fFreeBallPos[0] = 0;
-      fFreeBallPos[1] = 0;
-      fFreeBallPos[2] = 0;
+      fFreeBallPos[0] = 0.0;
+      fFreeBallPos[1] = 0.0;
+      fFreeBallPos[2] = 0.0;
     }
   }
 
@@ -1424,7 +1484,7 @@ Action EPassScore(Event event, const char[] name, bool dontBroadcast) {
     arr_bPanaceaCheck[scorer] = false;
 
   float speed = GetVectorLength(fFreeBallThrowerVec, false);
-  float dist = 0;
+  float dist = 0.0;
 
   int logic = GetOrFindPasstimeLogic();
   if (logic != INVALID_ENT_REFERENCE) {
