@@ -113,6 +113,7 @@ ConVar fResupplyCooldown;
 ConVar fResupplyDecayRate;
 ConVar fResupplyDecayAddition;
 ConVar fGoalRegeneration;
+ConVar bDemoResist;
 
 // int plyDirecter;
 int ibFirstGrabCheck;
@@ -139,8 +140,6 @@ bool   arr_bDeathbombCheck [MAXPLAYERS + 1];
 float  nextInstantResupplyTime[MAXPLAYERS + 1];
 float  resupplyDecay[MAXPLAYERS + 1];
 
-// Demoman blast resistance
-bool  g_bDemoResistEnabled;
 float g_fCurrentDemoResistValue[MAXPLAYERS + 1];
 bool  g_bDemoResistApplied[MAXPLAYERS + 1];
 
@@ -616,7 +615,6 @@ public void OnPluginStart() {
 
   // Admin commands
   AC("sm_pt_spawnball",   CSpawnBall,        GENERIC, "Spawn the jack for pre-game practice.");
-  AC("sm_pt_demoresist",  CToggleDemoResist, GENERIC, "Toggle demo blast vulnerability");
 
   // Admin commands with aliases
   ACA("sm_force_ready",    "sm_fr",   CForceReady,    GENERIC, "Set a team's ready status");
@@ -677,14 +675,15 @@ public void OnPluginStart() {
   bWinstratKills =         CV("sm_pt_winstrat_kills",                   "0",    "Enable killing winstratters and printing \"tried to winstrat\" in chat.",                          NOTIFY);
   bVerboseLogs =           CV("sm_pt_logs_verbose",                     "0",    "Enable printing additional information to logs.");
   bMedicSplash =           CV("sm_pt_medic_can_splash",                 "1",    "Enable medic arrows neutralizing the jack.",                                                       NOTIFY);
-  bMedicSplashPush =       CV("sm_pt_medic_splash_pushes_ball",         "1",    "If sm_pt_medic_can_splash is 1, enable crossbow push on the jack.",                                    NOTIFY);
+  bMedicSplashPush =       CV("sm_pt_medic_splash_pushes_ball",         "1",    "If sm_pt_medic_can_splash is 1, enable crossbow push on the jack.",                                NOTIFY);
   bResupply =              CV("sm_pt_resupply_enabled",                 "1",    "Enable instant resupply.",                                                                         NOTIFY);
   fResupplyCooldown =      CV("sm_pt_resupply_cooldown",                "0.5",  "Set the resupply cooldown duration in seconds (also used as max decay cap).",                      NOTIFY);
   fResupplyDecayRate =     CV("sm_pt_resupply_decay_rate",              "0.15", "Set the resupply decay rate (seconds of decay recovered per second).",                             NOTIFY);
   fResupplyDecayAddition = CV("sm_pt_resupply_decay_addition",          "0.2",  "Set the resupply decay addition per successful resupply.",                                         NOTIFY);
   fGoalRegeneration =      CV("sm_pt_goal_heal",                        "0",    "Set the amount of health regeneration every 500ms while in the goal zone.",                        NOTIFY);
+  bDemoResist =            CV("sm_pt_demoresist",                       "0",    "Reduce blast damage taken by demoman with shield equipped.",                                       NOTIFY);
   bPractice =              CV("sm_pt_practice",                         "0",    "Enable practice mode. When the round timer reaches 5 minutes, add 5 minutes to the timer.",        NOTIFY, true, 0.0, true, 1.0);
-  cvRespawnTime =          CV("sm_pt_respawn_time",                     "0.0",  "Player respawn delay in seconds",                                                                 NOTIFY);
+  cvRespawnTime =          CV("sm_pt_respawn_time",                     "0.0",  "Player respawn delay in seconds",                                                                  NOTIFY);
 
   // Demoman boots attribute ConVars
   cvBootsChargeTurn = CV("sm_pt_boots_charge_turn", "3.0",  "Charge turn control multiplier for Demoman boots",     NOTIFY);
@@ -738,6 +737,7 @@ public void OnPluginStart() {
 
   HCC(bPractice, Hook_OnPracticeModeChange);
   HCC(bResupply, Hook_OnAllowInstantResupplyChange);
+  HCC(bDemoResist, Hook_OnDemoResistChange);
   // HCC(trikzEnable, Hook_OnTrikzChange);
   // HCC(trikzProjCollide, Hook_OnProjCollideChange);
   // HCC(trikzProjDev, Hook_OnProjCollideDev);

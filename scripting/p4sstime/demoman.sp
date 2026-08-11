@@ -10,7 +10,7 @@ void ApplyDemoResistance(int client) {
   // When demo resistance is disabled, apply blast vulnerability (25% more damage)
   // When enabled, remove the attribute so shield works normally
   if (playerClass == TFClass_DemoMan) {
-    if (!g_bDemoResistEnabled) {
+    if (!bDemoResist.BoolValue) {
       desiredValue = 1.25;
       shouldApply = true;
     }
@@ -97,25 +97,9 @@ void ClearDemoClientState(int client) {
   ClearBootsState(client);
 }
 
-Action CToggleDemoResist(int client, int args) {
-  if (args != 1) {
-    CTagReply(client, "Usage: sm_pt_demoresist <0|1>");
-    return Plugin_Handled;
-  }
-
-  int value = GetCmdArgInt(1);
-  if (value != 0 && value != 1) {
-    CTagReply(client, "Usage: sm_pt_demoresist <0|1>");
-    return Plugin_Handled;
-  }
-
-  g_bDemoResistEnabled = (value != 0);
-
+void Hook_OnDemoResistChange(ConVar convar, const char[] oldValue, const char[] newValue) {
   for (int i = 1; i <= MaxClients; i++) {
     if (IsClientInGame(i))
       ApplyDemoResistance(i);
   }
-
-  CTagReply(client, "Demo blast resistance %s", g_bDemoResistEnabled ? "{cGreen}enabled" : "{cRed}disabled");
-  return Plugin_Handled;
 }
