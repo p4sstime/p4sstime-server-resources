@@ -73,26 +73,6 @@ Action CForceReady(int client, int args) {
   return Plugin_Handled;
 }
 
-Action CToggleRespawn(int client, int args) {
-  if (args != 1) {
-    ReplyToCommand(client, "[SM] Usage: sm_enable_respawn <0|1>");
-    return Plugin_Handled;
-  }
-
-  char arg[4];
-  GetCmdArg(1, arg, sizeof(arg));
-  int value = StringToInt(arg);
-
-  if (value != 0 && value != 1) {
-    ReplyToCommand(client, "[SM] Usage: sm_enable_respawn <0|1>");
-    return Plugin_Handled;
-  }
-
-  g_bInstantRespawnEnabled = (value != 0);
-  ReplyToCommand(client, "[SM] Instant respawn %s", g_bInstantRespawnEnabled ? "enabled" : "disabled");
-  return Plugin_Handled;
-}
-
 Action CSetTeam(int client, int args) {
   char targetArg[33], teamArg[5];
   GetCmdArg(1, targetArg, sizeof(targetArg));

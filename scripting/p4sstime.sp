@@ -159,8 +159,7 @@ bool g_bResupplyDn[MAXPLAYERS + 1];
 bool g_bResupplyUp[MAXPLAYERS + 1];
 
 // Instant respawn
-ConVar cvRespawnTime;
-bool g_bInstantRespawnEnabled = true;
+ConVar bInstantRespawn;
 
 // Immunity & infinite ammo
 bool g_bPendingHP[MAXPLAYERS + 1];
@@ -566,7 +565,26 @@ public Plugin myinfo = {
 
 public void OnPluginStart() {
   gameData = new GameData("p4sstime"); // Load config
+  // SDKHooks
+  StartPrepSDKCall(SDKCall_Player);
+  PrepSDKCall_SetFromConf(gameData, SDKConf_Signature, "CTFPlayer::ForceRegenerateAndRespawn");
+  tfPlayerForceRegenerateAndRespawn = EndPrepSDKCall();
+  if (tfPlayerForceRegenerateAndRespawn == null)
+    LogError("Failed to find CTFPlayer::ForceRegenerateAndRespawn -- certain features may be non-functional");
 
+  StartPrepSDKCall(SDKCall_Static);
+  PrepSDKCall_SetFromConf(gameData, SDKConf_Signature, "PointInRespawnRoom");
+
+  PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer);
+  PrepSDKCall_AddParameter(SDKType_Vector,      SDKPass_ByRef);
+  PrepSDKCall_AddParameter(SDKType_Bool,        SDKPass_ByValue);
+
+  PrepSDKCall_SetReturnInfo(SDKType_Bool,       SDKPass_ByValue);
+  pointInRespawnRoom = EndPrepSDKCall();
+  if (pointInRespawnRoom == null)
+    LogError("Failed to find PointInRespawnRoom -- certain features may be non-functional");
+
+  InitAttributeSDKCalls();
   // Initialize mirror spawnpoint arrays
   g_hMirrorSpawnPoints[0][0] = new ArrayList();  // RED left
   g_hMirrorSpawnPoints[0][1] = new ArrayList();  // RED right
@@ -618,7 +636,6 @@ public void OnPluginStart() {
 
   // Admin commands with aliases
   ACA("sm_force_ready",    "sm_fr",   CForceReady,    GENERIC, "Set a team's ready status");
-  ACA("sm_enable_respawn", "sm_resp", CToggleRespawn, GENERIC, "Toggle instant respawn");
   ACA("sm_setteam",        "sm_st",   CSetTeam,       GENERIC, "Set a client's team");
   ACA("sm_setclass",       "sm_sc",   CSetClass,      GENERIC, "Set a client's class");
 
@@ -683,7 +700,7 @@ public void OnPluginStart() {
   fGoalRegeneration =      CV("sm_pt_goal_heal",                        "0",    "Set the amount of health regeneration every 500ms while in the goal zone.",                        NOTIFY);
   bDemoResist =            CV("sm_pt_demoresist",                       "0",    "Reduce blast damage taken by demoman with shield equipped.",                                       NOTIFY);
   bPractice =              CV("sm_pt_practice",                         "0",    "Enable practice mode. When the round timer reaches 5 minutes, add 5 minutes to the timer.",        NOTIFY, true, 0.0, true, 1.0);
-  cvRespawnTime =          CV("sm_pt_respawn_time",                     "0.0",  "Player respawn delay in seconds",                                                                  NOTIFY);
+  bInstantRespawn =        CV("sm_pt_instant_respawn",                  "1",    "Enable instant respawn.",                                                                          NOTIFY);
 
   // Demoman boots attribute ConVars
   cvBootsChargeTurn = CV("sm_pt_boots_charge_turn", "3.0",  "Charge turn control multiplier for Demoman boots",     NOTIFY);
@@ -699,42 +716,6 @@ public void OnPluginStart() {
   // trikzProjCollide = CC("sm_pt_trikz_projcollide",     "2", "Manually set team projectile collision behavior when trikz is on. 2 always collides, 1 will cause your projectiles to phase through if you are too close (default game behavior), 0 will cause them to never collide.", 0, true, 0.0, true, 2.0);
   // trikzProjDev =     CC("sm_pt_trikz_projcollide_dev", "0", "DONOTUSE; This command is used solely by the plugin to change values. Changing this manually may cause issues.", FCVAR_HIDDEN, true, 0.0, true, 2.0);
 
-  // Hook SDKHooks for already-connected clients on plugin load/reload
-  for (int i = 1; i <= MaxClients; i++) {
-    if (IsClientInGame(i)) {
-      SDKHook(i, SDKHook_OnTakeDamage,     Hook_ImmunityOnTakeDamage);
-      SDKHook(i, SDKHook_OnTakeDamagePost, Hook_ImmunityOnTakeDamagePost);
-    }
-  }
-
-  // Hooks
-  HE("player_spawn",                 EPlayerSpawn);
-  HE("post_inventory_application",   EPlayerResup);
-  HE("player_death",                 EPlayerDeath);
-  HE("pass_get",                     EPassGet);
-  HE("pass_free",                    EPassFree);
-  HE("pass_ball_stolen",             EPassStolen);
-  HE("pass_score",                   EPassScore);
-  HE("pass_pass_caught",             EPassCaught);
-  HE("pass_ball_blocked",            EPassBallBlocked);
-  HE("rocket_jump",                  ERocketJump);
-  HE("rocket_jump_landed",           ERocketJumpLand);
-  HE("sticky_jump",                  EPipeJump);
-  HE("sticky_jump_landed",           EPipeJumpLand);
-  HE("teamplay_pre_round_time_left", EPregameCountdown);
-  HE("teamplay_broadcast_audio",     EMidgameCountdown);
-  HE("teamplay_round_active",        EPlayersCanMove);
-  HE("teamplay_round_win",           ETeamWin);
-  HE("stats_resetround",             ERoundReset);
-
-  HEO("trigger_catapult",         "OnCatapulted", EOOnCatapult);
-  HEO("info_passtime_ball_spawn", "OnSpawnBall",  EOOnSpawnBall);
-
-  AddCommandListener(OnChangeClass, "joinclass");
-  AddCommandListener(OnSpecCommand, "spec_next");
-  AddCommandListener(OnSpecCommand, "spec_prev");
-  AddCommandListener(OnSpecCommand, "spec_mode");
-
   HCC(bPractice, Hook_OnPracticeModeChange);
   HCC(bResupply, Hook_OnAllowInstantResupplyChange);
   HCC(bDemoResist, Hook_OnDemoResistChange);
@@ -742,55 +723,10 @@ public void OnPluginStart() {
   // HCC(trikzProjCollide, Hook_OnProjCollideChange);
   // HCC(trikzProjDev, Hook_OnProjCollideDev);
 
-  CreateTimer(0.5, GoalHealTimer, 0, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
-  CreateTimer(0.05, Timer_CheckSpecFov, _, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
-  /*for (i client = 1; client <= MaxClients; client++)
-    if (IsClientInGame(client))
-      OnClientPutInServer(client);*/
-  for (int i = MaxClients; i > 0; --i) {
-    if (!AreClientCookiesCached(i)) {
-      continue;
-    }
-    OnClientCookiesCached(i);
-  }
-
-  char sMapNameBuffer[256];
-  GetCurrentMap(sMapNameBuffer, 256);
-  VerboseLog("Current map buffer -> %s", sMapNameBuffer);
-  // check if stadium is the current map in order to set the height lower
-  // see OnMapInit
-  // this is necessary as OnMapInit is not called when the plugin is ran
-  if (StrContains(sMapNameBuffer, "stadium", false) != -1) {
-    iWinStratDistance = 150;
-  }
-  else {
-    iWinStratDistance = 400;
-  }
-
   if (LibraryExists("updater")) {
     OnLibraryAdded("updater");
   }
 
-  // SDKHooks
-  StartPrepSDKCall(SDKCall_Player);
-  PrepSDKCall_SetFromConf(gameData, SDKConf_Signature, "CTFPlayer::ForceRegenerateAndRespawn");
-  tfPlayerForceRegenerateAndRespawn = EndPrepSDKCall();
-  if (tfPlayerForceRegenerateAndRespawn == null)
-    LogError("Failed to find CTFPlayer::ForceRegenerateAndRespawn -- certain features may be non-functional");
-
-  StartPrepSDKCall(SDKCall_Static);
-  PrepSDKCall_SetFromConf(gameData, SDKConf_Signature, "PointInRespawnRoom");
-
-  PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer);
-  PrepSDKCall_AddParameter(SDKType_Vector,      SDKPass_ByRef);
-  PrepSDKCall_AddParameter(SDKType_Bool,        SDKPass_ByValue);
-
-  PrepSDKCall_SetReturnInfo(SDKType_Bool,       SDKPass_ByValue);
-  pointInRespawnRoom = EndPrepSDKCall();
-  if (pointInRespawnRoom == null)
-    LogError("Failed to find PointInRespawnRoom -- certain features may be non-functional");
-
-  InitAttributeSDKCalls();
   PrintToServer("p4sstime v%s loaded", VERSION);
 }
 
@@ -837,28 +773,86 @@ public Action GoalHealTimer(Handle timer) {
   return Plugin_Continue;
 }
 
-public void OnMapInit(const char[] mapName) {
-  if (StrContains(mapName, "stadium", false) != -1)  // stadium has much lower top spawner so do this to av false positive win strats
-    iWinStratDistance = 150;
-  else
-    iWinStratDistance = 400;
-}
+public void OnMapStart() {
+  ConVar tf_gamemode_passtime = FindConVar("tf_gamemode_passtime");
+  if (!tf_gamemode_passtime.BoolValue) {
+    SetFailState("not playing passtime, disabled.");
+  }
 
-public void OnMapStart() { // get goal locations
   int goal1 = FindEntityByClassname(-1, "func_passtime_goal");
   if (goal1 == -1) {
     PrintToServer("[p4sstime] Goal entity not found, is this a passtime map?");
     return;
   }
+
   int goal2 = FindEntityByClassname(goal1, "func_passtime_goal");
+
   int team1 = GetEntProp(goal1, Prop_Send, "m_iTeamNum");
   if (team1 == 2) {
     GetEntPropVector(goal1, Prop_Send, "m_vecOrigin", fBluGoalPos);
     GetEntPropVector(goal2, Prop_Send, "m_vecOrigin", fRedGoalPos);
-  }
-  else {
+  } else {
     GetEntPropVector(goal2, Prop_Send, "m_vecOrigin", fBluGoalPos);
     GetEntPropVector(goal1, Prop_Send, "m_vecOrigin", fRedGoalPos);
+  }
+
+  // Hooks
+  HE("player_spawn",                 EPlayerSpawn);
+  HE("post_inventory_application",   EPlayerResup);
+  HE("player_death",                 EPlayerDeath);
+  HE("pass_get",                     EPassGet);
+  HE("pass_free",                    EPassFree);
+  HE("pass_ball_stolen",             EPassStolen);
+  HE("pass_score",                   EPassScore);
+  HE("pass_pass_caught",             EPassCaught);
+  HE("pass_ball_blocked",            EPassBallBlocked);
+  HE("rocket_jump",                  ERocketJump);
+  HE("rocket_jump_landed",           ERocketJumpLand);
+  HE("sticky_jump",                  EPipeJump);
+  HE("sticky_jump_landed",           EPipeJumpLand);
+  HE("teamplay_pre_round_time_left", EPregameCountdown);
+  HE("teamplay_broadcast_audio",     EMidgameCountdown);
+  HE("teamplay_round_active",        EPlayersCanMove);
+  HE("teamplay_round_win",           ETeamWin);
+  HE("stats_resetround",             ERoundReset);
+
+  HEO("trigger_catapult",         "OnCatapulted", EOOnCatapult);
+  HEO("info_passtime_ball_spawn", "OnSpawnBall",  EOOnSpawnBall);
+
+  AddCommandListener(OnChangeClass, "joinclass");
+  AddCommandListener(OnSpecCommand, "spec_next");
+  AddCommandListener(OnSpecCommand, "spec_prev");
+  AddCommandListener(OnSpecCommand, "spec_mode");
+
+  // Hook SDKHooks for already-connected clients on plugin load/reload
+  for (int i = 1; i <= MaxClients; i++) {
+    if (IsClientInGame(i)) {
+      SDKHook(i, SDKHook_OnTakeDamage,     Hook_ImmunityOnTakeDamage);
+      SDKHook(i, SDKHook_OnTakeDamagePost, Hook_ImmunityOnTakeDamagePost);
+    }
+  }
+
+  CreateTimer(0.5, GoalHealTimer, 0, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
+  CreateTimer(0.05, Timer_CheckSpecFov, _, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
+  /*for (i client = 1; client <= MaxClients; client++)
+    if (IsClientInGame(client))
+      OnClientPutInServer(client);*/
+  for (int i = MaxClients; i > 0; --i) {
+    if (!AreClientCookiesCached(i)) {
+      continue;
+    }
+    OnClientCookiesCached(i);
+  }
+
+  char sMapNameBuffer[256];
+  GetCurrentMap(sMapNameBuffer, 256);
+  VerboseLog("Current map buffer -> %s", sMapNameBuffer);
+  // check if stadium is the current map in order to set the height lower
+  if (StrContains(sMapNameBuffer, "stadium", false) != -1) {
+    iWinStratDistance = 150;
+  }
+  else {
+    iWinStratDistance = 400;
   }
 }
 
@@ -1195,15 +1189,16 @@ Action EPlayerDeath(Event event, const char[] name, bool dontBroadcast) {
   }
 
   // Instant respawn
-  if (!IsMatch() && g_bInstantRespawnEnabled && cvRespawnTime.FloatValue <= 0.0) {
-    RequestFrame(RespawnFrame, client);
+  if (!IsMatch() && bInstantRespawn.BoolValue) {
+    RequestFrame(RespawnFrame, EntIndexToEntRef(client));
   }
 
   return Plugin_Handled;
 }
 
-void RespawnFrame(any client) {
-  if (!IsPlayerAlive(client)) TF2_RespawnPlayer(client);
+void RespawnFrame(any ref) {
+  int client = EntRefToEntIndex(ref);
+  if (ref != INVALID_ENT_REFERENCE && !IsPlayerAlive(client)) TF2_RespawnPlayer(client);
 }
 
 public void OnClientDisconnect(int client) {
