@@ -13,7 +13,7 @@
 #pragma semicolon 1 // required for logs.tf
 #pragma newdecls required
 
-#define VERSION "3.0.1"
+#define VERSION "3.0.2"
 
 // Macros
 #define GD      GameData 
@@ -114,11 +114,9 @@ ConVar fResupplyDecayRate;
 ConVar fResupplyDecayAddition;
 ConVar fGoalRegeneration;
 
-int iPlyWhoGotJack;
 // int plyDirecter;
 int ibFirstGrabCheck;
-int entJack;
-int entPassTarget;
+int entPassTarget = INVALID_ENT_REFERENCE;
 int ibBallSpawnedLower;
 int iRoundResetTick;
 int iWinStratDistance;
@@ -131,7 +129,6 @@ int iBluBallTime;
 Menu   mPassMenu;
 bool   bWaitingForBallSpawnToRestart;
 bool   bHalloweenMode;
-bool   bBallLoose;         // Is the ball currently loose (is the passtime_ball entity on the map)?
 bool   bBallSplashed;      // check if ball splashed for panacea checks
 TFTeam eLastTickBallTeam;  // in effect, this is "last thrown ball team"
 bool   arr_bPlyIsDead [MAXPLAYERS + 1];
@@ -173,14 +170,10 @@ bool g_bPendingHP[MAXPLAYERS + 1];
 bool g_bSaveEnabled = true;
 
 // Mirror spawnpoint system for side-aware resupply
-ArrayList g_hCachedSpawnRooms;
-ArrayList g_hCachedSpawnPoints[2];  // RED and BLU spawn points
-ArrayList g_hMirrorSpawnPoints[2][2];  // [team][side] where team=0=RED,1=BLU and side=0=left,1=right
+ArrayList g_hMirrorSpawnPoints[2][2];  // [team][side] where team=0=RED,1=BLU and side=0=left,1=right MUST query AreMirrorSpawnPointsAvailable side-effects
 int g_iCurrentSpawnIndex[2][2];  // [team][side] current spawnpoint index
 float g_fMirrorPlaneX = 0.0;  // X coordinate of the middle plane
 float g_fMirrorPlaneY = 0.0;  // Y coordinate of the middle plane
-bool g_bMirrorSystemInitialized = false;
-int g_iCachedTimerEntity = -1;
 
 // FOV
 ConVar cvFovMin;
@@ -229,24 +222,21 @@ Handle   tfPlayerForceRegenerateAndRespawn;
 Handle   pointInRespawnRoom;
 GameData gameData;
 
+char chatEventBuffer[254];
 // Utility functions for chat events
 stock void ChatEvent(const char[] format, any ...) {
   if (bChatEvents.BoolValue) {
-    int len = strlen(format) + 255;
-    char[] MessageToChat = new char[len];
-    VFormat(MessageToChat, len, format, 2);
-    TagChatAll(MessageToChat);
+    VFormat(chatEventBuffer, sizeof(chatEventBuffer), format, 2);
+    TagChatAll(chatEventBuffer);
   }
 }
 
 stock void ChatEventToClients(const char[] format, any ...) {
   if (bChatEvents.BoolValue) {
-    int len = strlen(format) + 255;
-    char[] MessageToChat = new char[len];
-    VFormat(MessageToChat, len, format, 2);
+    VFormat(chatEventBuffer, sizeof(chatEventBuffer), format, 2);
     for (int x = 1; x < MaxClients + 1; x++) {
       if (!IsValidClient(x) || IsClientSourceTV(x)) continue;
-      CTagChat(x, MessageToChat);
+      CTagChat(x, chatEventBuffer);
     }
   }
 }
@@ -319,11 +309,10 @@ stock void ShowJackChat(int client, const char[] message) {
   }
 }
 
+char logGameEventBuffer[1024];
 stock void LogGameEvent(const char[] eventName, const char[] format, any ...) {
-  int len = strlen(format) + 255;
-  char[] MessageToLog = new char[len];
-  VFormat(MessageToLog, len, format, 3);
-  LogToGame("\"%N<%i><%s><%s>\" triggered \"%s\" %s", user1, GetClientUserId(user1), user1steamid, user1team, eventName, MessageToLog);
+  VFormat(logGameEventBuffer, sizeof(logGameEventBuffer), format, 3);
+  LogToGame("\"%N<%i><%s><%s>\" triggered \"%s\" %s", user1, GetClientUserId(user1), user1steamid, user1team, eventName, logGameEventBuffer);
 }
 
 stock void LogScoreEvent(int scorer, int points, bool panacea, bool winstrat, bool deathbomb, float dist, float speed) {
@@ -508,11 +497,11 @@ stock void LogBallSpawn(const char[] spawnName, int caller) {
   TagChatSTV("%s", logMessage);
 }
 
-stock void LogCatapultEvent(const char[] catapultName) {
-  SetLogInfo(iPlyWhoGotJack);
+stock void LogCatapultEvent(const char[] catapultName, int ply) {
+  SetLogInfo(ply);
   LogGameEvent(catapultName, "with the jack (position \"%.0f %.0f %.0f\")",
               user1position[0], user1position[1], user1position[2]);
-  arr_iClientRoundStats[iPlyWhoGotJack].iCatapults++;
+  arr_iClientRoundStats[ply].iCatapults++;
 }
 
 stock void LogBallDamage(int victim, int attacker, int inflictor, float damage, int damagetype, const char[] classname) {
@@ -554,7 +543,6 @@ stock void LogPassBallStolen(int thief, int victim, bool steal2save) {
 
 // Modules (loaded here cause the methods above are dependent on them)
 #include "p4sstime/stocks.sp"
-#include "p4sstime/snapshot.sp"
 #include "p4sstime/logs.sp"
 #include "p4sstime/pass_menu.sp"
 #include "p4sstime/practice.sp"
@@ -581,9 +569,6 @@ public void OnPluginStart() {
   gameData = new GameData("p4sstime"); // Load config
 
   // Initialize mirror spawnpoint arrays
-  g_hCachedSpawnRooms =        new ArrayList();
-  g_hCachedSpawnPoints[0] =    new ArrayList();  // RED
-  g_hCachedSpawnPoints[1] =    new ArrayList();  // BLU
   g_hMirrorSpawnPoints[0][0] = new ArrayList();  // RED left
   g_hMirrorSpawnPoints[0][1] = new ArrayList();  // RED right
   g_hMirrorSpawnPoints[1][0] = new ArrayList();  // BLU left
@@ -630,7 +615,6 @@ public void OnPluginStart() {
   CCA("sm_load",       "sm_ld",      CLoadpoint, "Teleport to saved spawn");
 
   // Admin commands
-  AC("sm_pt_snapshot",    CSnapshot,         GENERIC, "Take a snapshot of the plugin's current variable values.");
   AC("sm_pt_spawnball",   CSpawnBall,        GENERIC, "Spawn the jack for pre-game practice.");
   AC("sm_pt_demoresist",  CToggleDemoResist, GENERIC, "Toggle demo blast vulnerability");
 
@@ -684,23 +668,23 @@ public void OnPluginStart() {
   AddC("cOldSteal",     0xFF8000); // #FF8000
 
   // ConVars
-  bFixStocks =             CV("sm_pt_fix_stocks",              "1",    "Disable equipping shotgun, stickies, and needles; the allowlist can't block stock weapons.",       NOTIFY);
-  bFixRespawnBypass =      CV("sm_pt_fix_respawn_bypass",      "1",    "Disable switching classes while dead to respawn immediately.",                                     NOTIFY);
-  bFixJackCollision =      CV("sm_pt_fix_jack_collision",      "1",    "Disable jack collision on ammo packs and weapons.",                                                NOTIFY);
-  bFixBlur =               CV("sm_pt_fix_blur",                "1",    "Disable blurry screen overlay when intercepting or stealing.",                                     NOTIFY);
-  bChatEvents =            CV("sm_pt_chat_events",             "1",    "Enable printing of passtime events to chat both during and after games. Does not affect logging.", NOTIFY);
-  bChatEventsFun =         CV("sm_pt_chat_events_fun",         "0",    "If sm_pt_print_events is 1, enable printing additional fun stats.",                                NOTIFY);
-  bWinstratKills =         CV("sm_pt_kill_winstrats",          "0",    "Enable killing winstratters and printing \"tried to winstrat\" in chat.",                          NOTIFY);
-  bVerboseLogs =           CV("sm_pt_logs_verbose",            "0",    "Enable printing additional information to logs.");
-  bMedicSplash =           CV("sm_pt_medic_splash",            "1",    "Enable medic arrows neutralizing the jack.",                                                       NOTIFY);
-  bMedicSplashPush =       CV("sm_pt_medic_splash_push",       "1",    "If sm_pt_medic_splash is 1, enable crossbow push on the jack.",                                    NOTIFY);
-  bResupply =              CV("sm_pt_resupply_enabled",        "1",    "Enable instant resupply.",                                                                         NOTIFY);
-  fResupplyCooldown =      CV("sm_pt_resupply_cooldown",       "0.5",  "Set the resupply cooldown duration in seconds (also used as max decay cap).",                      NOTIFY);
-  fResupplyDecayRate =     CV("sm_pt_resupply_decay_rate",     "0.15", "Set the resupply decay rate (seconds of decay recovered per second).",                             NOTIFY);
-  fResupplyDecayAddition = CV("sm_pt_resupply_decay_addition", "0.2",  "Set the resupply decay addition per successful resupply.",                                         NOTIFY);
-  fGoalRegeneration =      CV("sm_pt_goal_regeneration",       "0",    "Set the amount of health regeneration every 500ms while in the goal zone.",                        NOTIFY);
-  bPractice =              CV("sm_pt_practice",                "0",    "Enable practice mode. When the round timer reaches 5 minutes, add 5 minutes to the timer.",        NOTIFY, true, 0.0, true, 1.0);
-  cvRespawnTime =          CV("sm_pt_respawn_time",            "0.0",  "Player respawn delay in seconds",                                                                 NOTIFY);
+  bFixStocks =             CV("sm_pt_stock_blocklist",                  "1",    "Disable equipping shotgun, stickies, and needles; the allowlist can't block stock weapons.",       NOTIFY);
+  bFixRespawnBypass =      CV("sm_pt_block_instant_respawn",            "1",    "Disable switching classes while dead to respawn immediately.",                                     NOTIFY);
+  bFixJackCollision =      CV("sm_pt_disable_jack_drop_item_collision", "1",    "Disable jack collision on ammo packs and weapons.",                                                NOTIFY);
+  bFixBlur =               CV("sm_pt_disable_intercept_blur",           "1",    "Disable blurry screen overlay when intercepting or stealing.",                                     NOTIFY);
+  bChatEvents =            CV("sm_pt_print_events",                     "1",    "Enable printing of passtime events to chat both during and after games. Does not affect logging.", NOTIFY);
+  bChatEventsFun =         CV("sm_pt_print_events_fun",                 "0",    "If sm_pt_print_events is 1, enable printing additional fun stats.",                                NOTIFY);
+  bWinstratKills =         CV("sm_pt_winstrat_kills",                   "0",    "Enable killing winstratters and printing \"tried to winstrat\" in chat.",                          NOTIFY);
+  bVerboseLogs =           CV("sm_pt_logs_verbose",                     "0",    "Enable printing additional information to logs.");
+  bMedicSplash =           CV("sm_pt_medic_can_splash",                 "1",    "Enable medic arrows neutralizing the jack.",                                                       NOTIFY);
+  bMedicSplashPush =       CV("sm_pt_medic_splash_pushes_ball",         "1",    "If sm_pt_medic_can_splash is 1, enable crossbow push on the jack.",                                    NOTIFY);
+  bResupply =              CV("sm_pt_resupply_enabled",                 "1",    "Enable instant resupply.",                                                                         NOTIFY);
+  fResupplyCooldown =      CV("sm_pt_resupply_cooldown",                "0.5",  "Set the resupply cooldown duration in seconds (also used as max decay cap).",                      NOTIFY);
+  fResupplyDecayRate =     CV("sm_pt_resupply_decay_rate",              "0.15", "Set the resupply decay rate (seconds of decay recovered per second).",                             NOTIFY);
+  fResupplyDecayAddition = CV("sm_pt_resupply_decay_addition",          "0.2",  "Set the resupply decay addition per successful resupply.",                                         NOTIFY);
+  fGoalRegeneration =      CV("sm_pt_goal_heal",                        "0",    "Set the amount of health regeneration every 500ms while in the goal zone.",                        NOTIFY);
+  bPractice =              CV("sm_pt_practice",                         "0",    "Enable practice mode. When the round timer reaches 5 minutes, add 5 minutes to the timer.",        NOTIFY, true, 0.0, true, 1.0);
+  cvRespawnTime =          CV("sm_pt_respawn_time",                     "0.0",  "Player respawn delay in seconds",                                                                 NOTIFY);
 
   // Demoman boots attribute ConVars
   cvBootsChargeTurn = CV("sm_pt_boots_charge_turn", "3.0",  "Charge turn control multiplier for Demoman boots",     NOTIFY);
@@ -742,11 +726,6 @@ public void OnPluginStart() {
   HE("teamplay_broadcast_audio",     EMidgameCountdown);
   HE("teamplay_round_active",        EPlayersCanMove);
   HE("teamplay_round_win",           ETeamWin);
-  HE("teamplay_round_restart_seconds", EGameState_RoundRestartSeconds);
-  HE("teamplay_restart_round",       EGameState_RestartRound);
-  HE("teamplay_map_time_remaining",  EGameState_MapTimeRemaining);
-  HE("teamplay_round_start",         EGameState_RoundStart);
-  HE("teamplay_game_over",           EGameState_GameOver);
   HE("stats_resetround",             ERoundReset);
 
   HEO("trigger_catapult",         "OnCatapulted", EOOnCatapult);
@@ -787,9 +766,6 @@ public void OnPluginStart() {
   else {
     iWinStratDistance = 400;
   }
-
-  int jackIndex = FindEntityByClassname(-1, "passtime_ball");
-  if (jackIndex != -1) entJack = jackIndex;
 
   if (LibraryExists("updater")) {
     OnLibraryAdded("updater");
@@ -884,44 +860,42 @@ public void OnMapStart() { // get goal locations
     GetEntPropVector(goal2, Prop_Send, "m_vecOrigin", fBluGoalPos);
     GetEntPropVector(goal1, Prop_Send, "m_vecOrigin", fRedGoalPos);
   }
-
-  // for mirror spawnpoints
-  BuildEntityCache();
 }
 
 public void OnMapEnd() {
-  entJack = 0;
   ClearAttributeDefCache();
 }
 
 public void OnGameFrame() {
-  if (bBallLoose) {
-    TFTeam ballTeam = GetBallTeam();
-    if (ballTeam != eLastTickBallTeam) {
-      VerboseLog("Ball team changed from %d (%s) to %d (%s)", eLastTickBallTeam, TFTeamToString(eLastTickBallTeam), ballTeam, TFTeamToString(ballTeam));
-      float ballPos[3];
-      GetEntPropVector(entJack, Prop_Send, "m_vecOrigin", ballPos);
-      float distFromBluGoal = GetVectorDistance(ballPos, fBluGoalPos);
-      float distFromRedGoal = GetVectorDistance(ballPos, fRedGoalPos);
-      VerboseLog("Loose ball distance from goals: \"blu\" \"%.2f\" \"red\" \"%.2f\"", distFromBluGoal, distFromRedGoal);
-      if (bChatEvents.BoolValue && bChatEventsFun.BoolValue) {
-        if (distFromBluGoal <= 120) {
-          ChatEvent("The ball went neutral %.2fhu {chat}from the goal!", distFromBluGoal - 20);
-        }
-        elif (distFromRedGoal <= 120) {
-          ChatEvent("The ball went neutral %.2fhu {chat}from the goal!", distFromRedGoal - 20);
+  int logic = GetOrFindPasstimeLogic();
+  if (logic != INVALID_ENT_REFERENCE) {
+    int jack = GetBall(logic);
+    if (jack != INVALID_ENT_REFERENCE) {
+      int carrier = GetBallCarrier(jack);
+
+      // ball is loose
+      if (carrier == INVALID_ENT_REFERENCE) {
+        TFTeam ballTeam = view_as<TFTeam>(GetEntProp(jack, Prop_Send, "m_iTeamNum"));
+        if (ballTeam != eLastTickBallTeam) {
+          VerboseLog("Ball team changed from %d (%s) to %d (%s)", eLastTickBallTeam, TFTeamToString(eLastTickBallTeam), ballTeam, TFTeamToString(ballTeam));
+          float ballPos[3];
+          GetEntPropVector(jack, Prop_Send, "m_vecOrigin", ballPos);
+          float distFromBluGoal = GetVectorDistance(ballPos, fBluGoalPos);
+          float distFromRedGoal = GetVectorDistance(ballPos, fRedGoalPos);
+          VerboseLog("Loose ball distance from goals: \"blu\" \"%.2f\" \"red\" \"%.2f\"", distFromBluGoal, distFromRedGoal);
+          if (bChatEvents.BoolValue && bChatEventsFun.BoolValue) {
+            if (distFromBluGoal <= 120) {
+              ChatEvent("The ball went neutral %.2fhu {chat}from the goal!", distFromBluGoal - 20);
+            }
+            elif (distFromRedGoal <= 120) {
+              ChatEvent("The ball went neutral %.2fhu {chat}from the goal!", distFromRedGoal - 20);
+            }
+          }
         }
         eLastTickBallTeam = ballTeam;
-      }
     }
-    eLastTickBallTeam = ballTeam;
   }
-
-  static int iEntityCacheFrame = 0;
-  if (++iEntityCacheFrame >= 30) {
-    iEntityCacheFrame = 0;
-    ValidateEntityCache();
-  }
+}
 
   // Buffered resupply: while key is held and player enters spawn, auto-resupply
   if (bResupply.BoolValue) {
@@ -961,8 +935,11 @@ public void OnEntityCreated(int eIndex, const char[] eClassname) {
   //   }
   // }
   if (StrEqual(eClassname, "passtime_ball")) {
-    VerboseLog("passtime_ball spawned i \"%d\"", eIndex);
-    SetJack(eIndex);
+    if (!SDKHookEx(eIndex, SDKHook_OnTakeDamage, PasstimeBallTookDamage)) {
+      LogError("Could not hook passtime_ball. Splash detection will not work.");
+    }
+
+    VerboseLog("passtime_ball spawned \"%d\"", eIndex);
   }
   if (StrEqual(eClassname, "tf_projectile_rocket") || StrEqual(eClassname, "tf_projectile_pipe")) {
     SDKHookEx(eIndex, SDKHook_Touch, OnProjectileTouch);
@@ -991,16 +968,16 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
   VerboseLog("passtime_ball damage debug: playerWhoSplashed: %d, playerTeam: %s, ballTeam: %s", attacker, TFTeamToString(playerTeam), TFTeamToString(ballTeam));
   bBallSplashed = true;
   float fSplashedBallPos[3];
-  GetEntPropVector(entJack, Prop_Send, "m_vecOrigin", fSplashedBallPos);
+  GetEntPropVector(victim, Prop_Send, "m_vecOrigin", fSplashedBallPos);
   bool inGoalZone, expectedBallTeam;
   if (playerTeam == TFTeam_Blue) {
     VerboseLog("passtime_ball damage debug: player team is BLU, checking if in blu goal and if ball is red.");
-    inGoalZone = EntInGoalZone(entJack, TFTeam_Blue);
+    inGoalZone = EntInGoalZone(victim, TFTeam_Blue);
     expectedBallTeam = (ballTeam == TFTeam_Red);
   }
   else {
     VerboseLog("passtime_ball damage debug: player team is RED, checking if in red goal and if ball is blu.");
-    inGoalZone = EntInGoalZone(entJack, TFTeam_Red);
+    inGoalZone = EntInGoalZone(victim, TFTeam_Red);
     expectedBallTeam = (ballTeam == TFTeam_Blue);
   }
 
@@ -1010,9 +987,19 @@ Action PasstimeBallTookDamage(int victim, int& attacker, int& inflictor, float& 
     char throwerNameTeam[MAX_TEAMFORMAT_NAME_LENGTH];
     GetClientName(attacker, playerName, sizeof(playerName));
     FormatPlayerNameWithTeam(attacker, playerNameTeam);
-    FormatPlayerNameWithTeam(iPlyWhoGotJack, throwerNameTeam);
-    ChatEvent("%s {cNeutral}splashed %s{chat}!", playerNameTeam, throwerNameTeam);
-    TagChatSTV("%s splashed %N. t%d", playerName, iPlyWhoGotJack, STVTickCount());
+    int logic = GetOrFindPasstimeLogic();
+    if (logic != INVALID_ENT_REFERENCE) {
+        int jack = GetBall(logic);
+        if (jack != INVALID_ENT_REFERENCE) {
+            int prevCarrier = GetBallPrevCarrier(jack);
+            if (prevCarrier != INVALID_ENT_REFERENCE) {
+                FormatPlayerNameWithTeam(prevCarrier, throwerNameTeam);
+                ChatEvent("%s {cNeutral}splashed %s{chat}!", playerNameTeam, throwerNameTeam);
+                TagChatSTV("%s splashed %N. t%d", playerName, prevCarrier, STVTickCount());
+            }
+        }
+    }
+
     SetLogInfo(attacker);
     LogGameEvent("pass_splash_defense", "(ball position \"%.0f %.0f %.0f\")",
                 fSplashedBallPos[0], fSplashedBallPos[1], fSplashedBallPos[2]);
@@ -1065,7 +1052,6 @@ Action ERoundReset(Event event, const char[] name, bool dontBroadcast) {
     ClearLocalStats(i);
   iRedBallTime = 0;
   iBluBallTime = 0;
-  bBallLoose = false;
   if (GetConVarInt(bPractice) == 1) {
     SetConVarInt(bPractice, 0);
     TagChatAll("Game started; practice mode disabled.");
@@ -1094,7 +1080,6 @@ Action EMidgameCountdown(Event event, const char[] name, bool dontBroadcast) {
 }
 
 Action EPlayersCanMove(Event event, const char[] name, bool dontBroadcast) {
-  OnGameStateRoundActive();
   int offset = GameConfGetOffset(gameData, "CTFPlayer::m_bPasstimeBallSlippery");
   for (int x = 1; x < MaxClients + 1; x++) {
     if (!IsValidClient(x)) continue;
@@ -1108,9 +1093,7 @@ Action EPlayersCanMove(Event event, const char[] name, bool dontBroadcast) {
 }
 
 Action ETeamWin(Event event, const char[] name, bool dontBroadcast) {
-  OnGameStateRoundWin();
   CreateTimer(0.5, Timer_DisplayStats);
-  iPlyWhoGotJack = 0;  // reset this because it's a good idea. doesn't actually fix anything but this shouldn't carry over between rounds
   return Plugin_Handled;
 }
 
@@ -1205,7 +1188,8 @@ public void TF2_OnConditionRemoved(int client, TFCond condition) {
 Action EPlayerDeath(Event event, const char[] name, bool dontBroadcast) {
   int client = GetClientOfUserId(event.GetInt("userid"));
   arr_bPlyIsDead[client] = true;
-  if (client == entPassTarget) {
+  int target = EntRefToEntIndex(entPassTarget);
+  if (client == target) {
     entDeathBomber = client;
     arr_bDeathbombCheck[entDeathBomber] = true;
   }
@@ -1235,11 +1219,13 @@ public void OnClientDisconnect(int client) {
 /*-------------------------------------------------- PASS Events --------------------------------------------------*/
 void EOOnSpawnBall(const char[] name, int caller, int activator, float delay) {
   char spawnName[24];
-  entJack = FindEntityByClassname(-1, "passtime_ball");
 
-  bBallLoose = true;
+  int logic = GetOrFindPasstimeLogic();
+  if (logic != INVALID_ENT_REFERENCE) {
+    int jack = GetBall(logic);
+    if (bFixJackCollision.BoolValue && jack != -1) SetEntityCollisionGroup(jack, 4);
+  }
   ibBallSpawnedLower = 0;
-  if (bFixJackCollision.BoolValue) SetEntityCollisionGroup(entJack, 4);
   if (bWaitingForBallSpawnToRestart) {
     ServerCommand("mp_tournament_restart");
     bWaitingForBallSpawnToRestart = false;
@@ -1251,7 +1237,6 @@ void EOOnSpawnBall(const char[] name, int caller, int activator, float delay) {
 }
 
 Action EPassFree(Event event, const char[] name, bool dontBroadcast) {
-  bBallLoose = true;
   int owner = event.GetInt("owner");
   TFTeam ownerTeam = TF2_GetClientTeam(owner);
   if (ownerTeam == TFTeam_Blue) {
@@ -1272,9 +1257,21 @@ Action EPassFree(Event event, const char[] name, bool dontBroadcast) {
   arr_bDeathbombCheck[entDeathBomber] = false;  // if anyone at all throws the ball, the deathbomb is automatically false
 
   HideJackHud(owner);
-  GetEntPropVector(entJack, Prop_Data, "m_vecAbsOrigin",   fFreeBallPos);
+
+  int logic = GetOrFindPasstimeLogic();
+  if (logic != INVALID_ENT_REFERENCE) {
+    int jack = GetBall(logic);
+    if (jack != INVALID_ENT_REFERENCE) {
+      GetEntPropVector(jack, Prop_Data, "m_vecAbsOrigin", fFreeBallPos);
+    } else {
+      fFreeBallPos[0] = 0;
+      fFreeBallPos[1] = 0;
+      fFreeBallPos[2] = 0;
+    }
+  }
+
   GetEntPropVector(owner,   Prop_Data, "m_vecAbsVelocity", fFreeBallThrowerVec);
-  entPassTarget = EntRefToEntIndex(GetEntPropEnt(owner, Prop_Send, "m_hPasstimePassTarget"));
+  entPassTarget = GetEntProp(owner, Prop_Send, "m_hPasstimePassTarget");
   if (!(arr_bBlastJumpStatus[owner])) {
     arr_bPanaceaCheck[owner]  = false;
     arr_bWinStratCheck[owner] = false;
@@ -1295,46 +1292,45 @@ Action EPassBallBlocked(Event event, const char[] name, bool dontBroadcast) {
 
 // When a player gets a neutral ball.
 Action EPassGet(Event event, const char[] name, bool dontBroadcast) {
-  bBallLoose = false;
   iBallPickedUpTick = GetGameTickCount();
   VerboseLog("Ball picked up - t%d", iBallPickedUpTick);
-  iPlyWhoGotJack = event.GetInt("owner");
+  int owner = event.GetInt("owner");
   float position[3];
 
-  SetLogInfo(iPlyWhoGotJack);
+  SetLogInfo(owner);
   LogToGame("\"%N<%i><%s><%s>\" triggered \"pass_get\" (firstcontact \"%i\") (position \"%.0f %.0f %.0f\")",
             user1, GetClientUserId(user1), user1steamid, user1team, ibFirstGrabCheck,
             user1position[0], user1position[1], user1position[2]);
-  if (ibFirstGrabCheck && arr_bBlastJumpStatus[iPlyWhoGotJack]) {
-    arr_iClientRoundStats[iPlyWhoGotJack].iFirstGrabs++;
-    arr_bPanaceaCheck[iPlyWhoGotJack] = true;
-    GetClientAbsOrigin(iPlyWhoGotJack, position);
+  if (ibFirstGrabCheck && arr_bBlastJumpStatus[owner]) {
+    arr_iClientRoundStats[owner].iFirstGrabs++;
+    arr_bPanaceaCheck[owner] = true;
+    GetClientAbsOrigin(owner, position);
     float distanceFromTopSpawner = GetVectorDistance(position, fTopSpawnPos, false);
     VerboseLog("Panacea check - Distance from top spawner: %.0f, Cutoff distance for winstrat: %i", distanceFromTopSpawner, iWinStratDistance);
-    // may need to be changed 
-    if (distanceFromTopSpawner < iWinStratDistance)  { 
-      arr_bPanaceaCheck[iPlyWhoGotJack]  = false;
-      arr_bWinStratCheck[iPlyWhoGotJack] = true;
+    // may need to be changed
+    if (distanceFromTopSpawner < iWinStratDistance)  {
+      arr_bPanaceaCheck[owner]  = false;
+      arr_bWinStratCheck[owner] = true;
 
       if (bWinstratKills.BoolValue) {
-        arr_bWinStratCheck[iPlyWhoGotJack] = false;
+        arr_bWinStratCheck[owner] = false;
         // KILL winstratter
-        SDKHooks_TakeDamage(iPlyWhoGotJack, iPlyWhoGotJack, iPlyWhoGotJack, 500.0);
+        SDKHooks_TakeDamage(owner, owner, owner, 500.0);
         char winstratterName[MAX_NAME_LENGTH];
-        GetClientName(iPlyWhoGotJack, winstratterName, sizeof(winstratterName));
+        GetClientName(owner, winstratterName, sizeof(winstratterName));
         TagChatAll("{chat}%s {cScore}tried to {cScore}win strat.", winstratterName);
       }
     }
   }
   else {
-    arr_bPanaceaCheck[iPlyWhoGotJack]  = false;
-    arr_bWinStratCheck[iPlyWhoGotJack] = false;
+    arr_bPanaceaCheck[owner]  = false;
+    arr_bWinStratCheck[owner] = false;
   }
   ibFirstGrabCheck = false;
 
-  ShowJackHud(iPlyWhoGotJack);
-  ShowJackChat(iPlyWhoGotJack, "YOU HAVE THE JACK!");
-  PlayJackSound(iPlyWhoGotJack);
+  ShowJackHud(owner);
+  ShowJackChat(owner, "YOU HAVE THE JACK!");
+  PlayJackSound(owner);
 
   return Plugin_Handled;
 }
@@ -1349,8 +1345,6 @@ Action EPassCaught(Handle event, const char[] name, bool dontBroadcast) {
   int intercept      = false;
   int bSave          = false;
   int ibHandoffCheck = false;
-  iPlyWhoGotJack     = catcher;
-  bBallLoose         = false;
 
   iBallPickedUpTick = GetGameTickCount();
 
@@ -1383,14 +1377,15 @@ Action EPassCaught(Handle event, const char[] name, bool dontBroadcast) {
       TagChatSTV("%s intercepted %s. t%d", catcherName, throwerName, STVTickCount());
     }
   }
+  int target = EntRefToEntIndex(entPassTarget);
   // if on same team and catcher is not locked onto for a pass, also 200 units above ground at least (to ignore just normal non-lock passes)
-  if (TF2_GetClientTeam(thrower) == TF2_GetClientTeam(catcher) && entPassTarget != catcher && !(GetEntityFlags(catcher) & FL_ONGROUND) && DistanceAboveGround(catcher) > 200) { 
+  if (TF2_GetClientTeam(thrower) == TF2_GetClientTeam(catcher) && (target == INVALID_ENT_REFERENCE) && !(GetEntityFlags(catcher) & FL_ONGROUND) && DistanceAboveGround(catcher) > 200) {
     ChatEventToClients("%s {cAssist}handoff {chat}to %s{chat}!", throwerNameTeamFormat, catcherNameTeamFormat);
     TagChatSTV("%s handoff to %s. t%d", throwerName, catcherName, STVTickCount());
     ibHandoffCheck = true;
     arr_iClientRoundStats[thrower].iHandoffs++;
-    entPassTarget = 0;
   }
+  entPassTarget = INVALID_ENT_REFERENCE;
   LogPassCaught(catcher, thrower, intercept, bSave, ibHandoffCheck, dist, duration);
   user2 = 0;
   arr_bPanaceaCheck[thrower]  = false;
@@ -1406,7 +1401,6 @@ Action EPassStolen(Event event, const char[] name, bool dontBroadcast) {
   int thief       = event.GetInt("attacker");
   int victim      = event.GetInt("victim");
   bool steal2save = false;
-  iPlyWhoGotJack  = thief;
 
   iBallPickedUpTick = GetGameTickCount();
   VerboseLog("Ball picked up - t%d", iBallPickedUpTick);
@@ -1449,7 +1443,6 @@ Action EPassScore(Event event, const char[] name, bool dontBroadcast) {
   int points    = event.GetInt("points");
   int assistant = event.GetInt("assister");
   char playerName[MAX_NAME_LENGTH];
-  bBallLoose        = false;
   eLastTickBallTeam = TFTeam_Unassigned;
 
   GetClientName(scorer, playerName, sizeof(playerName));
@@ -1457,10 +1450,18 @@ Action EPassScore(Event event, const char[] name, bool dontBroadcast) {
   if (ibBallSpawnedLower || bBallSplashed)
     arr_bPanaceaCheck[scorer] = false;
 
-  float fScoredBallPos[3];
-  GetEntPropVector(entJack, Prop_Send, "m_vecOrigin", fScoredBallPos);
-  float dist = GetVectorDistance(fFreeBallPos, fScoredBallPos, false);
   float speed = GetVectorLength(fFreeBallThrowerVec, false);
+  float dist = 0;
+
+  int logic = GetOrFindPasstimeLogic();
+  if (logic != INVALID_ENT_REFERENCE) {
+    int jack = GetBall(logic);
+    if (jack != INVALID_ENT_REFERENCE) {
+      float fScoredBallPos[3];
+      GetEntPropVector(jack, Prop_Send, "m_vecOrigin", fScoredBallPos);
+      dist = GetVectorDistance(fFreeBallPos, fScoredBallPos, false);
+    }
+  }
 
   if (arr_bDeathbombCheck[entDeathBomber]) {
     HandleDeathbombScoring(scorer, points, dist, speed);
@@ -1532,12 +1533,30 @@ bool AtEnemyGoal(int client) {
 void EOOnCatapult(const char[] output, int caller, int activator, float delay) {
   char catapultName[15];
   GetEntPropString(caller, Prop_Data, "m_iName", catapultName, sizeof(catapultName));
-  if (activator == entJack && iPlyWhoGotJack != 0) {
-    if (StrEqual(catapultName, "red_catapult1") || StrEqual(catapultName, "red_catapult2") || StrEqual(catapultName, "blu_catapult1") || StrEqual(catapultName, "blu_catapult2") && IsClientConnected(iPlyWhoGotJack)) {
-      LogCatapultEvent(catapultName);
-    }
+  if (!(
+        StrEqual(catapultName, "red_catapult1") ||
+        StrEqual(catapultName, "red_catapult2") ||
+        StrEqual(catapultName, "blu_catapult1") ||
+        StrEqual(catapultName, "blu_catapult2"))) return;
+
+  int logic = GetOrFindPasstimeLogic();
+  if (logic == INVALID_ENT_REFERENCE) return;
+
+  int jack = GetBall(logic);
+  if (jack == INVALID_ENT_REFERENCE) return;
+
+  // must be the ball entity getting catapulted
+  if (activator != jack) return;
+
+  // sanity check: we should NOT have a carrier if being catapulted.
+  int carrier = GetBallCarrier(jack);
+  if (carrier != INVALID_ENT_REFERENCE) return;
+
+  int prevCarrier = GetBallPrevCarrier(jack);
+  if (prevCarrier != INVALID_ENT_REFERENCE) {
+    LogCatapultEvent(catapultName, prevCarrier);
+    TagChatSTV("%N triggered \"%s\" with the jack. t%d", prevCarrier, catapultName, STVTickCount());
   }
-  TagChatSTV("%N triggered \"%s\" with the jack. t%d", user1, catapultName, STVTickCount());
 }
 
 // outputString must be of size MAX_NAME_LENGTH + 7 or greater.
@@ -1552,41 +1571,13 @@ void FormatPlayerNameWithTeam(int player, char[] outputString) {
   }
 }
 
-// 0: TEAM_UNASSIGNED
-// 1: spectator
-// 2: TF_TEAM_RED
-// 3: TF_TEAM_BLU
-stock TFTeam GetBallTeam() {
-  if (entJack == 0 || !IsValidEntity(entJack)) {
-    LogStackTrace("Ball entity invalid, returning Unassigned");
-    return TFTeam_Unassigned;
-  }
-  int team = GetEntProp(entJack, Prop_Send, "m_iTeamNum");
-  switch (team) {
-    case 0:  return TFTeam_Unassigned;
-    case 1:  return TFTeam_Spectator;
-    case 2:  return TFTeam_Red;
-    case 3:  return TFTeam_Blue;
-    default: return TFTeam_Unassigned;
-  }
-}
-
 // Utility function
 stock void VerboseLog(const char[] format, any...) {
   if (bVerboseLogs.BoolValue) {
-    int len = strlen(format) + 255;
-    // sensible value for max log size?
-    char[] MessageToLog = new char[len];
-    VFormat(MessageToLog, len, format, 2);
-    LogMessage("[VERBOSE] %s", MessageToLog);
+    char buffer[512];
+    VFormat(buffer, sizeof(buffer), format, 2);
+    LogMessage("[VERBOSE] %s", buffer);
   }
-}
-
-void SetJack(int eIndex) {
-  if (!SDKHookEx(eIndex, SDKHook_OnTakeDamage, PasstimeBallTookDamage)) {
-    LogError("Could not hook passtime_ball. Splash detection will not work.");
-  }
-  entJack = eIndex;
 }
 
 bool PointInRespawnRoom(int client, float origin[3], bool sameTeamOnly) {

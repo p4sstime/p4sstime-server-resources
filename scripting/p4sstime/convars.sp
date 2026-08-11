@@ -145,7 +145,7 @@ void BufferedResupply(int client) {
   resupplyDecay[client] = newDecay < maxDecay ? newDecay : maxDecay;
 
   // Try to use side-aware spawnpoint selection if mirror system is available
-  if (g_bMirrorSystemInitialized) {
+  if (AreMirrorSpawnPointsAvailable()) {
     TFTeam clientTeam = TF2_GetClientTeam(client);
     int teamIndex = (clientTeam == TFTeam_Red) ? 0 : 1;
 
@@ -218,83 +218,52 @@ void RemoveStocks(int client) {
   }
 }
 
-// Validate entity cache and rebuild if any cached entity has become invalid
-void ValidateEntityCache() {
-  bool needsRebuild = false;
+bool AreMirrorSpawnPointsAvailable() {
+    for (int i = 0; i < 2; i++) {
+        int count = 0;
+        for (int j = 0; j < 2; j++) {
+            int length = g_hMirrorSpawnPoints[i][j].Length;
+            count += length;
 
-  if (g_iCachedTimerEntity != -1 && !IsValidEntity(g_iCachedTimerEntity))
-    needsRebuild = true;
-
-  if (!needsRebuild) {
-    for (int idx = 0; idx < g_hCachedSpawnRooms.Length; idx++) {
-      if (!IsValidEntity(g_hCachedSpawnRooms.Get(idx))) {
-        needsRebuild = true;
-        break;
-      }
-    }
-  }
-
-  if (!needsRebuild) {
-    for (int team = 0; team < 2; team++) {
-      for (int idx = 0; idx < g_hCachedSpawnPoints[team].Length; idx++) {
-        if (!IsValidEntity(g_hCachedSpawnPoints[team].Get(idx))) {
-          needsRebuild = true;
-          break;
+            for (int k = 0; k < length; k++) {
+                // spawn point entity is invalid now. recalc
+                if (EntRefToEntIndex(g_hMirrorSpawnPoints[i][j].Get(k)) == INVALID_ENT_REFERENCE)
+                    return FindSpawnPointsAndAnalyzeMirror();
+            }
         }
-      }
-      if (needsRebuild) break;
-    }
-  }
 
-  if (needsRebuild) {
-    PrintToServer("[p4sstime] Entity cache invalidated, rebuilding...");
-    BuildEntityCache();
-  }
+        // no left or right spawn points at all. recalc
+        if (count == 0) return FindSpawnPointsAndAnalyzeMirror();
+    }
+
+    return true;
 }
 
-// Build entity cache for mirror spawnpoint system
-void BuildEntityCache() {
-  g_hCachedSpawnRooms.Clear();
-  g_hCachedSpawnPoints[0].Clear();
-  g_hCachedSpawnPoints[1].Clear();
-  g_iCachedTimerEntity = -1;
+bool FindSpawnPointsAndAnalyzeMirror() {
+    ArrayList spawns[2];
+    spawns[0] = new ArrayList();
+    spawns[1] = new ArrayList();
 
-  // Cache team_round_timer entities
-  int entity = -1;
-  while ((entity = FindEntityByClassname(entity, "team_round_timer")) != -1) {
-    if (IsValidEntity(entity)) {
-      g_iCachedTimerEntity = entity;
-      break;
+    int entity = -1;
+    while ((entity = FindEntityByClassname(entity, "info_player_teamspawn")) != -1) {
+        TFTeam team = view_as<TFTeam>(GetEntProp(entity, Prop_Send, "m_iTeamNum"));
+        if (team == TFTeam_Red) {
+            spawns[0].Push(entity);
+        } else if (team == TFTeam_Blue) {
+            spawns[1].Push(entity);
+        }
     }
-  }
 
-  // Cache func_respawnroom entities
-  entity = -1;
-  while ((entity = FindEntityByClassname(entity, "func_respawnroom")) != -1) {
-    if (IsValidEntity(entity)) {
-      g_hCachedSpawnRooms.Push(entity);
-    }
-  }
+    bool value = AnalyzeMirrorSpawnpoints(spawns);
 
-  // Cache info_player_teamspawn entities
-  entity = -1;
-  while ((entity = FindEntityByClassname(entity, "info_player_teamspawn")) != -1) {
-    if (IsValidEntity(entity)) {
-      int team = GetEntProp(entity, Prop_Send, "m_iTeamNum");
-      if (team == 2) {
-        g_hCachedSpawnPoints[0].Push(entity);
-      }
-      else if (team == 3) {
-        g_hCachedSpawnPoints[1].Push(entity);
-      }
-    }
-  }
+    delete spawns[1];
+    delete spawns[0];
 
-  AnalyzeMirrorSpawnpoints();
+    return value;
 }
 
 // Analyze spawnpoints for mirror system - determine left/right split based on coordinates
-void AnalyzeMirrorSpawnpoints() {
+bool AnalyzeMirrorSpawnpoints(ArrayList spawns[2]) {
   g_hMirrorSpawnPoints[0][0].Clear();
   g_hMirrorSpawnPoints[0][1].Clear();
   g_hMirrorSpawnPoints[1][0].Clear();
@@ -305,52 +274,38 @@ void AnalyzeMirrorSpawnpoints() {
   g_iCurrentSpawnIndex[1][0] = 0;
   g_iCurrentSpawnIndex[1][1] = 0;
 
-  int totalSpawns = g_hCachedSpawnPoints[0].Length + g_hCachedSpawnPoints[1].Length;
-  if (totalSpawns < 2) {
-    g_bMirrorSystemInitialized = false;
-    PrintToServer("[p4sstime] Resupply swap disabled: no valid spawnpoints (%d)", totalSpawns);
-    return;
-  }
+  int totalSpawns = spawns[0].Length + spawns[1].Length;
+  if (totalSpawns < 2) return false;
 
   float totalX = 0.0, totalY = 0.0;
   int count = 0;
 
   for (int team = 0; team < 2; team++) {
-    int spawnCount = g_hCachedSpawnPoints[team].Length;
+    int spawnCount = spawns[team].Length;
     for (int j = 0; j < spawnCount; j++) {
-      int entity = g_hCachedSpawnPoints[team].Get(j);
-      if (IsValidEntity(entity)) {
-        float origin[3];
-        GetEntPropVector(entity, Prop_Data, "m_vecOrigin", origin);
-        totalX += origin[0];
-        totalY += origin[1];
-        count++;
-      }
+      int entity = spawns[team].Get(j);
+      float origin[3];
+      GetEntPropVector(entity, Prop_Data, "m_vecOrigin", origin);
+      totalX += origin[0];
+      totalY += origin[1];
+      count++;
     }
-  }
-
-  if (count < 2) {
-    g_bMirrorSystemInitialized = false;
-    PrintToServer("[p4sstime] Resupply swap disabled: no valid spawnpoints (%d)", count);
-    return;
   }
 
   g_fMirrorPlaneX = totalX / count;
   g_fMirrorPlaneY = totalY / count;
 
   for (int team = 0; team < 2; team++) {
-    int spawnCount = g_hCachedSpawnPoints[team].Length;
+    int spawnCount = spawns[team].Length;
     for (int j = 0; j < spawnCount; j++) {
-      int entity = g_hCachedSpawnPoints[team].Get(j);
-      if (IsValidEntity(entity)) {
-        float origin[3];
-        GetEntPropVector(entity, Prop_Data, "m_vecOrigin", origin);
+      int entity = spawns[team].Get(j);
+      float origin[3];
+      GetEntPropVector(entity, Prop_Data, "m_vecOrigin", origin);
 
-        int side = (origin[0] < g_fMirrorPlaneX) ? 0 : 1;
-        g_hMirrorSpawnPoints[team][side].Push(entity);
-      }
+      int side = (origin[0] < g_fMirrorPlaneX) ? 0 : 1;
+      g_hMirrorSpawnPoints[team][side].Push(entity);
     }
   }
 
-  g_bMirrorSystemInitialized = true;
+  return true;
 }

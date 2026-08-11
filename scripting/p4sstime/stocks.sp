@@ -249,3 +249,36 @@ stock Action EndCommand( int client, const char[] format, any... ) {
 bool IsValidClientAlive( int client ) {
     return IsValidClient( client ) && IsPlayerAlive( client );
 }
+
+int g_passtimeLogic = INVALID_ENT_REFERENCE;
+stock int GetOrFindPasstimeLogic() {
+    int entity;
+    if (g_passtimeLogic != INVALID_ENT_REFERENCE)
+        entity = EntRefToEntIndex(g_passtimeLogic);
+    else
+        entity = INVALID_ENT_REFERENCE;
+
+    if (entity == INVALID_ENT_REFERENCE) {
+        entity = FindEntityByClassname(-1, "passtime_logic");
+
+        if (entity == INVALID_ENT_REFERENCE) {
+            g_passtimeLogic = INVALID_ENT_REFERENCE;
+        } else {
+            g_passtimeLogic = EntIndexToEntRef(entity);
+        }
+    }
+
+    return entity;
+}
+
+stock int GetBall(int logic) {
+    return GetEntPropEnt(logic, Prop_Send, "m_hBall");
+}
+
+stock int GetBallCarrier(int ball) {
+    return GetEntPropEnt(ball, Prop_Send, "m_hCarrier");
+}
+
+stock int GetBallPrevCarrier(int ball) {
+    return GetEntPropEnt(ball, Prop_Send, "m_hPrevCarrier");
+}
