@@ -31,7 +31,7 @@
 #define RCC  RegClientCookie
 #define AddC CAddColor
 #define CV   CreateConVar
-#define DEPRECATED(%1,%2) { \
+#define DEPRECATED(%1,%2) do { \
   g_hDeprecatedConVars.SetString(%1, %2); \
   ConVar _deprecatedConVar = FindConVar(%1); \
   if (_deprecatedConVar != null) { \
@@ -39,7 +39,7 @@
   } else { \
     RegServerCmd(%1, CDeprecated, "Deprecated command"); \
   } \
-}
+} while(0)
 #define EvI  GetEventInt
 #define EvF  GetEventFloat
 #define ACA  RegAdminCmdWithShort
@@ -710,16 +710,16 @@ public void OnPluginStart() {
   // ConVars
   g_hDeprecatedConVars = new StringMap();
 
-  DEPRECATED("sm_pt_stock_blocklist", "sm_pt_fix_stocks")
-  DEPRECATED("sm_pt_block_instant_respawn", "sm_pt_fix_respawn_bypass")
-  DEPRECATED("sm_pt_disable_jack_drop_item_collision", "sm_pt_fix_jack_collision")
-  DEPRECATED("sm_pt_disable_intercept_blur", "sm_pt_fix_blur")
-  DEPRECATED("sm_pt_print_events", "sm_pt_chat_events")
-  DEPRECATED("sm_pt_print_events_fun", "sm_pt_chat_events_fun")
-  DEPRECATED("sm_pt_winstrat_kills", "sm_pt_kill_winstrats")
-  DEPRECATED("sm_pt_medic_can_splash", "sm_pt_medic_splash")
-  DEPRECATED("sm_pt_medic_splash_pushes_ball", "sm_pt_medic_splash_push")
-  DEPRECATED("sm_pt_goal_heal", "sm_pt_goal_regeneration")
+  DEPRECATED("sm_pt_stock_blocklist", "sm_pt_fix_stocks");
+  DEPRECATED("sm_pt_block_instant_respawn", "sm_pt_fix_respawn_bypass");
+  DEPRECATED("sm_pt_disable_jack_drop_item_collision", "sm_pt_fix_jack_collision");
+  DEPRECATED("sm_pt_disable_intercept_blur", "sm_pt_fix_blur");
+  DEPRECATED("sm_pt_print_events", "sm_pt_chat_events");
+  DEPRECATED("sm_pt_print_events_fun", "sm_pt_chat_events_fun");
+  DEPRECATED("sm_pt_winstrat_kills", "sm_pt_kill_winstrats");
+  DEPRECATED("sm_pt_medic_can_splash", "sm_pt_medic_splash");
+  DEPRECATED("sm_pt_medic_splash_pushes_ball", "sm_pt_medic_splash_push");
+  DEPRECATED("sm_pt_goal_heal", "sm_pt_goal_regeneration");
   
   bFixStocks =             CV("sm_pt_fix_stocks",              "1",    "Disable equipping shotgun, stickies, and needles; the allowlist can't block stock weapons.",       NOTIFY);
   bFixRespawnBypass =      CV("sm_pt_fix_respawn_bypass",      "1",    "Disable switching classes while dead to respawn immediately.",                                     NOTIFY);
