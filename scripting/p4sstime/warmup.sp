@@ -63,25 +63,7 @@ void OnGameStateRoundWin() {
 }
 
 bool IsMatch() {
-  bool awaitingReadyRestart = view_as<bool>(GameRules_GetProp("m_bAwaitingReadyRestart"));
-  bool timerPaused          = false;
-  bool timerDisabled        = false;
-  bool isPostRound          = GameRules_GetRoundState() == RoundState_TeamWin;
-
-  if (g_iCachedTimerEntity != -1 && IsValidEntity(g_iCachedTimerEntity)) {
-    timerPaused   = view_as<bool>(GetEntProp(g_iCachedTimerEntity, Prop_Send, "m_bTimerPaused"));
-    timerDisabled = view_as<bool>(GetEntProp(g_iCachedTimerEntity, Prop_Send, "m_bIsDisabled"));
-  }
-
-  bool activeByTimer = !(awaitingReadyRestart || timerPaused || timerDisabled || isPostRound);
-
-  bool activeByState = g_iGameState == STATE_GAME_START
-                    || g_iGameState == STATE_ROUND_ACTIVE
-                    || g_iGameState == STATE_ROUND_FINISHED;
-
-  // State machine is primary, but the timer/gamerules check keeps the plugin
-  // from reporting the wrong state on a fresh load before any events arrive.
-  return activeByState || activeByTimer;
+  return !view_as<bool>(GameRules_GetProp("m_bInWaitingForPlayers"));
 }
 
 void SetAmmo(int client, int weapon, int ammo) {
@@ -91,6 +73,30 @@ void SetAmmo(int client, int weapon, int ammo) {
   SetEntData(client, ammotype, ammo, 4, true);
 }
 
+void HandleWarmupToggle(int client) {
+  if (IsPlayerAlive(client)) {
+    TF2_RespawnPlayer(client);
+    ApplyBootsAttributes(client);
+  }
+}
+
+Action CSpawnBall(int client, int args) {
+  if (IsMatch()) {
+    CTagChat(client, "Starting practice mode is disabled during a match.");
+    return Plugin_Handled;
+  }
+  char name[MAX_NAME_LENGTH];
+  VerboseLog("ptspawnball called from client %d", client);
+  if (client == 0) name = "CONSOLE";
+  else GetClientName(client, name, sizeof(name));
+
+  TagChatAll("Spawning the ball for practice...", name);
+  TagChatAll("{warning}THE GAME IS {cRed}NOT {warning}STARTING!");
+  bWaitingForBallSpawnToRestart = true;
+  ServerCommand("mp_restartgame_immediate 1");
+  return Plugin_Handled;
+}
+
 Action CImmune(int client, int args) {
   if (IsMatch()) {
     CTagChat(client, "Immunity is disabled during a match.");
@@ -98,10 +104,7 @@ Action CImmune(int client, int args) {
   }
   arr_iClientPrefs[client].bImmunity = !arr_iClientPrefs[client].bImmunity;
   SetBoolCookie(client, ck_bImmunity, arr_iClientPrefs[client].bImmunity);
-  if (IsPlayerAlive(client)) {
-    TF2_RespawnPlayer(client);
-    ApplyBootsAttributes(client);
-  }
+  HandleWarmupToggle(client);
   CTagChat(client, "Immunity %s.", arr_iClientPrefs[client].bImmunity ? "enabled" : "disabled");
   return Plugin_Handled;
 }
@@ -113,10 +116,7 @@ Action CInfAmmo(int client, int args) {
   }
   arr_iClientPrefs[client].bInfAmmo = !arr_iClientPrefs[client].bInfAmmo;
   SetBoolCookie(client, ck_bInfAmmo, arr_iClientPrefs[client].bInfAmmo);
-  if (IsPlayerAlive(client)) {
-    TF2_RespawnPlayer(client);
-    ApplyBootsAttributes(client);
-  }
+  HandleWarmupToggle(client);
   CTagChat(client, "Infinite ammo %s.", arr_iClientPrefs[client].bInfAmmo ? "enabled" : "disabled");
   return Plugin_Handled;
 }

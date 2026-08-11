@@ -559,7 +559,6 @@ stock void LogPassBallStolen(int thief, int victim, bool steal2save) {
 #include "p4sstime/convars.sp"
 #include "p4sstime/stats_print.sp"
 #include "p4sstime/f2stocks.sp"
-#include "p4sstime/spawnball.sp"
 
 public Plugin myinfo = {
   name        = "4v4 PASS Time Extension",
@@ -600,7 +599,6 @@ public void OnPluginStart() {
   CC("sm_pt_pickup_sound", CJackPickupSound, "Toggle JACK pickup sound");
   CC("sm_pt_pickup_hud",   CJackPickupHud,   "Toggle JACK pickup HUD text");
   CC("sm_pt_pickup_chat",  CJackPickupChat,  "Toggle JACK pickup chat message");
-  CC("sm_pt_menu",         CMenu,            "Open the PASS Time menu");
   CC("sm_pt_countdown",    CChatCountdown,   "Toggle JACK spawn timer captions");
   CC("sm_fov",             CSetFOV,          "Set your field of view");
   CC("sm_spec_fov",        CSetSpecFOV,      "Set your spectator FOV");
@@ -618,6 +616,7 @@ public void OnPluginStart() {
   CCA("sm_diceroll",   "sm_dice",    CDice,      "Select a random player from targets");
   CCA("sm_ready",      "sm_r",       CReady,     "Toggle your team's ready state");
   CCA("sm_team_name",  "sm_tn",      CTeamName,  "Rename your team");
+  CCA("sm_pt_menu",    "sm_pt",      CMenu,      "Open the PASS Time menu");
   CCA("sm_save",       "sm_sv",      CSavepoint, "Save a spawn point");
   CCA("sm_load",       "sm_ld",      CLoadpoint, "Teleport to saved spawn");
 

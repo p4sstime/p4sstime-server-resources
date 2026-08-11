@@ -36,12 +36,7 @@ void ShowPassMenu(int client) {
 
   FormatEx(buffer, sizeof(buffer), "%s: %s", "Jack spawn timer captions", arr_iClientPrefs[client].bCountdown ? "ON" : "OFF");
   mPassMenu.AddItem("countdowncaption", buffer);
-  FormatEx(buffer, sizeof(buffer), "%s: %s", "Jack pickup HUD text",      arr_iClientPrefs[client].bJackHud ? "ON" : "OFF");
-  mPassMenu.AddItem("jackpickuphud", buffer);
-  FormatEx(buffer, sizeof(buffer), "%s: %s", "Jack pickup chat text",     arr_iClientPrefs[client].bJackChat ? "ON" : "OFF");
-  mPassMenu.AddItem("jackpickupchat", buffer);
-  FormatEx(buffer, sizeof(buffer), "%s: %s", "Jack pickup sound",         arr_iClientPrefs[client].bJackSound ? "ON" : "OFF");
-  mPassMenu.AddItem("jackpickupsound", buffer);
+  mPassMenu.AddItem("pickupcues", "Pickup cues");
   FormatEx(buffer, sizeof(buffer), "%s: %s", "Round stats format",        g_sStatsNames[arr_iClientPrefs[client].iStats]);
   mPassMenu.AddItem("stats", buffer);
   FormatEx(buffer, sizeof(buffer), "%s: %s", "Immunity",           arr_iClientPrefs[client].bImmunity ? "ON" : "OFF");
@@ -51,29 +46,42 @@ void ShowPassMenu(int client) {
   FormatEx(buffer, sizeof(buffer), "%s: %s", "Legacy colors",      arr_iClientPrefs[client].bLegacyColors ? "ON" : "OFF");
   mPassMenu.AddItem("legacycolors", buffer);
 
+  if (mPassMenu.ItemCount <= 9) {
+    mPassMenu.Pagination = MENU_NO_PAGINATION;
+  }
+  mPassMenu.ExitButton = true;
+
   mPassMenu.Display(client, MENU_TIME_FOREVER);
 }
 
-#define TOGGLE_SETTING(%1,%2,%3) \
+#define PREF(%1,%2,%3) \
   if (StrEqual(info, %1)) { \
-    arr_iClientPrefs[param1].%2 = !arr_iClientPrefs[param1].%2; \
-    SetBoolCookie(param1, %3, arr_iClientPrefs[param1].%2); \
-    ShowPassMenu(param1); \
+    arr_iClientPrefs[client].%2 = !arr_iClientPrefs[client].%2; \
+    SetBoolCookie(client, %3, arr_iClientPrefs[client].%2); \
+    ShowPassMenu(client); \
   }
 
-int PassMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
+#define PREF_CALLBACK(%1,%2,%3,%4) \
+  if (StrEqual(info, %1)) { \
+    arr_iClientPrefs[client].%2 = !arr_iClientPrefs[client].%2; \
+    SetBoolCookie(client, %3, arr_iClientPrefs[client].%2); \
+    ShowPassMenu(client); \
+    %4(client); \
+  }
+
+int PassMenuHandler(Menu menu, MenuAction action, int client, int position) {
   if (action == MenuAction_Select) {
     char info[32], display[255];
-    mPassMenu.GetItem(param2, info, sizeof(info), _, display, sizeof(display));
-    TOGGLE_SETTING("countdowncaption", bCountdown, ck_iCountdown)
-    TOGGLE_SETTING("jackpickuphud",    bJackHud,   ck_bJackHud)
-    TOGGLE_SETTING("jackpickupchat",   bJackChat,  ck_bJackChat)
-    TOGGLE_SETTING("jackpickupsound",  bJackSound, ck_bJackSound)
-    TOGGLE_SETTING("immunity",         bImmunity,  ck_bImmunity)
-    TOGGLE_SETTING("infammo",          bInfAmmo,   ck_bInfAmmo)
-    TOGGLE_SETTING("legacycolors",     bLegacyColors, ck_bLegacyColors)
+    mPassMenu.GetItem(position, info, sizeof(info), _, display, sizeof(display));
+    PREF("countdowncaption",  bCountdown,    ck_iCountdown)
+    PREF_CALLBACK("immunity", bImmunity,     ck_bImmunity, HandleWarmupToggle)
+    PREF_CALLBACK("infammo",  bInfAmmo,      ck_bInfAmmo, HandleWarmupToggle)
+    PREF("legacycolors",      bLegacyColors, ck_bLegacyColors)
+    elif (StrEqual(info, "pickupcues")) {
+      ShowPickupMenu(client);
+    }
     elif (StrEqual(info, "stats")) {
-      ShowStatsMenu(param1);
+      ShowStatsMenu(client);
     }
   }
   return 0;  // just do this to get rid of warning
@@ -118,29 +126,37 @@ void ShowStatsMenu(int client) {
   if (current != 0) {
     statsMenu.AddItem("preview", "Preview");
   }
+  statsMenu.AddItem("", "", ITEMDRAW_SPACER);
+  statsMenu.AddItem("back", "Back");
+
+  statsMenu.ExitButton = false;
+  statsMenu.Pagination = MENU_NO_PAGINATION;
 
   statsMenu.Display(client, MENU_TIME_FOREVER);
 }
 
-int StatsMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
+int StatsMenuHandler(Menu menu, MenuAction action, int client, int position) {
   if (action == MenuAction_Select) {
     char info[32];
-    menu.GetItem(param2, info, sizeof(info));
+    menu.GetItem(position, info, sizeof(info));
 
     if (StrEqual(info, "preview")) {
-      ShowStatsPreview(param1);
-      ShowStatsMenu(param1);
+      ShowStatsPreview(client);
+      ShowStatsMenu(client);
     }
     else if (StrEqual(info, "separatelines")) {
-      arr_iClientPrefs[param1].bStatsSeparateLines = !arr_iClientPrefs[param1].bStatsSeparateLines;
-      SetBoolCookie(param1, ck_bStatsSeparateLines, arr_iClientPrefs[param1].bStatsSeparateLines);
-      ShowStatsMenu(param1);
+      arr_iClientPrefs[client].bStatsSeparateLines = !arr_iClientPrefs[client].bStatsSeparateLines;
+      SetBoolCookie(client, ck_bStatsSeparateLines, arr_iClientPrefs[client].bStatsSeparateLines);
+      ShowStatsMenu(client);
+    }
+    else if (StrEqual(info, "back")) {
+      ShowPassMenu(client);
     }
     else {
       int value = StringToInt(info);
-      arr_iClientPrefs[param1].iStats = value;
-      SetIntCookie(param1, ck_iStats, arr_iClientPrefs[param1].iStats);
-      ShowStatsMenu(param1);
+      arr_iClientPrefs[client].iStats = value;
+      SetIntCookie(client, ck_iStats, arr_iClientPrefs[client].iStats);
+      ShowStatsMenu(client);
     }
   }
   else if (action == MenuAction_End) {
@@ -148,3 +164,55 @@ int StatsMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
   }
   return 0;
 }
+
+void ShowPickupMenu(int client) {
+  Menu pickupMenu = new Menu(PickupMenuHandler);
+  pickupMenu.SetTitle("Pickup cues");
+
+  char display[64];
+  FormatEx(display, sizeof(display), "HUD text: %s", arr_iClientPrefs[client].bJackHud ? "ON" : "OFF");
+  pickupMenu.AddItem("pickuphud", display);
+  FormatEx(display, sizeof(display), "Chat message: %s", arr_iClientPrefs[client].bJackChat ? "ON" : "OFF");
+  pickupMenu.AddItem("pickupchat", display);
+  FormatEx(display, sizeof(display), "Sound: %s", arr_iClientPrefs[client].bJackSound ? "ON" : "OFF");
+  pickupMenu.AddItem("pickupsound", display);
+
+  pickupMenu.AddItem("", "", ITEMDRAW_SPACER);
+  pickupMenu.AddItem("back", "Back");
+
+  pickupMenu.ExitButton = false;
+  pickupMenu.Pagination = MENU_NO_PAGINATION;
+
+  pickupMenu.Display(client, MENU_TIME_FOREVER);
+}
+
+int PickupMenuHandler(Menu menu, MenuAction action, int client, int position) {
+  if (action == MenuAction_Select) {
+    char info[32];
+    menu.GetItem(position, info, sizeof(info));
+
+    if (StrEqual(info, "pickuphud")) {
+      arr_iClientPrefs[client].bJackHud = !arr_iClientPrefs[client].bJackHud;
+      SetBoolCookie(client, ck_bJackHud, arr_iClientPrefs[client].bJackHud);
+      ShowPickupMenu(client);
+    }
+    elif (StrEqual(info, "pickupchat")) {
+      arr_iClientPrefs[client].bJackChat = !arr_iClientPrefs[client].bJackChat;
+      SetBoolCookie(client, ck_bJackChat, arr_iClientPrefs[client].bJackChat);
+      ShowPickupMenu(client);
+    }
+    elif (StrEqual(info, "pickupsound")) {
+      arr_iClientPrefs[client].bJackSound = !arr_iClientPrefs[client].bJackSound;
+      SetBoolCookie(client, ck_bJackSound, arr_iClientPrefs[client].bJackSound);
+      ShowPickupMenu(client);
+    }
+    elif (StrEqual(info, "back")) {
+      ShowPassMenu(client);
+    }
+  }
+  else if (action == MenuAction_End) {
+    delete menu;
+  }
+  return 0;
+}
+
