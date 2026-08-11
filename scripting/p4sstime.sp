@@ -585,7 +585,7 @@ public Action CDeprecated(int args) {
     cv.SetString(value, false, false);
   }
 
-  LogMessage("DEPRECATED: %s is deprecated, please use %s instead.", cmd, newName);
+  LogMessage("DEPRECATED: `%s`, use `%s` instead.", cmd, newName);
   return Plugin_Handled;
 }
 
