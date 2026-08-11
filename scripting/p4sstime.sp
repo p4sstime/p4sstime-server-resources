@@ -116,7 +116,7 @@ ConVar fGoalRegeneration;
 
 // int plyDirecter;
 int ibFirstGrabCheck;
-int entPassTarget;
+int entPassTarget = INVALID_ENT_REFERENCE;
 int ibBallSpawnedLower;
 int iRoundResetTick;
 int iWinStratDistance;
@@ -1180,7 +1180,8 @@ public void TF2_OnConditionRemoved(int client, TFCond condition) {
 Action EPlayerDeath(Event event, const char[] name, bool dontBroadcast) {
   int client = GetClientOfUserId(event.GetInt("userid"));
   arr_bPlyIsDead[client] = true;
-  if (client == entPassTarget) {
+  int target = EntRefToEntIndex(entPassTarget);
+  if (client == target) {
     entDeathBomber = client;
     arr_bDeathbombCheck[entDeathBomber] = true;
   }
@@ -1262,7 +1263,7 @@ Action EPassFree(Event event, const char[] name, bool dontBroadcast) {
   }
 
   GetEntPropVector(owner,   Prop_Data, "m_vecAbsVelocity", fFreeBallThrowerVec);
-  entPassTarget = EntRefToEntIndex(GetEntPropEnt(owner, Prop_Send, "m_hPasstimePassTarget"));
+  entPassTarget = GetEntProp(owner, Prop_Send, "m_hPasstimePassTarget");
   if (!(arr_bBlastJumpStatus[owner])) {
     arr_bPanaceaCheck[owner]  = false;
     arr_bWinStratCheck[owner] = false;
@@ -1368,14 +1369,15 @@ Action EPassCaught(Handle event, const char[] name, bool dontBroadcast) {
       TagChatSTV("%s intercepted %s. t%d", catcherName, throwerName, STVTickCount());
     }
   }
+  int target = EntRefToEntIndex(entPassTarget);
   // if on same team and catcher is not locked onto for a pass, also 200 units above ground at least (to ignore just normal non-lock passes)
-  if (TF2_GetClientTeam(thrower) == TF2_GetClientTeam(catcher) && entPassTarget != catcher && !(GetEntityFlags(catcher) & FL_ONGROUND) && DistanceAboveGround(catcher) > 200) { 
+  if (TF2_GetClientTeam(thrower) == TF2_GetClientTeam(catcher) && (target == INVALID_ENT_REFERENCE) && !(GetEntityFlags(catcher) & FL_ONGROUND) && DistanceAboveGround(catcher) > 200) {
     ChatEventToClients("%s {cAssist}handoff {chat}to %s{chat}!", throwerNameTeamFormat, catcherNameTeamFormat);
     TagChatSTV("%s handoff to %s. t%d", throwerName, catcherName, STVTickCount());
     ibHandoffCheck = true;
     arr_iClientRoundStats[thrower].iHandoffs++;
-    entPassTarget = 0;
   }
+  entPassTarget = INVALID_ENT_REFERENCE;
   LogPassCaught(catcher, thrower, intercept, bSave, ibHandoffCheck, dist, duration);
   user2 = 0;
   arr_bPanaceaCheck[thrower]  = false;
