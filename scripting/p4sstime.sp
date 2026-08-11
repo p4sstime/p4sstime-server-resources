@@ -222,24 +222,21 @@ Handle   tfPlayerForceRegenerateAndRespawn;
 Handle   pointInRespawnRoom;
 GameData gameData;
 
+char chatEventBuffer[254];
 // Utility functions for chat events
 stock void ChatEvent(const char[] format, any ...) {
   if (bChatEvents.BoolValue) {
-    int len = strlen(format) + 255;
-    char[] MessageToChat = new char[len];
-    VFormat(MessageToChat, len, format, 2);
-    TagChatAll(MessageToChat);
+    VFormat(chatEventBuffer, sizeof(chatEventBuffer), format, 2);
+    TagChatAll(chatEventBuffer);
   }
 }
 
 stock void ChatEventToClients(const char[] format, any ...) {
   if (bChatEvents.BoolValue) {
-    int len = strlen(format) + 255;
-    char[] MessageToChat = new char[len];
-    VFormat(MessageToChat, len, format, 2);
+    VFormat(chatEventBuffer, sizeof(chatEventBuffer), format, 2);
     for (int x = 1; x < MaxClients + 1; x++) {
       if (!IsValidClient(x) || IsClientSourceTV(x)) continue;
-      CTagChat(x, MessageToChat);
+      CTagChat(x, chatEventBuffer);
     }
   }
 }
@@ -312,11 +309,10 @@ stock void ShowJackChat(int client, const char[] message) {
   }
 }
 
+char logGameEventBuffer[1024];
 stock void LogGameEvent(const char[] eventName, const char[] format, any ...) {
-  int len = strlen(format) + 255;
-  char[] MessageToLog = new char[len];
-  VFormat(MessageToLog, len, format, 3);
-  LogToGame("\"%N<%i><%s><%s>\" triggered \"%s\" %s", user1, GetClientUserId(user1), user1steamid, user1team, eventName, MessageToLog);
+  VFormat(logGameEventBuffer, sizeof(logGameEventBuffer), format, 3);
+  LogToGame("\"%N<%i><%s><%s>\" triggered \"%s\" %s", user1, GetClientUserId(user1), user1steamid, user1team, eventName, logGameEventBuffer);
 }
 
 stock void LogScoreEvent(int scorer, int points, bool panacea, bool winstrat, bool deathbomb, float dist, float speed) {
@@ -1551,11 +1547,9 @@ void FormatPlayerNameWithTeam(int player, char[] outputString) {
 // Utility function
 stock void VerboseLog(const char[] format, any...) {
   if (bVerboseLogs.BoolValue) {
-    int len = strlen(format) + 255;
-    // sensible value for max log size?
-    char[] MessageToLog = new char[len];
-    VFormat(MessageToLog, len, format, 2);
-    LogMessage("[VERBOSE] %s", MessageToLog);
+    char buffer[512];
+    VFormat(buffer, sizeof(buffer), format, 2);
+    LogMessage("[VERBOSE] %s", buffer);
   }
 }
 
