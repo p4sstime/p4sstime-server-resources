@@ -1265,9 +1265,9 @@ Action EPassFree(Event event, const char[] name, bool dontBroadcast) {
     if (jack != INVALID_ENT_REFERENCE) {
       GetEntPropVector(jack, Prop_Data, "m_vecAbsOrigin", fFreeBallPos);
     } else {
-      fFreeBallPos[0] = 0;
-      fFreeBallPos[1] = 0;
-      fFreeBallPos[2] = 0;
+      fFreeBallPos[0] = 0.0;
+      fFreeBallPos[1] = 0.0;
+      fFreeBallPos[2] = 0.0;
     }
   }
 
@@ -1459,7 +1459,7 @@ Action EPassScore(Event event, const char[] name, bool dontBroadcast) {
     arr_bPanaceaCheck[scorer] = false;
 
   float speed = GetVectorLength(fFreeBallThrowerVec, false);
-  float dist = 0;
+  float dist = 0.0;
 
   int logic = GetOrFindPasstimeLogic();
   if (logic != INVALID_ENT_REFERENCE) {
