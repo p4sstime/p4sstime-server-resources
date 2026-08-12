@@ -282,3 +282,7 @@ stock int GetBallCarrier(int ball) {
 stock int GetBallPrevCarrier(int ball) {
     return GetEntPropEnt(ball, Prop_Send, "m_hPrevCarrier");
 }
+
+stock int GetBallHomingTarget(int ball) {
+    return GetEntPropEnt(ball, Prop_Send, "m_hHomingTarget");
+}
