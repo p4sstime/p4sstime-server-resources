@@ -857,6 +857,34 @@ public void OnMapStart() {
 
 public void OnMapEnd() {
   ClearAttributeDefCache();
+
+  // Hooks
+  UnhookEvent("player_spawn",                 EPlayerSpawn);
+  UnhookEvent("post_inventory_application",   EPlayerResup);
+  UnhookEvent("player_death",                 EPlayerDeath);
+  UnhookEvent("pass_get",                     EPassGet);
+  UnhookEvent("pass_free",                    EPassFree);
+  UnhookEvent("pass_ball_stolen",             EPassStolen);
+  UnhookEvent("pass_score",                   EPassScore);
+  UnhookEvent("pass_pass_caught",             EPassCaught);
+  UnhookEvent("pass_ball_blocked",            EPassBallBlocked);
+  UnhookEvent("rocket_jump",                  ERocketJump);
+  UnhookEvent("rocket_jump_landed",           ERocketJumpLand);
+  UnhookEvent("sticky_jump",                  EPipeJump);
+  UnhookEvent("sticky_jump_landed",           EPipeJumpLand);
+  UnhookEvent("teamplay_pre_round_time_left", EPregameCountdown);
+  UnhookEvent("teamplay_broadcast_audio",     EMidgameCountdown);
+  UnhookEvent("teamplay_round_active",        EPlayersCanMove);
+  UnhookEvent("teamplay_round_win",           ETeamWin);
+  UnhookEvent("stats_resetround",             ERoundReset);
+
+  UnhookEntityOutput("trigger_catapult",         "OnCatapulted", EOOnCatapult);
+  UnhookEntityOutput("info_passtime_ball_spawn", "OnSpawnBall",  EOOnSpawnBall);
+
+  RemoveCommandListener(OnChangeClass, "joinclass");
+  RemoveCommandListener(OnSpecCommand, "spec_next");
+  RemoveCommandListener(OnSpecCommand, "spec_prev");
+  RemoveCommandListener(OnSpecCommand, "spec_mode");
 }
 
 public void OnGameFrame() {
