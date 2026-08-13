@@ -1046,7 +1046,8 @@ void MedicArrowTouchedSomething(int arrow, int other) {
 
     char medicAttackerNameTeamFmt[MAX_TEAMFORMAT_NAME_LENGTH];
     FormatPlayerNameWithTeam(eiMedicAttacker, medicAttackerNameTeamFmt);
-    TagChatAll("%s {cBlock}directed {chat}the ball with an {cNeutral}arrow{chat}!", medicAttackerNameTeamFmt);
+    ChatEvent("%s {cBlock}directed {chat}the ball with an {cNeutral}arrow{chat}!", medicAttackerNameTeamFmt);
+    ChatEvent("medic_arrow", eiMedicAttacker);
   }
   VerboseLog("medic arrow from %d touched %s i %d", eiMedicAttacker, classname, other);
 }
