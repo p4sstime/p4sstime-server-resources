@@ -786,13 +786,14 @@ public void OnMapStart() {
 
   int goal2 = FindEntityByClassname(goal1, "func_passtime_goal");
 
-  int team1 = GetEntProp(goal1, Prop_Send, "m_iTeamNum");
-  if (team1 == 2) {
+  TFTeam team1 = view_as<TFTeam>(GetEntProp(goal1, Prop_Send, "m_iTeamNum"));
+  // red will score ON THIS goal
+  if (team1 == TFTeam_Red) {
     GetEntPropVector(goal1, Prop_Send, "m_vecOrigin", fBluGoalPos);
     GetEntPropVector(goal2, Prop_Send, "m_vecOrigin", fRedGoalPos);
   } else {
-    GetEntPropVector(goal2, Prop_Send, "m_vecOrigin", fBluGoalPos);
     GetEntPropVector(goal1, Prop_Send, "m_vecOrigin", fRedGoalPos);
+    GetEntPropVector(goal2, Prop_Send, "m_vecOrigin", fBluGoalPos);
   }
 
   // Hooks
