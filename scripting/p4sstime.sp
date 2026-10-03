@@ -833,7 +833,7 @@ public Action GoalHealTimer(Handle timer) {
     int health = GetClientHealth(client_idx);
     int max_health = GetPlayerMaxHealthTF2(client_idx);
 
-    if (health >= max_health) return Plugin_Continue;
+    if (health >= max_health) continue;
 
     float distance_sqr, vertical_difference;
     if (team == TFTeam_Red) {
