@@ -53,7 +53,7 @@ void TargetStringAlias(char[] target, int size) {
 // ====================================================================================================
 
 Action CForceReady(int client, int args) {
-  if (IsMatch()) return Plugin_Continue;
+  if (!FindConVar("mp_tournament").BoolValue || IsMatch()) return Plugin_Handled;
   if (args != 2) {
     ReplyToCommand(client, "[SM] Usage: sm_force_ready <red|blu> <0|1>");
     return Plugin_Handled;
@@ -70,26 +70,6 @@ Action CForceReady(int client, int args) {
   GameRules_SetProp("m_bTeamReady", status, 1, teamIndex + 2);
   g_bIsTeamReady[teamIndex] = (status != 0);
 
-  return Plugin_Handled;
-}
-
-Action CToggleRespawn(int client, int args) {
-  if (args != 1) {
-    ReplyToCommand(client, "[SM] Usage: sm_enable_respawn <0|1>");
-    return Plugin_Handled;
-  }
-
-  char arg[4];
-  GetCmdArg(1, arg, sizeof(arg));
-  int value = StringToInt(arg);
-
-  if (value != 0 && value != 1) {
-    ReplyToCommand(client, "[SM] Usage: sm_enable_respawn <0|1>");
-    return Plugin_Handled;
-  }
-
-  g_bInstantRespawnEnabled = (value != 0);
-  ReplyToCommand(client, "[SM] Instant respawn %s", g_bInstantRespawnEnabled ? "enabled" : "disabled");
   return Plugin_Handled;
 }
 
@@ -273,7 +253,7 @@ Action CDice(int client, int args) {
 }
 
 Action CReady(int client, int args) {
-  if (IsMatch()) return Plugin_Handled;
+  if (!FindConVar("mp_tournament").BoolValue || IsMatch()) return Plugin_Handled;
   if (args != 0) { CTagChat(client, "Usage: sm_ready"); return Plugin_Handled; }
 
   TFTeam clientTeam = TF2_GetClientTeam(client);
@@ -316,8 +296,6 @@ Action CReady(int client, int args) {
       GameRules_SetPropFloat("m_flRestartRoundTime", -1.0);
       GameRules_SetProp("m_bAwaitingReadyRestart", 1);
       if (cvRestart != null) cvRestart.SetInt(0);
-
-      SetGameState(STATE_WAITING);
 
       char teamName[4];
       strcopy(teamName, sizeof(teamName), (clientTeam == TFTeam_Red) ? "RED" : "BLU");
