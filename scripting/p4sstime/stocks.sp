@@ -151,17 +151,17 @@ void RegConsoleCmdWithShort(const char[] name, const char[] shortName, ConCmd ha
   RegConsoleCmd(shortName, handler, description);
 }
 
-// Save- and Loadpoint data structures
+// Save- and Loadpoint data structures (per-client, so each player has their own spot)
 #define MAXSLOTS 2
 
-bool g_bSavepointValid = false;
-float g_vSavePos[3];
-float g_vSaveAng[3];
-float g_vSaveVel[3];
-int g_iSavedClip1[MAXSLOTS];
-int g_iSavedClip2[MAXSLOTS];
-int g_iSavedAmmoType[MAXSLOTS][2];
-int g_iSavedAmmoCount[MAXSLOTS][2];
+bool g_bSavepointValid[MAXPLAYERS + 1];
+float g_vSavePos[MAXPLAYERS + 1][3];
+float g_vSaveAng[MAXPLAYERS + 1][3];
+float g_vSaveVel[MAXPLAYERS + 1][3];
+int g_iSavedClip1[MAXPLAYERS + 1][MAXSLOTS];
+int g_iSavedClip2[MAXPLAYERS + 1][MAXSLOTS];
+int g_iSavedAmmoType[MAXPLAYERS + 1][MAXSLOTS][2];
+int g_iSavedAmmoCount[MAXPLAYERS + 1][MAXSLOTS][2];
 
 // Save a point
 stock Action CSavepoint( int client, int args ) {
@@ -169,33 +169,33 @@ stock Action CSavepoint( int client, int args ) {
     if ( client <= 0 || client > MaxClients || !IsClientInGame( client ) ) return Plugin_Handled;
     if ( !IsPlayerAlive( client ) ) return Plugin_Handled;
 
-    GetClientAbsOrigin( client, g_vSavePos );
-    GetClientEyeAngles( client, g_vSaveAng );
-    GetEntPropVector( client, Prop_Data, "m_vecAbsVelocity", g_vSaveVel );
+    GetClientAbsOrigin( client, g_vSavePos[ client ] );
+    GetClientEyeAngles( client, g_vSaveAng[ client ] );
+    GetEntPropVector( client, Prop_Data, "m_vecAbsVelocity", g_vSaveVel[ client ] );
 
     // Save current ammo and clips for carried weapons
     for ( int s = 0; s < MAXSLOTS; s++ ) {
-        g_iSavedClip1[ s ]          = -1;
-        g_iSavedClip2[ s ]          = -1;
-        g_iSavedAmmoType[ s ][ 0 ]  = -1;
-        g_iSavedAmmoType[ s ][ 1 ]  = -1;
-        g_iSavedAmmoCount[ s ][ 0 ] = 0;
-        g_iSavedAmmoCount[ s ][ 1 ] = 0;
+        g_iSavedClip1[ client ][ s ]          = -1;
+        g_iSavedClip2[ client ][ s ]          = -1;
+        g_iSavedAmmoType[ client ][ s ][ 0 ]  = -1;
+        g_iSavedAmmoType[ client ][ s ][ 1 ]  = -1;
+        g_iSavedAmmoCount[ client ][ s ][ 0 ] = 0;
+        g_iSavedAmmoCount[ client ][ s ][ 1 ] = 0;
 
         int wep                     = GetPlayerWeaponSlot( client, s );
         if ( wep != -1 ) {
-            g_iSavedClip1[ s ]         = GetEntProp( wep, Prop_Send, "m_iClip1" );
-            g_iSavedClip2[ s ]         = GetEntProp( wep, Prop_Send, "m_iClip2" );
+            g_iSavedClip1[ client ][ s ]         = GetEntProp( wep, Prop_Send, "m_iClip1" );
+            g_iSavedClip2[ client ][ s ]         = GetEntProp( wep, Prop_Send, "m_iClip2" );
 
             int at1                    = GetEntProp( wep, Prop_Send, "m_iPrimaryAmmoType" );
             int at2                    = GetEntProp( wep, Prop_Send, "m_iSecondaryAmmoType" );
-            g_iSavedAmmoType[ s ][ 0 ] = at1;
-            g_iSavedAmmoType[ s ][ 1 ] = at2;
-            if ( at1 >= 0 ) g_iSavedAmmoCount[ s ][ 0 ] = GetEntProp( client, Prop_Send, "m_iAmmo", _, at1 );
-            if ( at2 >= 0 ) g_iSavedAmmoCount[ s ][ 1 ] = GetEntProp( client, Prop_Send, "m_iAmmo", _, at2 );
+            g_iSavedAmmoType[ client ][ s ][ 0 ] = at1;
+            g_iSavedAmmoType[ client ][ s ][ 1 ] = at2;
+            if ( at1 >= 0 ) g_iSavedAmmoCount[ client ][ s ][ 0 ] = GetEntProp( client, Prop_Send, "m_iAmmo", _, at1 );
+            if ( at2 >= 0 ) g_iSavedAmmoCount[ client ][ s ][ 1 ] = GetEntProp( client, Prop_Send, "m_iAmmo", _, at2 );
         }
     }
-    g_bSavepointValid = true;
+    g_bSavepointValid[ client ] = true;
 
     EndCommand( client, "Location saved!" );
     return Plugin_Handled;
@@ -206,35 +206,35 @@ stock Action CLoadpoint( int client, int args ) {
     if ( IsMatch() || !g_bSaveEnabled ) return EndCommand( client, "Loading is disabled." );
     if ( !IsValidClientAlive( client ) ) return Plugin_Handled;
     if ( args != 0 ) return EndCommand( client, "Usage: sm_load" );
-    if ( !g_bSavepointValid ) return EndCommand( client, "No savepoint set yet." );
+    if ( !g_bSavepointValid[ client ] ) return EndCommand( client, "No savepoint set yet." );
 
-    TeleportEntity( client, g_vSavePos, g_vSaveAng, g_vSaveVel );
+    TeleportEntity( client, g_vSavePos[ client ], g_vSaveAng[ client ], g_vSaveVel[ client ] );
 
     // Restore ammo and clips for current carried weapons
     for ( int s = 0; s < MAXSLOTS; s++ ) {
         int wep = GetPlayerWeaponSlot( client, s );
         if ( wep != -1 ) {
-            if ( g_iSavedClip1[ s ] >= 0 ) SetEntProp( wep, Prop_Send, "m_iClip1", g_iSavedClip1[ s ] );
-            if ( g_iSavedClip2[ s ] >= 0 ) SetEntProp( wep, Prop_Send, "m_iClip2", g_iSavedClip2[ s ] );
+            if ( g_iSavedClip1[ client ][ s ] >= 0 ) SetEntProp( wep, Prop_Send, "m_iClip1", g_iSavedClip1[ client ][ s ] );
+            if ( g_iSavedClip2[ client ][ s ] >= 0 ) SetEntProp( wep, Prop_Send, "m_iClip2", g_iSavedClip2[ client ][ s ] );
         }
 
         // Set reserve ammo by ammo types
-        int at1 = g_iSavedAmmoType[ s ][ 0 ];
-        int at2 = g_iSavedAmmoType[ s ][ 1 ];
-        if ( at1 >= 0 ) SetEntProp( client, Prop_Send, "m_iAmmo", g_iSavedAmmoCount[ s ][ 0 ], _, at1 );
-        if ( at2 >= 0 ) SetEntProp( client, Prop_Send, "m_iAmmo", g_iSavedAmmoCount[ s ][ 1 ], _, at2 );
+        int at1 = g_iSavedAmmoType[ client ][ s ][ 0 ];
+        int at2 = g_iSavedAmmoType[ client ][ s ][ 1 ];
+        if ( at1 >= 0 ) SetEntProp( client, Prop_Send, "m_iAmmo", g_iSavedAmmoCount[ client ][ s ][ 0 ], _, at1 );
+        if ( at2 >= 0 ) SetEntProp( client, Prop_Send, "m_iAmmo", g_iSavedAmmoCount[ client ][ s ][ 1 ], _, at2 );
     }
     return Plugin_Handled;
 }
 
-// Check if a valid savepoint is saved
-stock bool IsSavepointValid() {
-  return g_bSavepointValid;
+// Check if a valid savepoint is saved for a given client
+stock bool IsSavepointValid( int client ) {
+  return g_bSavepointValid[ client ];
 }
 
-// Clear the savepoint
-stock void ClearSavepoint() {
-  g_bSavepointValid = false;
+// Clear the savepoint for a given client
+stock void ClearSavepoint( int client ) {
+  g_bSavepointValid[ client ] = false;
 }
 
 // Sends a message to the client and returns PH
