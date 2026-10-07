@@ -151,7 +151,7 @@ void RegConsoleCmdWithShort(const char[] name, const char[] shortName, ConCmd ha
   RegConsoleCmd(shortName, handler, description);
 }
 
-// Save- and Loadpoint data structures (per-client, so each player has their own spot)
+// Save- and Loadpoint data structures
 #define MAXSLOTS 2
 
 bool g_bSavepointValid[MAXPLAYERS + 1];
@@ -227,12 +227,12 @@ stock Action CLoadpoint( int client, int args ) {
     return Plugin_Handled;
 }
 
-// Check if a valid savepoint is saved for a given client
+// Check if a valid savepoint is saved for a client
 stock bool IsSavepointValid( int client ) {
   return g_bSavepointValid[ client ];
 }
 
-// Clear the savepoint for a given client
+// Clear the savepoint for a client
 stock void ClearSavepoint( int client ) {
   g_bSavepointValid[ client ] = false;
 }

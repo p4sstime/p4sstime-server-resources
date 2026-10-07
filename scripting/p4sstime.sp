@@ -757,11 +757,6 @@ public Action GoalHealTimer(Handle timer) {
     float goalPos[3];
     goalPos = (team == TFTeam_Red) ? fRedGoalPos : fBluGoalPos;
 
-    // Horizontal (XY-only) distance, decoupled from height, so the heal zone is a
-    // cylinder (radius x height) around the goal rather than a sphere clipped by
-    // height. The goal's m_vecOrigin is the brush's bounding-box center, which sits
-    // well above standing height, so folding Z into the radius check would shrink
-    // (or close) the usable zone for players standing at the base of the goal.
     float horizontal_diff[2];
     horizontal_diff[0] = goalPos[0] - position[0];
     horizontal_diff[1] = goalPos[1] - position[1];
