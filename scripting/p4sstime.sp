@@ -754,15 +754,20 @@ public Action GoalHealTimer(Handle timer) {
 
     if (health >= max_health) continue;
 
-    float distance_sqr, vertical_difference;
-    if (team == TFTeam_Red) {
-      distance_sqr = GetVectorDistance(position, fRedGoalPos, true);
-      vertical_difference = FloatAbs(fRedGoalPos[2] - position[2]);
-    }
-    else {
-      distance_sqr = GetVectorDistance(position, fBluGoalPos, true);
-      vertical_difference = FloatAbs(fBluGoalPos[2] - position[2]);
-    }
+    float goalPos[3];
+    goalPos = (team == TFTeam_Red) ? fRedGoalPos : fBluGoalPos;
+
+    // Horizontal (XY-only) distance, decoupled from height, so the heal zone is a
+    // cylinder (radius x height) around the goal rather than a sphere clipped by
+    // height. The goal's m_vecOrigin is the brush's bounding-box center, which sits
+    // well above standing height, so folding Z into the radius check would shrink
+    // (or close) the usable zone for players standing at the base of the goal.
+    float horizontal_diff[2];
+    horizontal_diff[0] = goalPos[0] - position[0];
+    horizontal_diff[1] = goalPos[1] - position[1];
+    float distance_sqr = horizontal_diff[0] * horizontal_diff[0] + horizontal_diff[1] * horizontal_diff[1];
+    float vertical_difference = FloatAbs(goalPos[2] - position[2]);
+
     if (distance_sqr < GOAL_HEAL_RADIUS_SQR && vertical_difference < GOAL_HEAL_HEIGHT) {
       VerboseLog("player \"%d\": distance '%f' (max distance '%f'), vertical_difference '%f'", client_idx, distance_sqr, GOAL_HEAL_RADIUS_SQR, vertical_difference);
 
