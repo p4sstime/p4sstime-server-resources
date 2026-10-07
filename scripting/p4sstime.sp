@@ -13,7 +13,7 @@
 #pragma semicolon 1 // required for logs.tf
 #pragma newdecls required
 
-#define VERSION "3.1.2"
+#define VERSION "3.1.3"
 
 // Macros
 #define GD      GameData 
@@ -591,18 +591,18 @@ public void OnPluginStart() {
   g_hMirrorSpawnPoints[1][1] = new ArrayList();  // BLU right
 
   // Cookies
-  ck_iCountdown =          RCC("p4ssClientCountdownCaption",  "p4sstime's client setting (1/0) for captions for JACK spawn timer", CookieAccess_Public);
-  ck_bJackHud =            RCC("p4ssClientJACKPickupHudText", "p4sstime's client setting (1/0) for HUD text when picking up JACK", CookieAccess_Public);
-  ck_bJackChat =           RCC("p4ssClientJACKPickupChatMsg", "p4sstime's client setting (1/0) for chat msg when picking up JACK", CookieAccess_Public);
-  ck_bJackSound =          RCC("p4ssClientJACKPickupSound",   "p4sstime's client setting (1/0) for sound when picking up JACK",    CookieAccess_Public);
-  ck_iStats =              RCC("p4ssClientStats",             "p4sstime's client setting (0/1/2) for EoR stats",                   CookieAccess_Public);
-  ck_bStatsSeparateLines = RCC("p4ssClientStatsSeparateLines", "p4sstime's client setting for separating stats into 2 lines", CookieAccess_Public);
-  ck_iFov =                RCC("p4ssClientFOV",               "p4sstime's client FOV setting",                                     CookieAccess_Public);
-  ck_iSpecFov =            RCC("p4ssClientSpecFOV",           "p4sstime's spectator FOV setting",                                  CookieAccess_Public);
-  ck_bAirshotLog =         RCC("p4ssClientAirshotLog",        "p4sstime's airshot log toggle",                                     CookieAccess_Public);
-  ck_bImmunity =           RCC("p4ssClientImmunity",          "p4sstime's immunity setting",                                       CookieAccess_Public);
-  ck_bInfAmmo =            RCC("p4ssClientInfiniteAmmo",      "p4sstime's infinite ammo setting",                                  CookieAccess_Public);
-  ck_bLegacyColors =       RCC("p4ssClientLegacyColors",   "p4sstime's client setting for using legacy colors",                 CookieAccess_Public);
+  ck_iCountdown =          RCC("p4ssClientCountdownCaption",   "p4sstime's client setting (1/0) for captions for JACK spawn timer", CookieAccess_Public);
+  ck_bJackHud =            RCC("p4ssClientJACKPickupHudText",  "p4sstime's client setting (1/0) for HUD text when picking up JACK", CookieAccess_Public);
+  ck_bJackChat =           RCC("p4ssClientJACKPickupChatMsg",  "p4sstime's client setting (1/0) for chat msg when picking up JACK", CookieAccess_Public);
+  ck_bJackSound =          RCC("p4ssClientJACKPickupSound",    "p4sstime's client setting (1/0) for sound when picking up JACK",    CookieAccess_Public);
+  ck_iStats =              RCC("p4ssClientStats",              "p4sstime's client setting (0/1/2) for EoR stats",                   CookieAccess_Public);
+  ck_bStatsSeparateLines = RCC("p4ssClientStatsSeparateLines", "p4sstime's client setting for separating stats into 2 lines",       CookieAccess_Public);
+  ck_iFov =                RCC("p4ssClientFOV",                "p4sstime's client FOV setting",                                     CookieAccess_Public);
+  ck_iSpecFov =            RCC("p4ssClientSpecFOV",            "p4sstime's spectator FOV setting",                                  CookieAccess_Public);
+  ck_bAirshotLog =         RCC("p4ssClientAirshotLog",         "p4sstime's airshot log toggle",                                     CookieAccess_Public);
+  ck_bImmunity =           RCC("p4ssClientImmunity",           "p4sstime's immunity setting",                                       CookieAccess_Public);
+  ck_bInfAmmo =            RCC("p4ssClientInfiniteAmmo",       "p4sstime's infinite ammo setting",                                  CookieAccess_Public);
+  ck_bLegacyColors =       RCC("p4ssClientLegacyColors",       "p4sstime's client setting for using legacy colors",                 CookieAccess_Public);
 
   // Client commands
   CC("sm_pt_stats",        CChatStats,       "Toggle end-of-round stats");
@@ -631,7 +631,7 @@ public void OnPluginStart() {
   CCA("sm_load",       "sm_ld",      CLoadpoint, "Teleport to saved spawn");
 
   // Admin commands
-  AC("sm_pt_spawnball",   CSpawnBall,        GENERIC, "Spawn the jack for pre-game practice.");
+  AC("sm_pt_spawnball", CSpawnBall, GENERIC, "Spawn the jack for pre-game practice.");
 
   // Admin commands with aliases
   ACA("sm_force_ready",    "sm_fr",   CForceReady,    GENERIC, "Set a team's ready status");
