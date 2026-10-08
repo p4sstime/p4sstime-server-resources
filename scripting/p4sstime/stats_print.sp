@@ -118,9 +118,7 @@ Action Timer_DisplayStats(Handle timer) {
   // calculate possession time
   int totalPossessionTime = iBluBallTime + iRedBallTime;
 
-#if defined(VERBOSE)
-    LogToGame("BluBallTime: %d, RedBallTime: %d, totalPossessionTime = %d", iBluBallTime, iRedBallTime, totalPossessionTime);
-#endif
+  VerboseLog("BluBallTime: %d, RedBallTime: %d, totalPossessionTime = %d", iBluBallTime, iRedBallTime, totalPossessionTime);
   float bluBallPossessionPercent;
   float redBallPossessionPercent;
 
@@ -134,19 +132,22 @@ Action Timer_DisplayStats(Handle timer) {
   else
     redBallPossessionPercent = (float(iRedBallTime) / float(totalPossessionTime));
 
-  // example values:
-  // red% = 54.53% (0.5453) 5453
-  // blu% = 45.47% (0.4547) 4547
-  int redTest = RoundToFloor(redBallPossessionPercent * 10000);
-  int bluTest = RoundToFloor(bluBallPossessionPercent * 10000);
-  // clean it up for spectators so the value adds up to a clean 100%
-  if (redTest + bluTest != 10000) {
-    redBallPossessionPercent += 0.0001;
+  // imagine a value of 0.6435: 
+  // * 1000 that is 643.5, 
+  // then rounded = 644, 
+  // then / 10 is 64.4
+  // that's the % we want to show
+  VerboseLog("possession before rounding: red%% = '%f', blu%% = '%f'", redBallPossessionPercent, bluBallPossessionPercent);
+  redBallPossessionPercent = float(RoundToNearest(redBallPossessionPercent * 1000)) / 10;
+  bluBallPossessionPercent = float(RoundToNearest(bluBallPossessionPercent * 1000)) / 10;
+  VerboseLog("possession after rounding: red%% = '%f', blu%% = '%f'", redBallPossessionPercent, bluBallPossessionPercent);
+  // because of rounding and/or floating point errors, we may sometimes be 0.1 off.
+  // slightly adjust red% for that
+  if (redBallPossessionPercent + bluBallPossessionPercent > 100.0) {
+    redBallPossessionPercent -= 0.1;
+  } elif (redBallPossessionPercent + bluBallPossessionPercent < 100.0) {
+    redBallPossessionPercent += 0.1;
   }
-
-  // for display
-  redBallPossessionPercent *= 100;
-  bluBallPossessionPercent *= 100;
   for (int x = 1; x < MaxClients + 1; x++) {
     if (!IsValidClient(x)) continue;
 
