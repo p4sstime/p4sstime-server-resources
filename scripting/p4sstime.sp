@@ -688,12 +688,14 @@ public void OnPluginStart() {
   AddCol("cOldSteal",     0xFF8000); // #FF8000
 
   // ConVars
+  
   // Fixes
   cvFixBlur =                CV("sm_pt_disable_intercept_blur",           "1",    "Disable blurry screen overlay when intercepting or stealing.",                               NOTIFY);
   cvFixJackCollision =       CV("sm_pt_disable_jack_drop_item_collision", "1",    "Disable jack collision on ammo packs and weapons.",                                          NOTIFY);
   cvFixRespawnBypass =       CV("sm_pt_block_instant_respawn",            "1",    "Disable switching classes while dead to respawn immediately.",                               NOTIFY);
   cvFixStocks =              CV("sm_pt_stock_blocklist",                  "1",    "Disable equipping shotgun, stickies, and needles; the allowlist can't block stock weapons.", NOTIFY);
   
+  // Chat & logs
   cvChatEvents =             CV("sm_pt_print_events",                     "1",    "Enable printing of passtime events to chat both during and after games. Does not affect logging.", NOTIFY);
   cvChatEventsFun =          CV("sm_pt_print_events_fun",                 "0",    "If sm_pt_print_events is 1, enable printing additional fun stats.",                                NOTIFY);
   cvVerboseLogs =            CV("sm_pt_logs_verbose",                     "0",    "Enable printing additional information to logs.",                                                  NONE);
@@ -722,15 +724,15 @@ public void OnPluginStart() {
 
   // Match timer
   cvMatchTimerEnabled =      CV("sm_pt_matchtimer_enabled",               "1",    "Enable the match timer (mercy score limit and overtime takeover on pass_ maps).", NOTIFY, true, 0.0,  true, 1.0);
-  cvMatchTimerMercy =        CV("sm_pt_matchtimer_mercy",                 "5",    "Mercy value, limit stays at lowest team's score + X. Below 1 = off.",             NOTIFY);
   cvMatchTimerEarlySeconds = CV("sm_pt_matchtimer_early_seconds",         "0.15", "Seconds before the round timer hits 0 to take it over.",                          NOTIFY, true, 0.05, false);
+  cvMatchTimerMercy =        CV("sm_pt_matchtimer_mercy",                 "5",    "Mercy value, limit stays at lowest team's score + X. Below 1 = off.",             NOTIFY);
+  cvMatchTimerRoundtime =    CV("sm_pt_matchtimer_roundtime",             "420",  "Round duration in seconds. -1 = default time", NOTIFY, true, -1.0, false);
   
   // Other
   cvInstantRespawn =         CV("sm_pt_instant_respawn",                  "1",    "Enable instant respawn.",                                                                   NOTIFY);
   cvPractice =               CV("sm_pt_practice",                         "0",    "Enable practice mode. When the round timer reaches 5 minutes, add 5 minutes to the timer.", NOTIFY, true, 0.0,  true, 1.0);
   cvWinstratKills =          CV("sm_pt_winstrat_kills",                   "0",    "Enable killing winstratters and printing \"tried to winstrat\" in chat.",                   NOTIFY);
 
-  cvMatchTimerRoundtime =    CV("sm_pt_matchtimer_roundtime",             "420",  "Round duration in seconds. -1 = default time", NOTIFY, true, -1.0, false);
 
   // trikzEnable =      RCC("sm_pt_trikz",                 "0", "Set 'trikz' mode. 1 adds friendly knockback for airshots, 2 adds friendly knockback for splash damage, 3 adds friendly knockback for everywhere", NOTIFY, true, 0.0, true, 3.0);
   // trikzProjCollide = RCC("sm_pt_trikz_projcollide",     "2", "Manually set team projectile collision behavior when trikz is on. 2 always collides, 1 will cause your projectiles to phase through if you are too close (default game behavior), 0 will cause them to never collide.", 0, true, 0.0, true, 2.0);
