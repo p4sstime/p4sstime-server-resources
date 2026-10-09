@@ -13,7 +13,7 @@
 #pragma semicolon 1 // required for logs.tf
 #pragma newdecls required
 
-#define VERSION "3.1.2"
+#define VERSION "3.2.0"
 
 // Macros
 #define GD      GameData 
@@ -553,6 +553,7 @@ stock void LogPassBallStolen(int thief, int victim, bool steal2save) {
 #include "p4sstime/stats_print.sp"
 #include "p4sstime/f2stocks.sp"
 #include "p4sstime/spawnball.sp"
+#include "p4sstime/match_timer.sp"
 
 public Plugin myinfo = {
   name        = "4v4 PASS Time Extension",
@@ -591,18 +592,18 @@ public void OnPluginStart() {
   g_hMirrorSpawnPoints[1][1] = new ArrayList();  // BLU right
 
   // Cookies
-  ck_iCountdown =          RCC("p4ssClientCountdownCaption",  "p4sstime's client setting (1/0) for captions for JACK spawn timer", CookieAccess_Public);
-  ck_bJackHud =            RCC("p4ssClientJACKPickupHudText", "p4sstime's client setting (1/0) for HUD text when picking up JACK", CookieAccess_Public);
-  ck_bJackChat =           RCC("p4ssClientJACKPickupChatMsg", "p4sstime's client setting (1/0) for chat msg when picking up JACK", CookieAccess_Public);
-  ck_bJackSound =          RCC("p4ssClientJACKPickupSound",   "p4sstime's client setting (1/0) for sound when picking up JACK",    CookieAccess_Public);
-  ck_iStats =              RCC("p4ssClientStats",             "p4sstime's client setting (0/1/2) for EoR stats",                   CookieAccess_Public);
-  ck_bStatsSeparateLines = RCC("p4ssClientStatsSeparateLines", "p4sstime's client setting for separating stats into 2 lines", CookieAccess_Public);
-  ck_iFov =                RCC("p4ssClientFOV",               "p4sstime's client FOV setting",                                     CookieAccess_Public);
-  ck_iSpecFov =            RCC("p4ssClientSpecFOV",           "p4sstime's spectator FOV setting",                                  CookieAccess_Public);
-  ck_bAirshotLog =         RCC("p4ssClientAirshotLog",        "p4sstime's airshot log toggle",                                     CookieAccess_Public);
-  ck_bImmunity =           RCC("p4ssClientImmunity",          "p4sstime's immunity setting",                                       CookieAccess_Public);
-  ck_bInfAmmo =            RCC("p4ssClientInfiniteAmmo",      "p4sstime's infinite ammo setting",                                  CookieAccess_Public);
-  ck_bLegacyColors =       RCC("p4ssClientLegacyColors",   "p4sstime's client setting for using legacy colors",                 CookieAccess_Public);
+  ck_iCountdown =          RCC("p4ssClientCountdownCaption",   "p4sstime's client setting (1/0) for captions for JACK spawn timer", CookieAccess_Public);
+  ck_bJackHud =            RCC("p4ssClientJACKPickupHudText",  "p4sstime's client setting (1/0) for HUD text when picking up JACK", CookieAccess_Public);
+  ck_bJackChat =           RCC("p4ssClientJACKPickupChatMsg",  "p4sstime's client setting (1/0) for chat msg when picking up JACK", CookieAccess_Public);
+  ck_bJackSound =          RCC("p4ssClientJACKPickupSound",    "p4sstime's client setting (1/0) for sound when picking up JACK",    CookieAccess_Public);
+  ck_iStats =              RCC("p4ssClientStats",              "p4sstime's client setting (0/1/2) for EoR stats",                   CookieAccess_Public);
+  ck_bStatsSeparateLines = RCC("p4ssClientStatsSeparateLines", "p4sstime's client setting for separating stats into 2 lines",       CookieAccess_Public);
+  ck_iFov =                RCC("p4ssClientFOV",                "p4sstime's client FOV setting",                                     CookieAccess_Public);
+  ck_iSpecFov =            RCC("p4ssClientSpecFOV",            "p4sstime's spectator FOV setting",                                  CookieAccess_Public);
+  ck_bAirshotLog =         RCC("p4ssClientAirshotLog",         "p4sstime's airshot log toggle",                                     CookieAccess_Public);
+  ck_bImmunity =           RCC("p4ssClientImmunity",           "p4sstime's immunity setting",                                       CookieAccess_Public);
+  ck_bInfAmmo =            RCC("p4ssClientInfiniteAmmo",       "p4sstime's infinite ammo setting",                                  CookieAccess_Public);
+  ck_bLegacyColors =       RCC("p4ssClientLegacyColors",       "p4sstime's client setting for using legacy colors",                 CookieAccess_Public);
 
   // Client commands
   CC("sm_pt_stats",        CChatStats,       "Toggle end-of-round stats");
@@ -631,7 +632,7 @@ public void OnPluginStart() {
   CCA("sm_load",       "sm_ld",      CLoadpoint, "Teleport to saved spawn");
 
   // Admin commands
-  AC("sm_pt_spawnball",   CSpawnBall,        GENERIC, "Spawn the jack for pre-game practice.");
+  AC("sm_pt_spawnball", CSpawnBall, GENERIC, "Spawn the jack for pre-game practice.");
 
   // Admin commands with aliases
   ACA("sm_force_ready",    "sm_fr",   CForceReady,    GENERIC, "Set a team's ready status");
@@ -711,6 +712,12 @@ public void OnPluginStart() {
   cvFovMin = CV("sm_pt_fov_min", "70",  "Minimum client field of view", _, true, 1.0, true, 175.0);
   cvFovMax = CV("sm_pt_fov_max", "120", "Maximum client field of view", _, true, 1.0, true, 175.0);
 
+  // Match timer ConVars
+  cvMatchTimerEnabled      = CV("sm_pt_matchtimer_enabled",       "1",    "Enable the match timer (mercy score limit and overtime takeover on pass_ maps).", NOTIFY, true, 0.0, true, 1.0);
+  cvMatchTimerMercy        = CV("sm_pt_matchtimer_mercy",         "5",    "Mercy value, limit stays at lowest team's score + X. Below 1 = off.",            NOTIFY);
+  cvMatchTimerEarlySeconds = CV("sm_pt_matchtimer_early_seconds", "0.15", "Seconds before the round timer hits 0 to take it over.",                         NOTIFY, true, 0.05, false);
+  cvMatchTimerRoundtime    = CV("sm_pt_matchtimer_roundtime",     "420",  "Round duration in seconds. -1 = default time",                                   NOTIFY, true, -1.0, false);
+
   // trikzEnable =      CC("sm_pt_trikz",                 "0", "Set 'trikz' mode. 1 adds friendly knockback for airshots, 2 adds friendly knockback for splash damage, 3 adds friendly knockback for everywhere", NOTIFY, true, 0.0, true, 3.0);
   // trikzProjCollide = CC("sm_pt_trikz_projcollide",     "2", "Manually set team projectile collision behavior when trikz is on. 2 always collides, 1 will cause your projectiles to phase through if you are too close (default game behavior), 0 will cause them to never collide.", 0, true, 0.0, true, 2.0);
   // trikzProjDev =     CC("sm_pt_trikz_projcollide_dev", "0", "DONOTUSE; This command is used solely by the plugin to change values. Changing this manually may cause issues.", FCVAR_HIDDEN, true, 0.0, true, 2.0);
@@ -721,6 +728,8 @@ public void OnPluginStart() {
   // HCC(trikzEnable, Hook_OnTrikzChange);
   // HCC(trikzProjCollide, Hook_OnProjCollideChange);
   // HCC(trikzProjDev, Hook_OnProjCollideDev);
+
+  MatchTimerInit();
 
   if (LibraryExists("updater")) {
     OnLibraryAdded("updater");
@@ -754,15 +763,15 @@ public Action GoalHealTimer(Handle timer) {
 
     if (health >= max_health) continue;
 
-    float distance_sqr, vertical_difference;
-    if (team == TFTeam_Red) {
-      distance_sqr = GetVectorDistance(position, fRedGoalPos, true);
-      vertical_difference = FloatAbs(fRedGoalPos[2] - position[2]);
-    }
-    else {
-      distance_sqr = GetVectorDistance(position, fBluGoalPos, true);
-      vertical_difference = FloatAbs(fBluGoalPos[2] - position[2]);
-    }
+    float goalPos[3];
+    goalPos = (team == TFTeam_Red) ? fRedGoalPos : fBluGoalPos;
+
+    float horizontal_diff[2];
+    horizontal_diff[0] = goalPos[0] - position[0];
+    horizontal_diff[1] = goalPos[1] - position[1];
+    float distance_sqr = horizontal_diff[0] * horizontal_diff[0] + horizontal_diff[1] * horizontal_diff[1];
+    float vertical_difference = FloatAbs(goalPos[2] - position[2]);
+
     if (distance_sqr < GOAL_HEAL_RADIUS_SQR && vertical_difference < GOAL_HEAL_HEIGHT) {
       VerboseLog("player \"%d\": distance '%f' (max distance '%f'), vertical_difference '%f'", client_idx, distance_sqr, GOAL_HEAL_RADIUS_SQR, vertical_difference);
 
@@ -773,6 +782,7 @@ public Action GoalHealTimer(Handle timer) {
 }
 
 public void OnMapStart() {
+  MatchTimerMapStart();
   ConVar tf_gamemode_passtime = FindConVar("tf_gamemode_passtime");
   if (!tf_gamemode_passtime.BoolValue) {
     SetFailState("not playing passtime, disabled.");
@@ -889,6 +899,8 @@ public void OnMapEnd() {
 }
 
 public void OnGameFrame() {
+  MatchTimerGameFrame();
+
   int logic = GetOrFindPasstimeLogic();
   if (logic != INVALID_ENT_REFERENCE) {
     int jack = GetBall(logic);
@@ -963,6 +975,7 @@ public void OnEntityCreated(int eIndex, const char[] eClassname) {
 
     VerboseLog("passtime_ball spawned \"%d\"", eIndex);
   }
+  if (StrEqual(eClassname, "team_round_timer")) SDKHook(eIndex, SDKHook_SpawnPost, MatchTimerSpawnPost);
   if (StrEqual(eClassname, "tf_projectile_rocket") || StrEqual(eClassname, "tf_projectile_pipe")) {
     SDKHookEx(eIndex, SDKHook_Touch, OnProjectileTouch);
   }
