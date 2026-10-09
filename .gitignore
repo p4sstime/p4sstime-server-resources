@@ -45,3 +45,6 @@
 # Exclude default sourcemod gamedata
 gamedata/funcommands.games.txt
 sm-tf2.games.txt
+
+# Exclude local folder
+local/
