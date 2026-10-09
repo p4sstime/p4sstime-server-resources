@@ -1,46 +1,56 @@
-"Games" {
-    "tf" {
-        "Signatures" {
-            "CTFPlayer::ForceRegenerateAndRespawn" {
-                "library"   "server"
-                "linux"     "@_ZN9CTFPlayer25ForceRegenerateAndRespawnEv"
-                "windows"   "\x55\x8B\xEC\x51\x56\x57\x8B\xF9\xC6\x45\xFF\x01"
+"Games"
+{
+    "tf"
+    {
+        "Signatures"
+        {
+            "CTFPlayer::ForceRegenerateAndRespawn"
+            {
+                "library"           "server"
+                "windows"           "\x55\x8B\xEC\x51\x56\x57\x8B\xF9\xC6\x45\xFF\x01"
+                "linux"             "@_ZN9CTFPlayer25ForceRegenerateAndRespawnEv"
             }
-
-            "PointInRespawnRoom" {
-                "library"   "server"
-                "linux"     "@_Z18PointInRespawnRoomPK11CBaseEntityRK6Vectorb"
-                "windows"   "\x55\x8B\xEC\x53\x33\xDB\x56\x57\x39\x1D"
+            "PointInRespawnRoom"
+            {
+                "library"           "server"
+                "windows"           "\x55\x8B\xEC\x53\x33\xDB\x56\x57\x39\x1D"
+                "linux"             "@_Z18PointInRespawnRoomPK11CBaseEntityRK6Vectorb"
             }
-
-            "GEconItemSchema" {
-                "library"   "server"
-                "linux"     "@_Z15GEconItemSchemav"
-                "windows"   "\xE8\x2A\x2A\x2A\x2A\x83\xC0\x04\xC3"
+            "GEconItemSchema"
+            {
+                "library"           "server"
+                "windows"           "\xE8\x2A\x2A\x2A\x2A\x83\xC0\x04\xC3"
+                "linux"             "@_Z15GEconItemSchemav"
+                "mac"               "@_Z15GEconItemSchemav"
             }
-
-            "CEconItemSchema::GetAttributeDefinitionByName" {
-                "library"   "server"
-                "linux"     "@_ZN15CEconItemSchema28GetAttributeDefinitionByNameEPKc"
-                "windows"   "\x55\x8B\xEC\x83\xEC\x1C\x83\x7D\x08\x00"
+            "CEconItemSchema::GetAttributeDefinitionByName"
+            {
+                "library"           "server"
+                "windows"           "\x55\x8B\xEC\x8B\x45\x08\x56\x8B\xF1\x57\x85\xC0\x74\x5F\x50\x8D\x8E"
+                "linux"             "@_ZN15CEconItemSchema28GetAttributeDefinitionByNameEPKc"
+                "mac"               "@_ZN15CEconItemSchema28GetAttributeDefinitionByNameEPKc"
             }
-
-            "CAttributeList::SetRuntimeAttributeValue" {
-                "library"   "server"
-                "linux"     "@_ZN14CAttributeList24SetRuntimeAttributeValueEPK28CEconItemAttributeDefinitionf"
-                "windows"   "\x55\x8B\xEC\x83\xEC\x2A\x33\x2A\x53\x8B\xD9\x56\x57\x8B\x2A\x2A\x8B\x2A\x2A"
+            "CAttributeList::SetRuntimeAttributeValue"
+            {
+                "library"           "server"
+                "windows"           "\x55\x8B\xEC\x83\xEC\x2A\x33\x2A\x53\x8B\xD9\x56\x57\x8B\x2A\x2A\x8B\x2A\x2A"
+                "linux"             "@_ZN14CAttributeList24SetRuntimeAttributeValueEPK28CEconItemAttributeDefinitionf"
+                "mac"               "@_ZN14CAttributeList24SetRuntimeAttributeValueEPK28CEconItemAttributeDefinitionf"
             }
-
-            "CAttributeList::RemoveAttribute" {
-                "library"   "server"
-                "linux"     "@_ZN14CAttributeList15RemoveAttributeEPK28CEconItemAttributeDefinition"
-                "windows"   "\x55\x8B\xEC\x51\x53\x8B\xD9\x56\x33\xF6\x8B\x43\x10\x89\x45\xFC\x85\xC0\x7E\x2A\x57\x33\xFF"
+            "CAttributeList::RemoveAttribute"
+            {
+                "library"           "server"
+                "windows"           "\x55\x8B\xEC\x51\x53\x8B\xD9\x56\x33\xF6\x8B\x43\x10\x89\x45\xFC\x85\xC0\x7E\x2A\x57\x33\xFF"
+                "linux"             "@_ZN14CAttributeList15RemoveAttributeEPK28CEconItemAttributeDefinition"
+                "mac"               "@_ZN14CAttributeList15RemoveAttributeEPK28CEconItemAttributeDefinition"
             }
         }
-        "Offsets" {
-			"CTFPlayer::m_bPasstimeBallSlippery" {
-                "linux"      "0x2645"
-                "windows"    "0x2649"
+        "Offsets"
+        {
+            "CTFPlayer::m_bPasstimeBallSlippery"
+            {
+                "windows"           "0x2649"
+                "linux"             "0x2645"
             }
         }
     }
