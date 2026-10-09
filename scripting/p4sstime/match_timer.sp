@@ -35,9 +35,9 @@ void MatchTimerInit() {
   cvMatchRestartGame = FindConVar("mp_restartgame");
   cvMatchScoreLimit  = FindConVar("tf_passtime_scores_per_round");
   HCC(cvMatchRestartGame, Hook_OnMatchRestartGame);
-  HE("teamplay_round_start",   EMatchRoundStart);
-  HE("teamplay_restart_round", EMatchRoundStart);
-  HE("teamplay_round_win",     EMatchRoundWin);
+  HEv("teamplay_round_start",   EMatchRoundStart);
+  HEv("teamplay_restart_round", EMatchRoundStart);
+  HEv("teamplay_round_win",     EMatchRoundWin);
   AddCommandListener(OnMatchExec, "exec");
 }
 

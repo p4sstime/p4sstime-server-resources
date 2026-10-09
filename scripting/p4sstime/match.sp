@@ -15,22 +15,22 @@ void TeamChatAnnounce(TFTeam team, const char[] format, any ...) {
 }
 
 int ParseTeamIndex(const char[] team) {
-  return StrEqual(team, "red") || StrEqual(team, "r")                            ? 0
+  return StrEqual(team, "red")                           || StrEqual(team, "r") ? 0
        : StrEqual(team, "blu") || StrEqual(team, "blue") || StrEqual(team, "b") ? 1
                                                                                 : -1;
 }
 
 TFTeam ParseTeam(const char[] team) {
   return StrEqual(team, "spectator") || StrEqual(team, "spec") || StrEqual(team, "s") ? TFTeam_Spectator
-       : StrEqual(team, "red") || StrEqual(team, "r")                                 ? TFTeam_Red
-       : StrEqual(team, "blue") || StrEqual(team, "blu") || StrEqual(team, "b")       ? TFTeam_Blue
+       : StrEqual(team, "red")                                 || StrEqual(team, "r") ? TFTeam_Red
+       : StrEqual(team, "blue")      || StrEqual(team, "blu")  || StrEqual(team, "b") ? TFTeam_Blue
                                                                                       : TFTeam_Unassigned;
 }
 
 TFClassType ParseClass(const char[] s) {
-  if (StrEqual(s, "soldier") || StrEqual(s, "2"))                          return TFClass_Soldier;
-  if (StrEqual(s, "demo") || StrEqual(s, "demoman") || StrEqual(s, "4"))  return TFClass_DemoMan;
-  if (StrEqual(s, "med")  || StrEqual(s, "medic")   || StrEqual(s, "7"))  return TFClass_Medic;
+  if (StrEqual(s, "soldier") || StrEqual(s, "sol")  || StrEqual(s, "2")) return TFClass_Soldier;
+  if (StrEqual(s, "demoman") || StrEqual(s, "demo") || StrEqual(s, "4")) return TFClass_DemoMan;
+  if (StrEqual(s, "medic")   || StrEqual(s, "med")  || StrEqual(s, "7")) return TFClass_Medic;
   return TFClass_Unknown;
 }
 
@@ -43,9 +43,9 @@ int FindTeamEntity(int teamNum) {
 }
 
 void TargetStringAlias(char[] target, int size) {
-  if      (StrEqual(target, "@r",          false))                                         strcopy(target, size, "@red");
-  elif    (StrEqual(target, "@blu", false) || StrEqual(target, "@b", false))               strcopy(target, size, "@blue");
-  elif    (StrEqual(target, "@s",   false) || StrEqual(target, "@spectator", false))       strcopy(target, size, "@spec");
+  if      (StrEqual(target, "@r",   false))                                          strcopy(target, size, "@red");
+  elif    (StrEqual(target, "@blu", false) || StrEqual(target, "@b", false))         strcopy(target, size, "@blue");
+  elif    (StrEqual(target, "@s",   false) || StrEqual(target, "@spectator", false)) strcopy(target, size, "@spec");
 }
 
 // ====================================================================================================
@@ -54,18 +54,24 @@ void TargetStringAlias(char[] target, int size) {
 
 Action CForceReady(int client, int args) {
   if (!FindConVar("mp_tournament").BoolValue || IsMatch()) return Plugin_Handled;
-  if (args != 2) {
-    ReplyToCommand(client, "[SM] Usage: sm_force_ready <red|blu> <0|1>");
+  if (args < 1 || args > 2) {
+    ReplyToCommand(client, "[SM] Usage: sm_force_ready <red|blu> [0|1]");
     return Plugin_Handled;
   }
 
   char teamArg[10];
   GetCmdArg(1, teamArg, sizeof(teamArg));
   int teamIndex = ParseTeamIndex(teamArg);
-  int status    = GetCmdArgInt(2);
 
   if (teamIndex == -1) { ReplyToCommand(client, "[SM] Invalid team. Use 'red' or 'blu'."); return Plugin_Handled; }
-  if (status < 0 || status > 1) { ReplyToCommand(client, "[SM] Invalid status. Use 0 (not ready) or 1 (ready)."); return Plugin_Handled; }
+
+  int status;
+  if (args == 2) {
+    status = GetCmdArgInt(2);
+    if (status < 0 || status > 1) { ReplyToCommand(client, "[SM] Invalid status. Use 0 (not ready) or 1 (ready)."); return Plugin_Handled; }
+  } else {
+    status = view_as<int>(!g_bIsTeamReady[teamIndex]);
+  }
 
   GameRules_SetProp("m_bTeamReady", status, 1, teamIndex + 2);
   g_bIsTeamReady[teamIndex] = (status != 0);
