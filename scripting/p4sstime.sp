@@ -553,6 +553,7 @@ stock void LogPassBallStolen(int thief, int victim, bool steal2save) {
 #include "p4sstime/stats_print.sp"
 #include "p4sstime/f2stocks.sp"
 #include "p4sstime/spawnball.sp"
+#include "p4sstime/match_timer.sp"
 
 public Plugin myinfo = {
   name        = "4v4 PASS Time Extension",
@@ -711,6 +712,12 @@ public void OnPluginStart() {
   cvFovMin = CV("sm_pt_fov_min", "70",  "Minimum client field of view", _, true, 1.0, true, 175.0);
   cvFovMax = CV("sm_pt_fov_max", "120", "Maximum client field of view", _, true, 1.0, true, 175.0);
 
+  // Match timer ConVars
+  cvMatchTimerEnabled      = CV("sm_pt_matchtimer_enabled",       "1",    "Enable the match timer (mercy score limit and overtime takeover on pass_ maps).", NOTIFY, true, 0.0, true, 1.0);
+  cvMatchTimerMercy        = CV("sm_pt_matchtimer_mercy",         "5",    "Mercy value, limit stays at lowest team's score + X. Below 1 = off.",            NOTIFY);
+  cvMatchTimerEarlySeconds = CV("sm_pt_matchtimer_early_seconds", "0.15", "Seconds before the round timer hits 0 to take it over.",                         NOTIFY, true, 0.05, false);
+  cvMatchTimerRoundtime    = CV("sm_pt_matchtimer_roundtime",     "420",  "Round duration in seconds. -1 = default time",                                   NOTIFY, true, -1.0, false);
+
   // trikzEnable =      CC("sm_pt_trikz",                 "0", "Set 'trikz' mode. 1 adds friendly knockback for airshots, 2 adds friendly knockback for splash damage, 3 adds friendly knockback for everywhere", NOTIFY, true, 0.0, true, 3.0);
   // trikzProjCollide = CC("sm_pt_trikz_projcollide",     "2", "Manually set team projectile collision behavior when trikz is on. 2 always collides, 1 will cause your projectiles to phase through if you are too close (default game behavior), 0 will cause them to never collide.", 0, true, 0.0, true, 2.0);
   // trikzProjDev =     CC("sm_pt_trikz_projcollide_dev", "0", "DONOTUSE; This command is used solely by the plugin to change values. Changing this manually may cause issues.", FCVAR_HIDDEN, true, 0.0, true, 2.0);
@@ -721,6 +728,8 @@ public void OnPluginStart() {
   // HCC(trikzEnable, Hook_OnTrikzChange);
   // HCC(trikzProjCollide, Hook_OnProjCollideChange);
   // HCC(trikzProjDev, Hook_OnProjCollideDev);
+
+  MatchTimerInit();
 
   if (LibraryExists("updater")) {
     OnLibraryAdded("updater");
@@ -773,6 +782,7 @@ public Action GoalHealTimer(Handle timer) {
 }
 
 public void OnMapStart() {
+  MatchTimerMapStart();
   ConVar tf_gamemode_passtime = FindConVar("tf_gamemode_passtime");
   if (!tf_gamemode_passtime.BoolValue) {
     SetFailState("not playing passtime, disabled.");
@@ -889,6 +899,8 @@ public void OnMapEnd() {
 }
 
 public void OnGameFrame() {
+  MatchTimerGameFrame();
+
   int logic = GetOrFindPasstimeLogic();
   if (logic != INVALID_ENT_REFERENCE) {
     int jack = GetBall(logic);
@@ -963,6 +975,7 @@ public void OnEntityCreated(int eIndex, const char[] eClassname) {
 
     VerboseLog("passtime_ball spawned \"%d\"", eIndex);
   }
+  if (StrEqual(eClassname, "team_round_timer")) SDKHook(eIndex, SDKHook_SpawnPost, MatchTimerSpawnPost);
   if (StrEqual(eClassname, "tf_projectile_rocket") || StrEqual(eClassname, "tf_projectile_pipe")) {
     SDKHookEx(eIndex, SDKHook_Touch, OnProjectileTouch);
   }
