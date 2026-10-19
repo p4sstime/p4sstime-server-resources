@@ -729,8 +729,6 @@ public void OnPluginStart() {
   // HCC(trikzProjCollide, Hook_OnProjCollideChange);
   // HCC(trikzProjDev, Hook_OnProjCollideDev);
 
-  MatchTimerInit();
-
   if (LibraryExists("updater")) {
     OnLibraryAdded("updater");
   }
@@ -782,11 +780,13 @@ public Action GoalHealTimer(Handle timer) {
 }
 
 public void OnMapStart() {
-  MatchTimerMapStart();
   ConVar tf_gamemode_passtime = FindConVar("tf_gamemode_passtime");
   if (!tf_gamemode_passtime.BoolValue) {
     SetFailState("not playing passtime, disabled.");
   }
+
+  MatchTimerInit();
+  MatchTimerMapStart();
 
   int goal1 = FindEntityByClassname(-1, "func_passtime_goal");
   if (goal1 == -1) {
@@ -896,6 +896,8 @@ public void OnMapEnd() {
   RemoveCommandListener(OnSpecCommand, "spec_next");
   RemoveCommandListener(OnSpecCommand, "spec_prev");
   RemoveCommandListener(OnSpecCommand, "spec_mode");
+
+  MatchTimerMapEnd();
 }
 
 public void OnGameFrame() {

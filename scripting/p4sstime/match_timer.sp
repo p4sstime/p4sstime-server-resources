@@ -8,7 +8,6 @@
 #define MATCH_RESPAWN_TIMER_PAD   5
 #define MATCH_UNSET_SCORE         -1
 
-bool    g_bMatchGamemode;                 // map is a pass_ map
 int     g_iMatchTimerRef = INVALID_ENT_REFERENCE;
 int     g_iMatchScoreLimitOriginal = MATCH_UNSET_SCORE;
 bool    g_bMatchOvertime;
@@ -41,16 +40,21 @@ void MatchTimerInit() {
   AddCommandListener(OnMatchExec, "exec");
 }
 
+void MatchTimerMapEnd() {
+  UnhookConVarChange(cvMatchRestartGame, Hook_OnMatchRestartGame);
+  UnhookEvent("teamplay_round_start",   EMatchRoundStart);
+  UnhookEvent("teamplay_restart_round", EMatchRoundStart);
+  UnhookEvent("teamplay_round_win",     EMatchRoundWin);
+  RemoveCommandListener(OnMatchExec, "exec");
+  ResetRoundState();
+}
+
 void MatchTimerMapStart() {
   g_hMatchDelayStart = null;
   g_hMatchPoll = null;
   g_iMatchTimerRef = INVALID_ENT_REFERENCE;
   g_iMatchScoreLimitOriginal = MATCH_UNSET_SCORE;
   ClearRoundState();
-
-  char mapname[64];
-  GetCurrentMap(mapname, sizeof(mapname));
-  g_bMatchGamemode = (StrContains(mapname, "pass_", true) == 0);
 }
 
 void MatchTimerSpawnPost(int entity) {
@@ -101,7 +105,7 @@ Action OnMatchExec(int client, const char[] command, int argc) {
 // ROUND STATE
 // ====================================================================================================
 bool IsMatchTimerActive() {
-  return g_bMatchGamemode && cvMatchTimerEnabled.BoolValue;
+  return cvMatchTimerEnabled.BoolValue;
 }
 
 void MatchCaptureOriginals() {
