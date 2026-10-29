@@ -43,7 +43,7 @@ Action OnChangeClass(int client, const char[] strCommand, int args) {
       elif (classcheck == TFClass_Medic) med = true;
     }
   }
-  if (arr_bPlyIsDead[client] == true && bFixRespawnBypass.BoolValue) {
+  if (arr_bPlyIsDead[client] == true && cvFixRespawnBypass.BoolValue) {
     if (class == TFClass_Medic && med) return Plugin_Handled;
     elif (class == TFClass_DemoMan && demo) return Plugin_Handled;
     elif (class == TFClass_Soldier && solly > 2) return Plugin_Handled;
@@ -57,7 +57,7 @@ Action OnChangeClass(int client, const char[] strCommand, int args) {
 }
 
 public void TF2_OnConditionAdded(int client, TFCond condition) {
-  if (condition == TFCond_PasstimeInterception && bFixBlur.BoolValue) {
+  if (condition == TFCond_PasstimeInterception && cvFixBlur.BoolValue) {
     ClientCommand(client, "r_screenoverlay \"\"");
   }
   if (condition == TFCond_Charging && TF2_GetPlayerClass(client) == TFClass_DemoMan) {
@@ -85,24 +85,24 @@ CREATE_BOOL_SETTING(CJackPickupChat,  bJackChat,  ck_bJackChat,  "JACK pickup ch
 CREATE_BOOL_SETTING(CJackPickupSound, bJackSound, ck_bJackSound, "JACK pickup sound")
 
 void Hook_OnAllowInstantResupplyChange(ConVar convar, const char[] oldValue, const char[] newValue) {
-  if (!bResupply.BoolValue)
+  if (!cvResupply.BoolValue)
     return;
 
   if (tfPlayerForceRegenerateAndRespawn == null) {
     LogError("Cannot allow instant resupply due to missing CTFPlayer::ForceRegenerateAndRespawn function");
-    bResupply.BoolValue = false;
+    cvResupply.BoolValue = false;
     return;
   }
 
   if (pointInRespawnRoom == null) {
     LogError("Cannot allow instant resupply due to missing PointInRespawnRoom function");
-    bResupply.BoolValue = false;
+    cvResupply.BoolValue = false;
     return;
   }
 }
 
 Action CResupDn(int client, int args) {
-  if (!bResupply.BoolValue) {
+  if (!cvResupply.BoolValue) {
     PrintToConsole(client, "[PASS] +resupply is disabled.");
     return Plugin_Handled;
   }
@@ -122,7 +122,7 @@ Action CResupUp(int client, int args) {
 }
 
 void BufferedResupply(int client) {
-  if (!bResupply.BoolValue) return;
+  if (!cvResupply.BoolValue) return;
   if (!g_bResupplyDn[client] || g_bResupplyUp[client]) return;
   if (!IsPlayerAlive(client)) return;
 
@@ -134,8 +134,8 @@ void BufferedResupply(int client) {
   if (!PointInRespawnRoom(client, origin, false)) return;
 
   // SUCCESSFUL input: apply decay-based cooldown
-  float maxDecay = fResupplyCooldown.FloatValue;
-  float decayAddition = fResupplyDecayAddition.FloatValue;
+  float maxDecay = cvResupplyCooldown.FloatValue;
+  float decayAddition = cvResupplyDecayAddition.FloatValue;
 
   // 1. Current decay determines the cooldown applied to this click
   nextInstantResupplyTime[client] = resupplyDecay[client] < maxDecay ? resupplyDecay[client] : maxDecay;
@@ -186,7 +186,7 @@ void BufferedResupply(int client) {
 }
 
 void RemoveStocks(int client) {
-  if (bFixStocks.BoolValue) {
+  if (cvFixStocks.BoolValue) {
     TFClassType class = TF2_GetPlayerClass(client);
     int iWep;
     if (class == TFClass_DemoMan || class == TFClass_Soldier) iWep = GetPlayerWeaponSlot(client, 1);
