@@ -10,7 +10,7 @@ void ApplyDemoResistance(int client) {
   // When demo resistance is disabled, apply blast vulnerability (25% more damage)
   // When enabled, remove the attribute so shield works normally
   if (playerClass == TFClass_DemoMan) {
-    if (!bDemoResist.BoolValue) {
+    if (!cvDemoResist.BoolValue) {
       desiredValue = 1.25;
       shouldApply = true;
     }
@@ -68,10 +68,10 @@ void ApplyBootsAttributes(int client) {
     return;
   }
 
-  float chargeTurn = cvBootsChargeTurn.FloatValue;
-  float maxHealth  = cvBootsMaxHealth.FloatValue;
-  float killRefill = cvBootsKillRefill.FloatValue;
-  float moveSpeed  = cvBootsMoveSpeed.FloatValue;
+  float chargeTurn = cvDemoBootsChargeTurn.FloatValue;
+  float maxHealth  = cvDemoBootsMaxHealth.FloatValue;
+  float killRefill = cvDemoBootsKillRefill.FloatValue;
+  float moveSpeed  = cvDemoBootsMoveSpeed.FloatValue;
 
   if (!g_bBootsAttributesApplied[client]
     || g_fCurrentBootsChargeTurn[client] != chargeTurn
