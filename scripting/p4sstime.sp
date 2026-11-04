@@ -688,7 +688,7 @@ public void OnPluginStart() {
   AddCol("cOldSteal",     0xFF8000); // #FF8000
 
   // ConVars
-  
+
   // Fixes
   cvFixBlur =                CV("sm_pt_disable_intercept_blur",           "1",    "Disable blurry screen overlay when intercepting or stealing.",                               NOTIFY);
   cvFixJackCollision =       CV("sm_pt_disable_jack_drop_item_collision", "1",    "Disable jack collision on ammo packs and weapons.",                                          NOTIFY);
