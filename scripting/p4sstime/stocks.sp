@@ -137,6 +137,10 @@ stock int min(int x, int y) {
   if (x <= y) return x;
   else return y;
 }
+stock int max(int x, int y) {
+  if (x >= y) return x;
+  else return y;
+}
 stock int GetPlayerMaxHealthTF2(int client) {
   return GetEntProp(GetPlayerResourceEntity(), Prop_Send, "m_iMaxHealth", _, client);
 }
