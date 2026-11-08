@@ -1,4 +1,9 @@
 Action CSpawnBall(int client, int args) {
+  if (IsMatch()) {
+    CTagChat(client, "Spawning the ball is disabled during a match.");
+    return Plugin_Handled;
+  }
+
   char name[MAX_NAME_LENGTH];
   VerboseLog("ptspawnball called from client %d", client);
   if (client == 0) name = "CONSOLE";
